@@ -19,22 +19,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version-file: .nvmrc
+          check-latest: true
           cache: npm
+
+      - name: Verify Node.js version
+        run: |
+          node --version
+          npm --version
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and deploy
-        run: npm run deploy:cf
+      - name: Build OpenNext bundle
+        run: npx opennextjs-cloudflare build
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
           NEXT_PUBLIC_APP_SITE_URL: ${{ secrets.NEXT_PUBLIC_APP_SITE_URL }}
           NEXT_PUBLIC_CN_SITE_URL: ${{ secrets.NEXT_PUBLIC_CN_SITE_URL }}
+
+      - name: Deploy to Cloudflare Workers
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
