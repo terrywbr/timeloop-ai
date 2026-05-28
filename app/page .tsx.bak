@@ -1,0 +1,949 @@
+'use client'
+
+import { useRef, useState, useCallback, useEffect, type ElementType } from 'react'
+import { Menu, ImageIcon } from 'lucide-react'
+import VideoBackground, { type VideoBackgroundRef } from '@/components/video-background'
+import StreamAudioPlayer from '@/components/stream-audio-player'
+import ControlPanel from '@/components/control-panel'
+import { MUSIC_CHANNELS, type MusicChannelKey } from '@/lib/music-channels'
+import CommunityGallery from '@/components/community-gallery'
+import { SCENE_DATA, type SceneGalleryItem } from '@/lib/scene-gallery-data'
+import { LanguageProvider } from '@/lib/language-context'
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer'
+
+// Demo video URLs for different scenes
+const sceneVideos: Record<string, string> = {
+  cyberpunk: 'https://assets.mixkit.co/videos/4793/4793-720.mp4',
+  nature: 'https://assets.mixkit.co/videos/4068/4068-720.mp4',
+  space: 'https://assets.mixkit.co/videos/28284/28284-720.mp4',
+  ocean: 'https://assets.mixkit.co/videos/34455/34455-720.mp4',
+  city: 'https://assets.mixkit.co/videos/4354/4354-720.mp4',
+  desert: 'https://assets.mixkit.co/videos/29807/29807-720.mp4',
+}
+
+export default function TimeLoopPage() {
+  const videoRef = useRef<VideoBackgroundRef>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [currentVideo, setCurrentVideo] = useState(sceneVideos.cyberpunk)
+  const [leftPanelExpanded, setLeftPanelExpanded] = useState(false)
+  const [rightPanelExpanded, setRightPanelExpanded] = useState(false)
+  const [leftDrawerOpen, setLeftDrawerOpen] = useState(false)
+  const [rightDrawerOpen, setRightDrawerOpen] = useState(false)
+  const [musicChannelIndex, setMusicChannelIndex] = useState(0)
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false)
+  const [musicVolume, setMusicVolume] = useState(50)
+
+  const activeStreamUrl = MUSIC_CHANNELS[musicChannelIndex]?.streamUrl ?? ''
+
+  /**
+   * 畫廊「進入此時空」：切背景影片、切到該場景建議的第一個可用電台、開始播放。
+   * 手機抽屜：`MobileGalleryContent` 在點擊卡片後會再呼叫 `onClose`（`setRightDrawerOpen(false)`）關閉抽屜。
+   */
+  const handleEnterGalleryScene = useCallback((item: SceneGalleryItem) => {
+    setCurrentVideo(sceneVideos[item.videoScene] ?? sceneVideos.cyberpunk)
+
+    let channelIndex = -1
+    for (const key of item.stationHints) {
+      const i = MUSIC_CHANNELS.findIndex((ch) => ch.key === key)
+      if (i !== -1) {
+        channelIndex = i
+        break
+      }
+    }
+    if (channelIndex !== -1) {
+      setMusicChannelIndex(channelIndex)
+    }
+
+    setIsMusicPlaying(true)
+  }, [])
+
+  const handleGenerate = useCallback((prompt: string, scene: string) => {
+    setIsGenerating(true)
+    
+    // Simulate AI generation delay
+    setTimeout(() => {
+      // Change video based on scene selection
+      const newVideo = sceneVideos[scene] || sceneVideos.cyberpunk
+      setCurrentVideo(newVideo)
+      setIsGenerating(false)
+    }, 2000)
+  }, [])
+
+  // 強制解除可能被 vaul / Radix 設成 none 的 body 觸控；抽屜開關後再解一次
+  useEffect(() => {
+    const unlock = () => {
+      document.body.style.pointerEvents = 'auto'
+      document.documentElement.style.pointerEvents = 'auto'
+    }
+    unlock()
+    const t = window.setTimeout(unlock, 0)
+    const t2 = window.setTimeout(unlock, 300)
+    return () => {
+      window.clearTimeout(t)
+      window.clearTimeout(t2)
+    }
+  }, [leftDrawerOpen, rightDrawerOpen])
+
+  // Track mouse position to show/hide panels
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const windowWidth = window.innerWidth
+      const mouseX = e.clientX
+      const leftThreshold = windowWidth / 3
+      const rightThreshold = (windowWidth * 2) / 3
+
+      if (mouseX < leftThreshold) {
+        // Mouse in left 1/3
+        setLeftPanelExpanded(true)
+        setRightPanelExpanded(false)
+      } else if (mouseX > rightThreshold) {
+        // Mouse in right 1/3
+        setRightPanelExpanded(true)
+        setLeftPanelExpanded(false)
+      }
+      // Middle area: panels will auto-hide via their own 3-second timers
+    }
+
+    // Only add listener on desktop
+    const mediaQuery = window.matchMedia('(min-width: 768px)')
+    if (mediaQuery.matches) {
+      window.addEventListener('mousemove', handleMouseMove)
+    }
+
+    const handleMediaChange = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        window.addEventListener('mousemove', handleMouseMove)
+      } else {
+        window.removeEventListener('mousemove', handleMouseMove)
+      }
+    }
+
+    mediaQuery.addEventListener('change', handleMediaChange)
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      mediaQuery.removeEventListener('change', handleMediaChange)
+    }
+  }, [])
+
+  return (
+    <LanguageProvider>
+      <main className="pointer-events-auto isolate h-screen w-screen overflow-hidden bg-background">
+        {/* 手機角鈕：main 最前兩個直接子節點、無包裹層；48×48 命中區、z 置頂 */}
+        <button
+          type="button"
+          aria-label="Open control panel"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            console.log('clicked', 'left-drawer')
+            setLeftDrawerOpen(true)
+          }}
+          className="pointer-events-auto fixed left-4 top-6 z-[999] flex h-12 w-12 shrink-0 touch-manipulation items-center justify-center rounded-xl border border-border/60 bg-popover/95 text-foreground/90 shadow-md ring-1 ring-foreground/15 transition-transform active:scale-95 hover:bg-popover md:hidden"
+        >
+          <Menu className="h-5 w-5 shrink-0 pointer-events-none" aria-hidden />
+        </button>
+        <button
+          type="button"
+          aria-label="Open community gallery"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            console.log('clicked', 'right-drawer')
+            setRightDrawerOpen(true)
+          }}
+          className="pointer-events-auto fixed right-4 top-6 z-[999] flex h-12 w-12 shrink-0 touch-manipulation items-center justify-center rounded-xl border border-border/60 bg-popover/95 text-foreground/90 shadow-md ring-1 ring-foreground/15 transition-transform active:scale-95 hover:bg-popover md:hidden"
+        >
+          <ImageIcon className="h-5 w-5 shrink-0 pointer-events-none" aria-hidden />
+        </button>
+
+        {/* Full screen video background */}
+        <VideoBackground ref={videoRef} src={currentVideo} />
+
+        {/* 手機全螢幕裝飾層：不攔截觸控（角鈕為 main 前段、z-[999]） */}
+        <div
+          className="pointer-events-none fixed inset-0 z-[1] md:hidden"
+          aria-hidden
+        />
+
+        {/* Audio lives here (not inside video) so video `src` changes never reload the stream */}
+        <StreamAudioPlayer
+          streamUrl={activeStreamUrl}
+          playing={isMusicPlaying}
+          volume={musicVolume}
+        />
+
+        {/* Desktop: Hidden side panels */}
+        <ControlPanel
+          videoRef={videoRef}
+          onGenerate={handleGenerate}
+          isGenerating={isGenerating}
+          isExpanded={leftPanelExpanded}
+          onExpandedChange={setLeftPanelExpanded}
+          musicChannelIndex={musicChannelIndex}
+          onMusicChannelIndexChange={setMusicChannelIndex}
+          isMusicPlaying={isMusicPlaying}
+          onMusicPlayingChange={setIsMusicPlaying}
+          musicVolume={musicVolume}
+          onMusicVolumeChange={setMusicVolume}
+        />
+
+        <CommunityGallery
+          isExpanded={rightPanelExpanded}
+          onExpandedChange={setRightPanelExpanded}
+          onEnterScene={handleEnterGalleryScene}
+        />
+
+        {/* 受控 Drawer：modal={false} + onOpenChange + open（與角鈕 state 連動）；DrawerContent 內建 Portal */}
+        <Drawer
+          modal={false}
+          onOpenChange={setLeftDrawerOpen}
+          open={leftDrawerOpen}
+          direction="left"
+        >
+          <DrawerContent
+            forceMount
+            className="glass h-full w-[85%] max-w-[320px] bg-popover/90"
+          >
+            <DrawerHeader className="sr-only">
+              <DrawerTitle>Control Panel</DrawerTitle>
+            </DrawerHeader>
+            <MobileControlContent
+              videoRef={videoRef}
+              onGenerate={handleGenerate}
+              isGenerating={isGenerating}
+              onClose={() => setLeftDrawerOpen(false)}
+              musicChannelIndex={musicChannelIndex}
+              onMusicChannelIndexChange={setMusicChannelIndex}
+              isMusicPlaying={isMusicPlaying}
+              onMusicPlayingChange={setIsMusicPlaying}
+              musicVolume={musicVolume}
+              onMusicVolumeChange={setMusicVolume}
+            />
+          </DrawerContent>
+        </Drawer>
+
+        <Drawer
+          modal={false}
+          onOpenChange={setRightDrawerOpen}
+          open={rightDrawerOpen}
+          direction="right"
+        >
+          <DrawerContent
+            forceMount
+            className="glass h-full w-[85%] max-w-[320px] bg-popover/90"
+          >
+            <DrawerHeader className="sr-only">
+              <DrawerTitle>Community Gallery</DrawerTitle>
+            </DrawerHeader>
+            <MobileGalleryContent
+              onClose={() => setRightDrawerOpen(false)}
+              onEnterScene={handleEnterGalleryScene}
+            />
+          </DrawerContent>
+        </Drawer>
+
+        {/* Generation overlay — glass card, does not touch the hidden audio element */}
+        {isGenerating && (
+          <div
+            className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center p-6"
+            aria-live="polite"
+            aria-busy="true"
+          >
+            <div className="pointer-events-none max-w-md rounded-2xl border border-white/20 bg-background/25 px-10 py-8 text-center shadow-[0_8px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 dark:bg-background/30">
+              <div className="mx-auto mb-5 h-9 w-9 animate-spin rounded-full border-2 border-accent/80 border-t-transparent" />
+              <p className="text-base font-medium tracking-wide text-foreground/95 md:text-lg">
+                AI 正在編織專屬時空...
+              </p>
+            </div>
+          </div>
+        )}
+
+      </main>
+    </LanguageProvider>
+  )
+}
+
+// Mobile Control Panel Content
+import {
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Download,
+  Settings,
+  X,
+  Maximize,
+  Minimize,
+  Music2,
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+  Plus,
+  Layers,
+  Headphones,
+  Radio,
+  Sparkles,
+} from 'lucide-react'
+import { useLanguage } from '@/lib/language-context'
+import LanguageSelector from '@/components/language-selector'
+
+interface MobileControlContentProps {
+  videoRef: React.RefObject<VideoBackgroundRef | null>
+  onGenerate: (prompt: string, scene: string) => void
+  isGenerating: boolean
+  onClose: () => void
+  musicChannelIndex: number
+  onMusicChannelIndexChange: (index: number) => void
+  isMusicPlaying: boolean
+  onMusicPlayingChange: (playing: boolean) => void
+  musicVolume: number
+  onMusicVolumeChange: (volume: number) => void
+}
+
+type SceneKey = 'cyberpunk' | 'nature' | 'space' | 'ocean' | 'city' | 'desert'
+
+// Scene configuration for saving user scenes
+interface SceneConfig {
+  id: string
+  name: string
+  videoScene: SceneKey
+  musicChannelKey: MusicChannelKey
+  createdAt: number
+}
+
+function MobileControlContent({
+  videoRef,
+  onGenerate,
+  isGenerating,
+  onClose,
+  musicChannelIndex: currentChannelIndex,
+  onMusicChannelIndexChange: setCurrentChannelIndex,
+  isMusicPlaying,
+  onMusicPlayingChange: setIsMusicPlaying,
+  musicVolume,
+  onMusicVolumeChange: setMusicVolume,
+}: MobileControlContentProps) {
+  const [isPaused, setIsPaused] = useState(false)
+  const [isMuted, setIsMuted] = useState(true)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [favoriteChannels, setFavoriteChannels] = useState<MusicChannelKey[]>([])
+  const [showFavoriteToast, setShowFavoriteToast] = useState(false)
+  const [savedScenes, setSavedScenes] = useState<SceneConfig[]>([])
+  const [showSceneInput, setShowSceneInput] = useState(false)
+  const [newSceneName, setNewSceneName] = useState('')
+  const [isFavoritesHeartFilled, setIsFavoritesHeartFilled] = useState(false)
+  const [prompt, setPrompt] = useState('')
+  const [selectedScene, setSelectedScene] = useState<SceneKey>('cyberpunk')
+  const { t } = useLanguage()
+
+  const scenes: SceneKey[] = ['cyberpunk', 'nature', 'space', 'ocean', 'city', 'desert']
+  const currentChannel = MUSIC_CHANNELS[currentChannelIndex]
+  const isCurrentFavorited = favoriteChannels.includes(currentChannel.key)
+
+  // Load favorites and scenes from localStorage
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('musicFavorites')
+    if (savedFavorites) {
+      try {
+        setFavoriteChannels(JSON.parse(savedFavorites))
+      } catch { /* ignore */ }
+    }
+    const savedScenesList = localStorage.getItem('savedScenes')
+    if (savedScenesList) {
+      try {
+        setSavedScenes(JSON.parse(savedScenesList))
+      } catch { /* ignore */ }
+    }
+  }, [])
+
+  // Music handlers
+  const handleMusicToggle = () => setIsMusicPlaying(!isMusicPlaying)
+  const handlePrevChannel = () => {
+    setCurrentChannelIndex(
+      currentChannelIndex === 0 ? MUSIC_CHANNELS.length - 1 : currentChannelIndex - 1
+    )
+  }
+  const handleNextChannel = () => {
+    setCurrentChannelIndex((currentChannelIndex + 1) % MUSIC_CHANNELS.length)
+  }
+
+  // Favorite handlers
+  const handleToggleFavorite = () => {
+    if (isCurrentFavorited) {
+      const newFavorites = favoriteChannels.filter(key => key !== currentChannel.key)
+      setFavoriteChannels(newFavorites)
+      localStorage.setItem('musicFavorites', JSON.stringify(newFavorites))
+    } else {
+      const newFavorites = [...favoriteChannels, currentChannel.key]
+      setFavoriteChannels(newFavorites)
+      localStorage.setItem('musicFavorites', JSON.stringify(newFavorites))
+      setShowFavoriteToast(true)
+      setTimeout(() => setShowFavoriteToast(false), 2000)
+    }
+  }
+
+  const handleRemoveFavorite = (key: MusicChannelKey) => {
+    const newFavorites = favoriteChannels.filter(k => k !== key)
+    setFavoriteChannels(newFavorites)
+    localStorage.setItem('musicFavorites', JSON.stringify(newFavorites))
+  }
+
+  const handlePlayFavorite = (key: MusicChannelKey) => {
+    const index = MUSIC_CHANNELS.findIndex(ch => ch.key === key)
+    if (index !== -1) {
+      setCurrentChannelIndex(index)
+      setIsMusicPlaying(true)
+    }
+  }
+
+  // Scene management handlers
+  const handleSaveScene = () => {
+    if (!newSceneName.trim()) return
+    const newScene: SceneConfig = {
+      id: `scene_${Date.now()}`,
+      name: newSceneName.trim(),
+      videoScene: selectedScene,
+      musicChannelKey: currentChannel.key,
+      createdAt: Date.now(),
+    }
+    const updatedScenes = [...savedScenes, newScene]
+    setSavedScenes(updatedScenes)
+    localStorage.setItem('savedScenes', JSON.stringify(updatedScenes))
+    setNewSceneName('')
+    setShowSceneInput(false)
+  }
+
+  const handleLoadScene = (scene: SceneConfig) => {
+    setSelectedScene(scene.videoScene)
+    const channelIndex = MUSIC_CHANNELS.findIndex(ch => ch.key === scene.musicChannelKey)
+    if (channelIndex !== -1) {
+      setCurrentChannelIndex(channelIndex)
+    }
+    setIsMusicPlaying(true)
+  }
+
+  const handleRemoveScene = (id: string) => {
+    const updatedScenes = savedScenes.filter(s => s.id !== id)
+    setSavedScenes(updatedScenes)
+    localStorage.setItem('savedScenes', JSON.stringify(updatedScenes))
+  }
+
+  // Fullscreen toggle handler
+  const handleFullscreenToggle = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {})
+    } else {
+      document.exitFullscreen().catch(() => {})
+    }
+  }, [])
+
+  // Listen for fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement)
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    }
+  }, [])
+
+  const handlePlayPause = () => {
+    if (videoRef.current) {
+      if (isPaused) {
+        videoRef.current.play()
+      } else {
+        videoRef.current.pause()
+      }
+      setIsPaused(!isPaused)
+    }
+  }
+
+  const handleMuteToggle = () => {
+    if (videoRef.current) {
+      videoRef.current.toggleMute()
+      setIsMuted(!isMuted)
+    }
+  }
+
+  const handleGenerate = () => {
+    if (prompt.trim() || selectedScene) {
+      onGenerate(prompt, selectedScene)
+      onClose()
+    }
+  }
+
+  return (
+    <div className="no-scrollbar flex h-full flex-col overflow-y-auto p-4">
+      {/* Header */}
+      <div className="mb-6 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20">
+            <Sparkles className="h-4 w-4 text-accent" />
+          </div>
+          <h1 className="text-lg font-semibold text-foreground">{t.title}</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <LanguageSelector />
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-foreground/70 hover:bg-secondary/50 hover:text-foreground"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Core Section - Input & Generate */}
+      <div className="mb-6 space-y-3">
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder={t.inputPlaceholder}
+          className="glass h-24 w-full resize-none rounded-lg border border-foreground/10 bg-input/50 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-accent/50 focus:outline-none"
+        />
+
+        <div className="space-y-1.5">
+          <label className="text-xs text-muted-foreground">{t.sceneLabel}</label>
+          <select
+            value={selectedScene}
+            onChange={(e) => setSelectedScene(e.target.value as SceneKey)}
+            className="glass w-full rounded-lg border border-foreground/10 bg-input/50 px-3 py-2 text-sm text-foreground focus:border-accent/50 focus:outline-none"
+          >
+            {scenes.map((scene) => (
+              <option key={scene} value={scene} className="bg-popover text-foreground">
+                {t.scenes[scene]}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          onClick={handleGenerate}
+          disabled={isGenerating}
+          className="animate-breathe flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-3 text-sm font-medium text-accent-foreground transition-all hover:bg-accent/90 hover:shadow-[0_0_25px_rgba(var(--accent)/0.5)] disabled:cursor-not-allowed disabled:opacity-50 disabled:animate-none"
+        >
+          <Sparkles className="h-4 w-4" />
+          {isGenerating ? t.generating : t.generateButton}
+        </button>
+      </div>
+
+      {/* Control Section */}
+      <div className="mb-6 space-y-2">
+        <div className="flex items-center justify-center gap-3">
+          <MobileControlButton
+            onClick={handlePlayPause}
+            icon={isPaused ? Play : Pause}
+            label={isPaused ? t.controls.play : t.controls.pause}
+          />
+          <MobileControlButton
+            onClick={handleMuteToggle}
+            icon={isMuted ? VolumeX : Volume2}
+            label={isMuted ? t.controls.unmute : t.controls.mute}
+          />
+          <MobileControlButton
+            onClick={() => {}}
+            icon={Download}
+            label={t.controls.download}
+          />
+          <MobileControlButton
+            onClick={() => {}}
+            icon={Settings}
+            label={t.controls.settings}
+          />
+        </div>
+      </div>
+
+      {/* Music Player Section */}
+      <div className="mb-6 space-y-3">
+        <div className="flex items-center gap-2">
+          <div className={`flex h-6 w-6 items-center justify-center ${isMusicPlaying ? 'animate-pulse' : ''}`}>
+            <Music2 className={`h-4 w-4 text-accent transition-all ${isMusicPlaying ? 'scale-110' : ''}`} />
+          </div>
+          <span className="text-xs font-medium text-muted-foreground">{t.music.title}</span>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handlePrevChannel}
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-foreground/10 bg-secondary/50 text-foreground/70 transition-all hover:border-foreground/20 hover:bg-secondary hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          
+          <div className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-foreground/10 bg-secondary/30 px-3 py-2">
+            <span className="truncate text-xs font-medium text-foreground">
+              {t.music.channels[currentChannel.key]}
+            </span>
+          </div>
+          
+          <button
+            onClick={handleNextChannel}
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-foreground/10 bg-secondary/50 text-foreground/70 transition-all hover:border-foreground/20 hover:bg-secondary hover:text-foreground"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={handleMusicToggle}
+            className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all ${
+              isMusicPlaying 
+                ? 'border-accent/50 bg-accent/20 text-accent' 
+                : 'border-foreground/10 bg-secondary/50 text-foreground/70 hover:border-foreground/20 hover:bg-secondary hover:text-foreground'
+            }`}
+          >
+            {isMusicPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+          </button>
+          
+          <button
+            onClick={handleToggleFavorite}
+            className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-all duration-300 ${
+              isCurrentFavorited 
+                ? 'border-red-500/60 bg-red-500/25 text-red-500 shadow-[0_0_16px_rgba(239,68,68,0.7),0_0_32px_rgba(239,68,68,0.4)]' 
+                : 'border-foreground/10 bg-secondary/50 text-foreground/70 hover:border-red-500/50 hover:bg-red-500/15 hover:text-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.5)] hover:scale-105'
+            }`}
+          >
+            <Heart className={`h-4 w-4 transition-all duration-300 ${isCurrentFavorited ? 'fill-current scale-110 heart-glow-active' : ''}`} />
+          </button>
+        </div>
+        
+        {showFavoriteToast && (
+          <div className="flex items-center justify-center">
+            <span className="text-xs text-accent animate-pulse">{t.music.alreadyFavorited}</span>
+          </div>
+        )}
+        
+        {isMusicPlaying && (
+          <div className="flex items-end justify-center gap-1 h-4">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="w-1 bg-accent/70 rounded-full animate-soundwave"
+                style={{ animationDelay: `${i * 0.1}s`, height: '100%' }}
+              />
+            ))}
+          </div>
+        )}
+        
+        {/* Volume Slider */}
+        <div className="flex items-center gap-2">
+          <Volume2 className="h-3 w-3 text-muted-foreground" />
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={musicVolume}
+            onChange={(e) => setMusicVolume(Number(e.target.value))}
+            className="h-1 flex-1 appearance-none rounded-full bg-secondary cursor-pointer accent-accent [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-accent [&::-webkit-slider-thumb]:shadow-[0_0_8px_rgba(var(--accent)/0.5)]"
+          />
+          <span className="text-xs text-muted-foreground w-6 text-right">{musicVolume}</span>
+        </div>
+
+        <div className="space-y-1">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/80">
+            {t.music.stations}
+          </p>
+          <div className="space-y-1">
+            {MUSIC_CHANNELS.map((ch, index) => (
+              <button
+                key={ch.key}
+                type="button"
+                onClick={() => {
+                  setCurrentChannelIndex(index)
+                  setIsMusicPlaying(true)
+                }}
+                className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left text-xs transition-all ${
+                  index === currentChannelIndex
+                    ? 'border-accent/50 bg-accent/15 text-foreground shadow-[0_0_12px_rgba(var(--accent)/0.2)]'
+                    : 'border-foreground/10 bg-secondary/30 text-foreground/80 hover:border-foreground/20 hover:bg-secondary/50'
+                }`}
+              >
+                <span className="truncate">{t.music.channels[ch.key]}</span>
+                {index === currentChannelIndex && isMusicPlaying ? (
+                  <span className="ml-2 shrink-0 text-[10px] text-accent">{t.music.live}</span>
+                ) : null}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* My Favorites Section */}
+      <div className="mb-6 space-y-2">
+        <button 
+          onClick={() => setIsFavoritesHeartFilled(!isFavoritesHeartFilled)}
+          className="flex items-center gap-2 transition-all duration-300 hover:scale-105"
+        >
+          <Heart className={`h-4 w-4 transition-all duration-300 ${isFavoritesHeartFilled ? 'fill-current text-red-500 heart-glow-active scale-110' : 'text-red-500'}`} />
+          <span className="text-xs font-medium text-muted-foreground">{t.music.favorites}</span>
+        </button>
+        
+        {favoriteChannels.length === 0 ? (
+          <p className="text-xs text-muted-foreground/60 italic">{t.music.noFavorites}</p>
+        ) : (
+          <div className="space-y-1">
+            {favoriteChannels.map((key) => (
+              <div
+                key={key}
+                className="group flex items-center justify-between rounded-lg border border-foreground/10 bg-secondary/30 px-3 py-2 transition-all hover:border-foreground/20 hover:bg-secondary/50"
+              >
+                <button
+                  onClick={() => handlePlayFavorite(key)}
+                  className="flex-1 text-left text-xs text-foreground/80 transition-colors hover:text-foreground"
+                >
+                  {t.music.channels[key]}
+                </button>
+                <button
+                  onClick={() => handleRemoveFavorite(key)}
+                  className="ml-2 flex h-6 w-6 items-center justify-center rounded hover:bg-red-500/20"
+                >
+                  <X className="h-3 w-3 text-red-500" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* My Scenes Section */}
+      <div className="mb-6 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Layers className="h-4 w-4 text-accent" />
+            <span className="text-xs font-medium text-muted-foreground">{t.myScenes.title}</span>
+          </div>
+          <button
+            onClick={() => setShowSceneInput(true)}
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-foreground/10 bg-secondary/50 text-foreground/70 transition-all hover:border-accent/50 hover:bg-accent/20 hover:text-accent hover:shadow-[0_0_10px_rgba(var(--accent)/0.3)]"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
+        
+        {showSceneInput && (
+          <div className="glass animate-fade-in-up space-y-2 rounded-lg border border-accent/40 bg-popover/60 p-3 shadow-[0_0_20px_rgba(var(--accent)/0.2)]">
+            <input
+              type="text"
+              value={newSceneName}
+              onChange={(e) => setNewSceneName(e.target.value)}
+              placeholder={t.myScenes.namePlaceholder}
+              className="glass w-full rounded-md border border-foreground/20 bg-input/30 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-accent/50 focus:outline-none focus:shadow-[0_0_10px_rgba(var(--accent)/0.3)]"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveScene()
+                if (e.key === 'Escape') setShowSceneInput(false)
+              }}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowSceneInput(false)}
+                className="flex-1 rounded-md border border-foreground/10 bg-secondary/50 px-3 py-2 text-sm text-foreground/70 transition-all hover:bg-secondary"
+              >
+                {t.myScenes.cancel}
+              </button>
+              <button
+                onClick={handleSaveScene}
+                disabled={!newSceneName.trim()}
+                className="flex-1 rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground transition-all hover:bg-accent/90 hover:shadow-[0_0_12px_rgba(var(--accent)/0.4)] disabled:opacity-50"
+              >
+                {t.myScenes.confirm}
+              </button>
+            </div>
+          </div>
+        )}
+        
+        {savedScenes.length === 0 && !showSceneInput ? (
+          <p className="text-xs text-muted-foreground/60 italic">{t.myScenes.noScenes}</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {savedScenes.map((scene, index) => (
+              <div
+                key={scene.id}
+                className="glass group animate-fade-in-up relative flex items-center gap-1.5 rounded-full border border-foreground/15 bg-popover/50 px-3 py-1.5 transition-all duration-300 hover:border-accent/40 hover:bg-accent/15 hover:shadow-[0_0_12px_rgba(var(--accent)/0.25)]"
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
+                <button
+                  onClick={() => handleLoadScene(scene)}
+                  className="text-xs text-foreground/80 transition-colors hover:text-foreground"
+                >
+                  {scene.name}
+                </button>
+                <button
+                  onClick={() => handleRemoveScene(scene.id)}
+                  className="flex h-4 w-4 items-center justify-center rounded-full opacity-0 transition-all hover:bg-red-500/20 group-hover:opacity-100"
+                >
+                  <X className="h-2.5 w-2.5 text-red-500" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* My Favorites Section */}
+      <div className="flex-1" />
+
+      {/* Fullscreen Toggle */}
+      <div className="mb-4">
+        <button
+          onClick={handleFullscreenToggle}
+          className="hover-flowing-glow flex w-full items-center justify-center gap-2 rounded-lg border border-foreground/10 bg-secondary/50 px-4 py-3 text-sm font-medium text-foreground/80 transition-all duration-300 hover:border-blue-500/50 hover:bg-secondary hover:text-foreground"
+        >
+          {isFullscreen ? (
+            <>
+              <Minimize className="h-4 w-4" />
+              {t.controls.exitFullscreen}
+            </>
+          ) : (
+            <>
+              <Maximize className="h-4 w-4" />
+              {t.controls.fullscreen}
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Membership Info */}
+      <div className="space-y-1 border-t border-foreground/10 pt-4 text-xs text-muted-foreground">
+        <p>{t.membership.free}</p>
+        <p className="text-accent">{t.membership.vip}</p>
+      </div>
+    </div>
+  )
+}
+
+interface MobileControlButtonProps {
+  onClick: () => void
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+}
+
+function MobileControlButton({ onClick, icon: Icon, label }: MobileControlButtonProps) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col items-center gap-1 rounded-lg border border-foreground/10 bg-secondary/50 px-4 py-2 text-foreground/70 transition-all hover:border-foreground/20 hover:bg-secondary hover:text-foreground"
+    >
+      <Icon className="h-5 w-5" />
+      <span className="text-[10px]">{label}</span>
+    </button>
+  )
+}
+
+// Mobile Gallery Content
+interface MobileGalleryContentProps {
+  onClose: () => void
+  onEnterScene: (item: SceneGalleryItem) => void
+}
+
+const mobileGalleryStationIcon: Record<MusicChannelKey, ElementType<{ className?: string }>> = {
+  lofiChill: Headphones,
+  synthNight: Radio,
+  ambientForest: Sparkles,
+}
+
+function MobileGalleryContent({ onClose, onEnterScene }: MobileGalleryContentProps) {
+  const { t } = useLanguage()
+
+  return (
+    <div className="no-scrollbar flex h-full flex-col overflow-y-auto p-4">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20">
+            <ImageIcon className="h-4 w-4 text-accent" />
+          </div>
+          <h2 className="text-lg font-semibold text-foreground">{t.gallery.title}</h2>
+        </div>
+        <button
+          onClick={onClose}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-foreground/70 hover:bg-secondary/50 hover:text-foreground"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {SCENE_DATA.map((item) => {
+          const typeLabel = item.type === 'NFT' ? t.gallery.typeNft : t.gallery.typeSponsor
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                onEnterScene(item)
+                onClose()
+              }}
+              className="group flex w-full flex-col gap-1.5 rounded-xl border border-foreground/10 bg-secondary/20 p-1.5 text-left transition hover:border-accent/40 hover:bg-secondary/40"
+            >
+              <div className="relative aspect-video w-full overflow-hidden rounded-lg ring-1 ring-foreground/10">
+                <img
+                  src={item.thumbnail}
+                  alt=""
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
+                />
+                <div className="absolute left-1 top-1 flex flex-wrap gap-1">
+                  <span className="rounded bg-black/65 px-1 py-px text-[8px] font-mono text-white/90">
+                    #{item.id}
+                  </span>
+                  <span
+                    className={`rounded px-1 py-px text-[8px] font-medium ${
+                      item.type === '贊助'
+                        ? 'bg-amber-500/90 text-black'
+                        : 'bg-accent/90 text-accent-foreground'
+                    }`}
+                  >
+                    {typeLabel}
+                  </span>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-300 group-hover:bg-black/30" />
+                <div className="absolute inset-0 flex items-center justify-center p-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                  <span className="rounded-lg border border-white/25 bg-background/55 px-2.5 py-1.5 text-[10px] font-medium text-foreground shadow-lg backdrop-blur-md">
+                    {t.gallery.enterScene}
+                  </span>
+                </div>
+              </div>
+              <div className="min-w-0 px-0.5 pb-0.5">
+                <p className="truncate text-xs font-semibold text-foreground">{item.title}</p>
+                <div className="mt-1 flex items-center justify-between gap-1">
+                  <div className="flex flex-wrap gap-0.5">
+                    {item.stationHints.map((key) => {
+                      const Icon = mobileGalleryStationIcon[key]
+                      return (
+                        <span
+                          key={key}
+                          className="flex h-5 w-5 items-center justify-center rounded-sm bg-secondary/80 text-muted-foreground ring-1 ring-foreground/10"
+                          title={t.music.channels[key]}
+                        >
+                          <Icon className="h-3 w-3" />
+                        </span>
+                      )
+                    })}
+                  </div>
+                  {item.type === 'NFT' ? (
+                    <span className="shrink-0 text-[10px] font-medium text-accent">{item.price} ETH</span>
+                  ) : (
+                    <span className="shrink-0 text-[10px] text-muted-foreground">{item.price}</span>
+                  )}
+                </div>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="mt-3">
+        <div className="glass flex h-[100px] w-full items-center justify-center rounded-lg border border-foreground/10 bg-popover/40">
+          <span className="text-xs text-muted-foreground/50">Sponsored Content</span>
+        </div>
+      </div>
+
+      <div className="mt-3 border-t border-foreground/10 pt-3 text-center text-xs text-muted-foreground">
+        <p>{t.gallery.trending}</p>
+      </div>
+    </div>
+  )
+}
+
+
