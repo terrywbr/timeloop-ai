@@ -25,6 +25,7 @@ import type { VideoBackgroundRef } from './ui/video-background'
 import { MUSIC_CHANNELS, type MusicChannelKey } from '@/lib/music-channels'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import type { UserAccountProfile } from '@/lib/api-client'
+import GoogleSignInButton from '@/components/google-sign-in-button'
 
 interface ControlPanelProps {
   videoRef: React.RefObject<VideoBackgroundRef | null>
@@ -648,6 +649,14 @@ export default function ControlPanel({
               )}
             </button>
           </div>
+
+          {/* Sign in */}
+          {!isAuthenticated ? (
+            <div className="mb-4 space-y-2 border-t border-foreground/10 pt-4">
+              <p className="text-xs text-muted-foreground">{t.auth.signInPrompt}</p>
+              <GoogleSignInButton onClick={() => void onRequireAuth()} />
+            </div>
+          ) : null}
 
           {/* Membership Info */}
           <div className="space-y-2 border-t border-foreground/10 pt-4 text-xs text-muted-foreground">

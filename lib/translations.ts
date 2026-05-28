@@ -47,6 +47,9 @@ export const translations: Record<Language, {
     creditsRemaining: string
     vipActive: string
   }
+  auth: {
+    signInPrompt: string
+  }
   language: string
   gallery: {
     title: string
@@ -116,6 +119,9 @@ export const translations: Record<Language, {
       buyCredits: 'Buy credit pack',
       creditsRemaining: 'Credits remaining: {count}',
       vipActive: 'VIP active — unlimited generations',
+    },
+    auth: {
+      signInPrompt: 'Sign in to save scenes and unlock VIP features.',
     },
     language: 'Language',
     gallery: {
@@ -208,6 +214,9 @@ export const translations: Record<Language, {
       creditsRemaining: '剩余点数：{count}',
       vipActive: 'VIP 已激活 — 无限生成',
     },
+    auth: {
+      signInPrompt: '登录以保存场景并解锁 VIP 功能。',
+    },
     language: '语言',
     gallery: {
       title: '社区画廊',
@@ -298,6 +307,9 @@ export const translations: Record<Language, {
       buyCredits: '購買點數包',
       creditsRemaining: '剩餘點數：{count}',
       vipActive: 'VIP 已啟用 — 無限生成',
+    },
+    auth: {
+      signInPrompt: '登入以儲存場景並解鎖 VIP 功能。',
     },
     language: '語言',
     gallery: {
@@ -390,6 +402,9 @@ export const translations: Record<Language, {
       creditsRemaining: '残りクレジット：{count}',
       vipActive: 'VIP有効 — 無制限生成',
     },
+    auth: {
+      signInPrompt: 'サインインしてシーンを保存し、VIP機能を解除してください。',
+    },
     language: '言語',
     gallery: {
       title: 'コミュニティギャラリー',
@@ -480,6 +495,9 @@ export const translations: Record<Language, {
       buyCredits: '크레딧 팩 구매',
       creditsRemaining: '남은 크레딧: {count}',
       vipActive: 'VIP 활성 — 무제한 생성',
+    },
+    auth: {
+      signInPrompt: '로그인하여 장면을 저장하고 VIP 기능을 잠금 해제하세요.',
     },
     language: '언어',
     gallery: {
@@ -572,6 +590,9 @@ export const translations: Record<Language, {
       creditsRemaining: 'Créditos restantes: {count}',
       vipActive: 'VIP activo — generaciones ilimitadas',
     },
+    auth: {
+      signInPrompt: 'Inicia sesión para guardar escenas y desbloquear funciones VIP.',
+    },
     language: 'Idioma',
     gallery: {
       title: 'Galería Comunitaria',
@@ -663,6 +684,9 @@ export const translations: Record<Language, {
       creditsRemaining: 'Crédits restants : {count}',
       vipActive: 'VIP actif — générations illimitées',
     },
+    auth: {
+      signInPrompt: 'Connectez-vous pour enregistrer vos scènes et débloquer les fonctionnalités VIP.',
+    },
     language: 'Langue',
     gallery: {
       title: 'Galerie Communautaire',
@@ -753,6 +777,9 @@ export const translations: Record<Language, {
       buyCredits: 'Credit-Paket kaufen',
       creditsRemaining: 'Verbleibende Credits: {count}',
       vipActive: 'VIP aktiv — unbegrenzte Generierungen',
+    },
+    auth: {
+      signInPrompt: 'Melden Sie sich an, um Szenen zu speichern und VIP-Funktionen freizuschalten.',
     },
     language: 'Sprache',
     gallery: {

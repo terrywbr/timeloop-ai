@@ -5,6 +5,7 @@ import type { User } from '@supabase/supabase-js'
 import { Menu, ImageIcon, Volume2 } from 'lucide-react'
 import { AmbientWorld } from '@/components/ui/ambient-world'
 import ControlPanel from '@/components/control-panel'
+import GoogleSignInButton from '@/components/google-sign-in-button'
 import CommunityGallery from '@/components/community-gallery'
 import StreamAudioPlayer from '@/components/stream-audio-player'
 import { LanguageProvider, useLanguage } from '@/lib/language-context'
@@ -12,6 +13,7 @@ import { SCENE_DATA, type SceneGalleryItem as GallerySceneItem } from '@/lib/sce
 import { MUSIC_CHANNELS as STREAM_MUSIC_CHANNELS, type MusicChannelKey } from '@/lib/music-channels'
 import { AMBIENT_WORLDS, WORLD_MUSIC_CHANNELS } from '@/lib/worlds'
 import { createSupabaseBrowserClient } from '@/lib/supabase-client'
+import { signInWithGoogle } from '@/lib/auth-google'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import {
   deleteWorld,
@@ -295,22 +297,13 @@ export default function TimeLoopPage() {
       return false
     }
 
-    const email = window.prompt('登入即可免費解鎖 AI 生成功能，並永久保存你的專屬工作空間。請輸入 Email：')
-    if (!email?.trim()) return false
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: {
-        emailRedirectTo: window.location.href,
-      },
-    })
+    const { error } = await signInWithGoogle(supabase)
 
     if (error) {
       window.alert(error.message)
       return false
     }
 
-    window.alert('登入連結已寄出，請到信箱完成登入後再回來使用。')
     return false
   }, [authUser, supabase])
 
@@ -1249,6 +1242,14 @@ function MobileControlContent({
           )}
         </button>
       </div>
+
+      {/* Sign in */}
+      {!isAuthenticated ? (
+        <div className="space-y-2 border-t border-foreground/10 pt-4">
+          <p className="text-xs text-muted-foreground">{t.auth.signInPrompt}</p>
+          <GoogleSignInButton onClick={() => void onRequireAuth()} />
+        </div>
+      ) : null}
 
       {/* Membership Info */}
       <div className="space-y-2 border-t border-foreground/10 pt-4 text-xs text-muted-foreground">
