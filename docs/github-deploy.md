@@ -78,10 +78,16 @@ npx wrangler secret put TOGETHER_API_KEY
 # ... 其餘同上
 ```
 
-## 第六步：確認 Workers Paid
+## 第六步：確認 Workers Paid（AI 生成必備）
 
-**Workers & Pages → Plans** → 升級 **Workers Paid**（約 $5/月）。  
-Free 方案無法跑 AI 生成 API。
+**Workers & Pages → Plans** → 升級 **Workers Paid**（約 $5/月）。
+
+- **Free 方案**：可部署網站，但 **AI 生成幾乎無法運作**（CPU 僅 10ms），且 `wrangler.jsonc` 不能設定 `cpu_ms`
+- **Paid 方案**：解鎖 AI 生成後，在 `wrangler.jsonc` 取消註解：
+  ```jsonc
+  "limits": { "cpu_ms": 300000 }
+  ```
+  再 push 一次部署
 
 ## 第七步：觸發部署
 

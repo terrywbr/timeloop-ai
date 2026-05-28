@@ -17,9 +17,8 @@
       "service": "timeloop-ai"
     }
   ],
-  "limits": {
-    "cpu_ms": 300000
-  },
+  // Workers Paid only: uncomment for AI generation (up to 5 min CPU)
+  // "limits": { "cpu_ms": 300000 },
   "observability": {
     "enabled": true
   },
