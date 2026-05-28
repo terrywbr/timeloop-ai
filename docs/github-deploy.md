@@ -60,6 +60,8 @@ GitHub Actions 只負責建置與部署；**API 金鑰**需在 Cloudflare Worker
 
 | 名稱 | 用途 |
 |------|------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase 專案 URL（API 執行時需要） |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key（API 執行時需要） |
 | `TOGETHER_API_KEY` | AI 生圖 |
 | `REPLICATE_API_TOKEN` | 深度圖 |
 | `SUPABASE_SERVICE_ROLE_KEY` | 後端寫入 Supabase |
@@ -131,6 +133,7 @@ GitHub → **Actions → Deploy to Cloudflare Workers → Run workflow**
 | `Authentication error` | 檢查 `CLOUDFLARE_API_TOKEN` 權限 |
 | `Could not find account` | 檢查 `CLOUDFLARE_ACCOUNT_ID` |
 | 建置成功但 API 401 | Worker Secrets 未設定 `SUPABASE_SERVICE_ROLE_KEY` |
+| `Missing NEXT_PUBLIC_SUPABASE_URL` | Worker Variables 未設定 `NEXT_PUBLIC_SUPABASE_URL` 與 `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
 | AI 生成失敗 | 確認 Workers Paid + `TOGETHER_API_KEY` / `REPLICATE_API_TOKEN` |
 | 自訂網域未生效 | DNS 橘雲 + Workers Domains 確認四個網域 |
 

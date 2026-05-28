@@ -34,6 +34,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Create production env file for OpenNext runtime
+        run: |
+          cat > .env.production << 'EOF'
+          NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}
+          NEXT_PUBLIC_APP_SITE_URL=${{ secrets.NEXT_PUBLIC_APP_SITE_URL }}
+          NEXT_PUBLIC_CN_SITE_URL=${{ secrets.NEXT_PUBLIC_CN_SITE_URL }}
+          EOF
+
       - name: Build OpenNext bundle
         run: npx opennextjs-cloudflare build
         env:
@@ -44,7 +54,13 @@ jobs:
           NEXT_PUBLIC_CN_SITE_URL: ${{ secrets.NEXT_PUBLIC_CN_SITE_URL }}
 
       - name: Deploy to Cloudflare Workers
-        run: npx wrangler deploy
+        run: |
+          npx wrangler deploy \
+            --var "NEXT_PUBLIC_SUPABASE_URL:${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" \
+            --var "NEXT_PUBLIC_SUPABASE_ANON_KEY:${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" \
+            --var "NEXT_PUBLIC_SITE_URL:${{ secrets.NEXT_PUBLIC_SITE_URL }}" \
+            --var "NEXT_PUBLIC_APP_SITE_URL:${{ secrets.NEXT_PUBLIC_APP_SITE_URL }}" \
+            --var "NEXT_PUBLIC_CN_SITE_URL:${{ secrets.NEXT_PUBLIC_CN_SITE_URL }}"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
