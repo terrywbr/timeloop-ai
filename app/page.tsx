@@ -10,13 +10,16 @@ import {
   exitAppFullscreen,
   getFullscreenElement,
   requestAppFullscreen,
+  requestLandscapeOrientation,
   subscribeFullscreenChange,
 } from '@/lib/fullscreen'
 import AudioUnlockButton from '@/components/audio-unlock-button'
-import PortraitRotateOverlay from '@/components/portrait-rotate-overlay'
+import MobileEntryGate from '@/components/mobile-entry-gate'
 import CommunityGallery from '@/components/community-gallery'
 import StreamAudioPlayer from '@/components/stream-audio-player'
 import { LanguageProvider, useLanguage } from '@/lib/language-context'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { useOrientation } from '@/hooks/use-orientation'
 import { SCENE_DATA, type SceneGalleryItem as GallerySceneItem } from '@/lib/scene-gallery-data'
 import { MUSIC_CHANNELS as STREAM_MUSIC_CHANNELS, type MusicChannelKey } from '@/lib/music-channels'
 import { AMBIENT_WORLDS, WORLD_MUSIC_CHANNELS } from '@/lib/worlds'
@@ -54,6 +57,8 @@ const AMBIENCE_AUDIO_SOURCES: Record<string, string> = {
 }
 
 const AMBIENCE_VOLUME_RATIO = 0.28
+
+const MOBILE_GESTURE_SESSION_KEY = 'timeloop-mobile-gestured'
 
 type GalleryWorldAssets = {
   backgroundImage: string
@@ -151,6 +156,9 @@ export default function TimeLoopPage() {
   const [regionPreference, setRegionPreference] = useState<'global' | 'cn' | null>(null)
   const [isCnHost, setIsCnHost] = useState(false)
   const [showRegionPrompt, setShowRegionPrompt] = useState(false)
+  const [hasUserGestured, setHasUserGestured] = useState(false)
+  const isMobile = useIsMobile()
+  const { isLandscape } = useOrientation()
   const supabase = useMemo(() => {
     try {
       return createSupabaseBrowserClient()
@@ -220,6 +228,16 @@ export default function TimeLoopPage() {
     setIsMusicPlaying(true)
   }, [])
 
+  const handleMobileGateTap = useCallback(() => {
+    void requestAppFullscreen()
+    void requestLandscapeOrientation()
+    sessionStorage.setItem(MOBILE_GESTURE_SESSION_KEY, '1')
+    setHasUserGestured(true)
+  }, [])
+
+  const showMobileGate = isMobile && (!hasUserGestured || !isLandscape)
+  const showCockpit = !isMobile || (hasUserGestured && isLandscape)
+
   const preferCreditPack = regionPreference === 'cn' || isCnHost
 
   const refreshAccountData = useCallback(async () => {
@@ -267,6 +285,19 @@ export default function TimeLoopPage() {
       subscription.subscription.unsubscribe()
     }
   }, [supabase])
+
+  useEffect(() => {
+    if (sessionStorage.getItem(MOBILE_GESTURE_SESSION_KEY) === '1') {
+      setHasUserGestured(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isMobile && hasUserGestured && isLandscape && !isAudioUnlocked) {
+      setIsAudioUnlocked(true)
+      setIsMusicPlaying(true)
+    }
+  }, [isMobile, hasUserGestured, isLandscape, isAudioUnlocked])
 
   useEffect(() => {
     const hostname = window.location.hostname
@@ -560,7 +591,10 @@ export default function TimeLoopPage() {
 
   return (
     <LanguageProvider>
-      <main className="relative h-screen w-screen overflow-hidden bg-background">
+      {showMobileGate ? <MobileEntryGate onTap={handleMobileGateTap} /> : null}
+
+      {showCockpit ? (
+      <main className="timeloop-app-shell relative h-screen w-screen overflow-hidden bg-background">
         {/* Full screen ambient world background with true crossfade */}
         <div className="pointer-events-none absolute inset-0 z-0 bg-transparent">
           {ambientLayers.map((layer) => (
@@ -595,11 +629,9 @@ export default function TimeLoopPage() {
           loop
         />
 
-        {!isAudioUnlocked ? (
+        {!isAudioUnlocked && !isMobile ? (
           <AudioUnlockButton onUnlock={handleUnlockAudio} />
         ) : null}
-
-        <PortraitRotateOverlay />
 
         {showRegionPrompt ? (
           <div className="fixed inset-x-4 top-20 z-[95] mx-auto max-w-md rounded-2xl border border-accent/30 bg-popover/90 p-4 text-sm text-foreground shadow-[0_0_32px_rgba(80,180,255,0.22)] backdrop-blur-md">
@@ -732,6 +764,7 @@ export default function TimeLoopPage() {
 
         {isGenerating ? <GeneratingOverlay /> : null}
       </main>
+      ) : null}
     </LanguageProvider>
   )
 }

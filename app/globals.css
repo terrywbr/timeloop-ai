@@ -173,6 +173,14 @@
   border-color: rgba(59, 130, 246, 0.5);
 }
 
+/* Hide cockpit before hydration on mobile portrait */
+@media (max-width: 767px) and (orientation: portrait) {
+  .timeloop-app-shell {
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+}
+
 /* Heart neon glow when favorited */
 .heart-glow-active {
   filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.8));

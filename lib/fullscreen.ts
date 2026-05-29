@@ -63,3 +63,15 @@ export function subscribeFullscreenChange(callback: () => void) {
     events.forEach((event) => document.removeEventListener(event, callback))
   }
 }
+
+export function requestLandscapeOrientation() {
+  if (typeof screen === 'undefined') return Promise.resolve()
+
+  const orientation = screen.orientation as ScreenOrientation & {
+    lock?: (orientation: OrientationLockType) => Promise<void>
+  }
+
+  if (!orientation?.lock) return Promise.resolve()
+
+  return orientation.lock('landscape').catch(() => undefined)
+}

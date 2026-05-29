@@ -55,6 +55,7 @@ export const translations: Record<Language, {
     rotateLabel: string
     rotateToLandscape: string
     landscapeHint: string
+    mobileTapAndRotate: string
   }
   language: string
   gallery: {
@@ -135,6 +136,8 @@ export const translations: Record<Language, {
       rotateToLandscape:
         'For the best starship cockpit experience, please rotate your device to landscape mode 🔄',
       landscapeHint: 'Landscape mode unlocks the full viewport',
+      mobileTapAndRotate:
+        '⚡ Tap the screen and rotate your device to landscape for the best cockpit experience',
     },
     language: 'Language',
     gallery: {
@@ -235,6 +238,7 @@ export const translations: Record<Language, {
       rotateLabel: '屏幕方向',
       rotateToLandscape: '为了获得最佳星舰座舱体验，请将手机旋转为横向模式 🔄',
       landscapeHint: '横屏模式将解锁完整视窗',
+      mobileTapAndRotate: '⚡ 点击屏幕，并将手机转为横向，以获得最佳驾驶舱体验',
     },
     language: '语言',
     gallery: {
@@ -335,6 +339,7 @@ export const translations: Record<Language, {
       rotateLabel: '螢幕方向',
       rotateToLandscape: '為了獲得最佳星艦座艙體驗，請將手機旋轉為橫向模式 🔄',
       landscapeHint: '橫向模式將解鎖完整視窗',
+      mobileTapAndRotate: '⚡ 點擊螢幕，並將手機轉為橫向，以獲得最佳駕駛艙體驗',
     },
     language: '語言',
     gallery: {
@@ -436,6 +441,8 @@ export const translations: Record<Language, {
       rotateToLandscape:
         '最高の星艦コックピット体験のため、デバイスを横向きに回転してください 🔄',
       landscapeHint: '横向きモードで全画面ビューが有効になります',
+      mobileTapAndRotate:
+        '⚡ 画面をタップし、端末を横向きに回転して最高のコックピット体験をお楽しみください',
     },
     language: '言語',
     gallery: {
@@ -537,6 +544,8 @@ export const translations: Record<Language, {
       rotateToLandscape:
         '최고의 스타십 콕핏 경험을 위해 기기를 가로 모드로 회전해 주세요 🔄',
       landscapeHint: '가로 모드에서 전체 화면이 활성화됩니다',
+      mobileTapAndRotate:
+        '⚡ 화면을 터치하고 기기를 가로로 돌려 최고의 콕핏 경험을 시작하세요',
     },
     language: '언어',
     gallery: {
@@ -638,6 +647,8 @@ export const translations: Record<Language, {
       rotateToLandscape:
         'Para la mejor experiencia de cabina estelar, gira tu dispositivo al modo horizontal 🔄',
       landscapeHint: 'El modo horizontal desbloquea la vista completa',
+      mobileTapAndRotate:
+        '⚡ Toca la pantalla y gira el dispositivo al horizontal para la mejor experiencia de cabina',
     },
     language: 'Idioma',
     gallery: {
@@ -739,6 +750,8 @@ export const translations: Record<Language, {
       rotateToLandscape:
         'Pour la meilleure expérience de cockpit stellaire, veuillez pivoter votre appareil en mode paysage 🔄',
       landscapeHint: 'Le mode paysage débloque la vue complète',
+      mobileTapAndRotate:
+        "⚡ Appuyez sur l'écran et pivotez votre appareil en paysage pour la meilleure expérience de cockpit",
     },
     language: 'Langue',
     gallery: {
@@ -840,6 +853,8 @@ export const translations: Record<Language, {
       rotateToLandscape:
         'Für das beste Sternenschiff-Cockpit-Erlebnis drehen Sie Ihr Gerät bitte ins Querformat 🔄',
       landscapeHint: 'Im Querformat wird die Vollansicht freigeschaltet',
+      mobileTapAndRotate:
+        '⚡ Tippen Sie auf den Bildschirm und drehen Sie Ihr Gerät ins Querformat für das beste Cockpit-Erlebnis',
     },
     language: 'Sprache',
     gallery: {
