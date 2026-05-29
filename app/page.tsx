@@ -1409,7 +1409,7 @@ function MobileGalleryContent({ onClose, onEnterScene }: MobileGalleryContentPro
           >
             <img
               src={item.thumbnail}
-              alt={item.title}
+              alt={`Gallery scene ${item.id}`}
               className="h-full w-full object-cover"
               crossOrigin="anonymous"
               loading="lazy"

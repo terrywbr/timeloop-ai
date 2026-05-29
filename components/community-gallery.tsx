@@ -171,7 +171,7 @@ function SceneGalleryCard({ item, index, t, onEnterScene }: SceneGalleryCardProp
       <div className="relative aspect-video w-full overflow-hidden rounded-md ring-1 ring-foreground/10">
         <img
           src={item.thumbnail}
-          alt={item.title}
+          alt={`Gallery scene ${item.id}`}
           className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
           loading="lazy"
         />
@@ -201,8 +201,7 @@ function SceneGalleryCard({ item, index, t, onEnterScene }: SceneGalleryCardProp
       </div>
 
       <div className="min-w-0 px-0.5">
-        <p className="truncate text-[10px] font-semibold leading-tight text-foreground">{item.title}</p>
-        <div className="mt-0.5 flex items-center justify-between gap-1">
+        <div className="flex items-center justify-between gap-1">
           <div className="flex items-center gap-0.5" title={t.music.title}>
             {item.stationHints.map((key) => {
               const Icon = stationHintIcon[key] ?? Headphones
