@@ -2,7 +2,7 @@
 
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { Menu, ImageIcon } from 'lucide-react'
+import { Menu, ImageIcon, Volume2 } from 'lucide-react'
 import { AmbientWorld } from '@/components/ui/ambient-world'
 import ControlPanel from '@/components/control-panel'
 import GoogleSignInButton from '@/components/google-sign-in-button'
@@ -22,7 +22,6 @@ import { MUSIC_CHANNELS as STREAM_MUSIC_CHANNELS, type MusicChannelKey } from '@
 import { AMBIENT_WORLDS, WORLD_MUSIC_CHANNELS } from '@/lib/worlds'
 import { createSupabaseBrowserClient } from '@/lib/supabase-client'
 import { signInWithGoogle } from '@/lib/auth-google'
-import { useOrientation } from '@/hooks/use-orientation'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import {
   deleteWorld,
@@ -152,7 +151,6 @@ export default function TimeLoopPage() {
   const [regionPreference, setRegionPreference] = useState<'global' | 'cn' | null>(null)
   const [isCnHost, setIsCnHost] = useState(false)
   const [showRegionPrompt, setShowRegionPrompt] = useState(false)
-  const { isMobilePortrait } = useOrientation()
   const supabase = useMemo(() => {
     try {
       return createSupabaseBrowserClient()
@@ -597,11 +595,11 @@ export default function TimeLoopPage() {
           loop
         />
 
-        {!isAudioUnlocked && !isMobilePortrait ? (
+        {!isAudioUnlocked ? (
           <AudioUnlockButton onUnlock={handleUnlockAudio} />
         ) : null}
 
-        <PortraitRotateOverlay visible={isMobilePortrait} />
+        <PortraitRotateOverlay />
 
         {showRegionPrompt ? (
           <div className="fixed inset-x-4 top-20 z-[95] mx-auto max-w-md rounded-2xl border border-accent/30 bg-popover/90 p-4 text-sm text-foreground shadow-[0_0_32px_rgba(80,180,255,0.22)] backdrop-blur-md">
@@ -661,75 +659,73 @@ export default function TimeLoopPage() {
         />
 
         {/* Mobile: Corner icons with drawer support */}
-        <div
-          className={`pointer-events-auto fixed left-4 top-4 z-[80] md:hidden max-md:landscape:left-3 max-md:landscape:top-3 ${
-            isMobilePortrait ? 'pointer-events-none opacity-0' : ''
-          }`}
-        >
+        <div className="pointer-events-auto fixed left-4 top-4 z-[80] max-md:portrait:pointer-events-none max-md:portrait:opacity-0 md:hidden max-md:landscape:left-3 max-md:landscape:top-3">
           <Drawer open={leftDrawerOpen} onOpenChange={setLeftDrawerOpen} direction="left">
             <DrawerTrigger asChild>
               <button
                 type="button"
-                onClick={() => setLeftDrawerOpen(true)}
                 className="glass flex h-10 w-10 touch-manipulation items-center justify-center rounded-xl border border-foreground/10 bg-popover/50 text-foreground/70 transition-all hover:bg-popover/70 hover:text-foreground max-md:landscape:h-9 max-md:landscape:w-9"
               >
                 <Menu className="h-5 w-5" />
               </button>
             </DrawerTrigger>
             <DrawerContent className="glass h-full w-[85%] max-w-[320px] bg-popover/90 max-md:landscape:w-[min(42vw,280px)] max-md:landscape:max-w-none">
-              <DrawerHeader className="sr-only">
-                <DrawerTitle>Control Panel</DrawerTitle>
-              </DrawerHeader>
-              <MobileControlContent
-                videoRef={videoRef}
-                onGenerate={handleGenerate}
-                isAuthenticated={Boolean(authUser)}
-                onRequireAuth={handleRequireAuth}
-                isGenerating={isGenerating}
-                onClose={() => setLeftDrawerOpen(false)}
-                musicChannelIndex={musicChannelIndex}
-                onMusicChannelIndexChange={handleMusicChannelIndexChange}
-                isMusicPlaying={isMusicPlaying}
-                onMusicPlayingChange={handleMusicPlayingChange}
-                musicVolume={musicVolume}
-                onMusicVolumeChange={setMusicVolume}
-                userProfile={userProfile}
-                savedWorlds={savedWorlds}
-                activeWorldId={activeWorldId}
-                onLoadWorld={handleLoadWorld}
-                onDeleteWorld={handleDeleteWorld}
-                onRenameWorld={handleRenameWorld}
-                onCheckout={handleCheckout}
-                onDownload={handleDownload}
-                preferCreditPack={preferCreditPack}
-              />
+              {leftDrawerOpen ? (
+                <>
+                  <DrawerHeader className="sr-only">
+                    <DrawerTitle>Control Panel</DrawerTitle>
+                  </DrawerHeader>
+                  <MobileControlContent
+                    videoRef={videoRef}
+                    onGenerate={handleGenerate}
+                    isAuthenticated={Boolean(authUser)}
+                    onRequireAuth={handleRequireAuth}
+                    isGenerating={isGenerating}
+                    onClose={() => setLeftDrawerOpen(false)}
+                    musicChannelIndex={musicChannelIndex}
+                    onMusicChannelIndexChange={handleMusicChannelIndexChange}
+                    isMusicPlaying={isMusicPlaying}
+                    onMusicPlayingChange={handleMusicPlayingChange}
+                    musicVolume={musicVolume}
+                    onMusicVolumeChange={setMusicVolume}
+                    userProfile={userProfile}
+                    savedWorlds={savedWorlds}
+                    activeWorldId={activeWorldId}
+                    onLoadWorld={handleLoadWorld}
+                    onDeleteWorld={handleDeleteWorld}
+                    onRenameWorld={handleRenameWorld}
+                    onCheckout={handleCheckout}
+                    onDownload={handleDownload}
+                    preferCreditPack={preferCreditPack}
+                  />
+                </>
+              ) : null}
             </DrawerContent>
           </Drawer>
         </div>
 
-        <div
-          className={`pointer-events-auto fixed right-4 top-4 z-[80] md:hidden max-md:landscape:right-3 max-md:landscape:top-3 ${
-            isMobilePortrait ? 'pointer-events-none opacity-0' : ''
-          }`}
-        >
+        <div className="pointer-events-auto fixed right-4 top-4 z-[80] max-md:portrait:pointer-events-none max-md:portrait:opacity-0 md:hidden max-md:landscape:right-3 max-md:landscape:top-3">
           <Drawer open={rightDrawerOpen} onOpenChange={setRightDrawerOpen} direction="right">
             <DrawerTrigger asChild>
               <button
                 type="button"
-                onClick={() => setRightDrawerOpen(true)}
                 className="glass flex h-10 w-10 touch-manipulation items-center justify-center rounded-xl border border-foreground/10 bg-popover/50 text-foreground/70 transition-all hover:bg-popover/70 hover:text-foreground max-md:landscape:h-9 max-md:landscape:w-9"
               >
                 <ImageIcon className="h-5 w-5" />
               </button>
             </DrawerTrigger>
             <DrawerContent className="glass h-full w-[85%] max-w-[320px] bg-popover/90 max-md:landscape:w-[min(42vw,280px)] max-md:landscape:max-w-none">
-              <DrawerHeader className="sr-only">
-                <DrawerTitle>Community Gallery</DrawerTitle>
-              </DrawerHeader>
-              <MobileGalleryContent
-                onClose={() => setRightDrawerOpen(false)}
-                onEnterScene={handleEnterGalleryScene}
-              />
+              {rightDrawerOpen ? (
+                <>
+                  <DrawerHeader className="sr-only">
+                    <DrawerTitle>Community Gallery</DrawerTitle>
+                  </DrawerHeader>
+                  <MobileGalleryContent
+                    onClose={() => setRightDrawerOpen(false)}
+                    onEnterScene={handleEnterGalleryScene}
+                  />
+                </>
+              ) : null}
             </DrawerContent>
           </Drawer>
         </div>

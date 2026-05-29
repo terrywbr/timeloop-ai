@@ -8,7 +8,7 @@ function readIsPortrait() {
 
 export function useOrientation() {
   const isMobile = useIsMobile()
-  const [isPortrait, setIsPortrait] = useState(false)
+  const [isPortrait, setIsPortrait] = useState(readIsPortrait)
 
   useEffect(() => {
     const update = () => setIsPortrait(readIsPortrait())

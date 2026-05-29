@@ -12,6 +12,7 @@ const DrawerChromeContext = React.createContext<{ open: boolean; modal: boolean 
 
 function Drawer({
   modal = true,
+  shouldScaleBackground = false,
   open: openProp,
   defaultOpen,
   onOpenChange,
@@ -33,6 +34,7 @@ function Drawer({
       data-slot="drawer"
       {...rest}
       modal={modal}
+      shouldScaleBackground={shouldScaleBackground}
       defaultOpen={defaultOpen}
       onOpenChange={handleOpenChange}
       {...(openProp !== undefined ? { open: openProp } : {})}

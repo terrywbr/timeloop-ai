@@ -20,7 +20,7 @@ export default function AudioUnlockButton({ onUnlock }: AudioUnlockButtonProps) 
     <button
       type="button"
       onClick={handleClick}
-      className="glass pointer-events-auto fixed bottom-5 left-1/2 z-[90] flex -translate-x-1/2 items-center gap-2 rounded-full border border-accent/40 bg-popover/75 px-5 py-2.5 text-sm font-medium text-foreground shadow-[0_0_24px_rgba(80,180,255,0.25)] backdrop-blur-md transition hover:border-accent/70 hover:bg-popover/90 max-md:landscape:bottom-3 max-md:landscape:scale-95"
+      className="glass pointer-events-auto fixed bottom-5 left-1/2 z-[90] flex max-w-[min(92vw,24rem)] -translate-x-1/2 items-center justify-center gap-2.5 rounded-full border border-accent/40 bg-popover/75 px-6 py-3 text-sm font-medium text-foreground shadow-[0_0_24px_rgba(80,180,255,0.25)] backdrop-blur-md transition hover:border-accent/70 hover:bg-popover/90 max-md:portrait:hidden max-md:landscape:bottom-4 max-md:landscape:px-5 max-md:landscape:py-2.5 max-md:landscape:text-base"
       aria-label={t.immersive.enterCockpit}
     >
       <Volume2 className="h-4 w-4 text-accent" />
