@@ -26,6 +26,12 @@ import { MUSIC_CHANNELS, type MusicChannelKey } from '@/lib/music-channels'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import type { UserAccountProfile } from '@/lib/api-client'
 import GoogleSignInButton from '@/components/google-sign-in-button'
+import {
+  exitAppFullscreen,
+  getFullscreenElement,
+  requestAppFullscreen,
+  subscribeFullscreenChange,
+} from '@/lib/fullscreen'
 
 interface ControlPanelProps {
   videoRef: React.RefObject<VideoBackgroundRef | null>
@@ -226,26 +232,18 @@ export default function ControlPanel({
   }
 
   const handleFullscreenToggle = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {
-        // Fullscreen request failed - some browsers may block it
-      })
+    if (!getFullscreenElement()) {
+      void requestAppFullscreen()
     } else {
-      document.exitFullscreen().catch(() => {
-        // Exit fullscreen failed
-      })
+      void exitAppFullscreen()
     }
   }, [])
 
   // Listen for fullscreen changes
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange)
-    }
+    return subscribeFullscreenChange(() => {
+      setIsFullscreen(Boolean(getFullscreenElement()))
+    })
   }, [])
 
   // Mobile touch handling

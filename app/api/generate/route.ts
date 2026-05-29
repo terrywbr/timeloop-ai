@@ -132,12 +132,31 @@ function imageGenerationOptions(prompt: string) {
 
 function getMissingApiKeys() {
   const missing: string[] = []
-  if (!process.env.TOGETHER_API_KEY) missing.push('TOGETHER_API_KEY')
-  if (!process.env.REPLICATE_API_TOKEN) missing.push('REPLICATE_API_TOKEN')
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) missing.push('NEXT_PUBLIC_SUPABASE_URL')
-  if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) missing.push('NEXT_PUBLIC_SUPABASE_ANON_KEY')
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) missing.push('SUPABASE_SERVICE_ROLE_KEY')
+  if (!readEnv('TOGETHER_API_KEY')) missing.push('TOGETHER_API_KEY')
+  if (!readEnv('REPLICATE_API_TOKEN')) missing.push('REPLICATE_API_TOKEN')
+  if (!readEnv('NEXT_PUBLIC_SUPABASE_URL')) missing.push('NEXT_PUBLIC_SUPABASE_URL')
+  if (!readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')) missing.push('NEXT_PUBLIC_SUPABASE_ANON_KEY')
+  if (!readEnv('SUPABASE_SERVICE_ROLE_KEY')) missing.push('SUPABASE_SERVICE_ROLE_KEY')
   return missing
+}
+
+function readEnv(name: string) {
+  const value = process.env[name]?.trim()
+  return value && value.length > 0 ? value : undefined
+}
+
+function formatPipelineError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  if (/invalid api key/i.test(message)) {
+    return 'Supabase 或 Together API 金鑰無效。請到 Cloudflare Worker → Variables and Secrets 重新貼上 sb_secret_ / tgp_v1_ 金鑰（前後勿有空格），或改用 Supabase 舊版 service_role JWT。'
+  }
+  if (/cpu time limit|exceeded.*cpu|1102|worker exceeded/i.test(message)) {
+    return 'Cloudflare Workers CPU 時間不足。AI 生圖需要 Workers Paid 方案（約 $5/月），並在 wrangler.jsonc 啟用 cpu_ms: 300000 後重新部署。'
+  }
+  if (/timed out|timeout|ETIMEDOUT/i.test(message)) {
+    return `生圖逾時：${message}。若使用 Workers Free，請升級 Workers Paid 後再試。`
+  }
+  return message
 }
 
 function replicateErrorMessage(payload: ReplicatePrediction, status: number, fallback: string) {
@@ -375,8 +394,8 @@ export async function POST(req: Request) {
       return jsonError(`Missing required API credentials: ${missingKeys.join(', ')}`, 401)
     }
 
-    const togetherApiKey = process.env.TOGETHER_API_KEY as string
-    const replicateApiToken = process.env.REPLICATE_API_TOKEN as string
+    const togetherApiKey = readEnv('TOGETHER_API_KEY') as string
+    const replicateApiToken = readEnv('REPLICATE_API_TOKEN') as string
     const supabase = createSupabaseAdminClient()
     let auth
     try {
@@ -533,7 +552,7 @@ export async function POST(req: Request) {
       world,
     } satisfies GenerateSuccessResponse)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown generation pipeline error'
+    const message = formatPipelineError(error)
     console.error('[api/generate] Pipeline failed:', error)
     return jsonError(message, 500)
   }

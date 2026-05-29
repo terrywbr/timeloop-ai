@@ -50,6 +50,12 @@ export const translations: Record<Language, {
   auth: {
     signInPrompt: string
   }
+  immersive: {
+    enterCockpit: string
+    rotateLabel: string
+    rotateToLandscape: string
+    landscapeHint: string
+  }
   language: string
   gallery: {
     title: string
@@ -122,6 +128,13 @@ export const translations: Record<Language, {
     },
     auth: {
       signInPrompt: 'Sign in to save scenes and unlock VIP features.',
+    },
+    immersive: {
+      enterCockpit: 'Enter Cockpit · Enable Sound',
+      rotateLabel: 'Orientation',
+      rotateToLandscape:
+        'For the best starship cockpit experience, please rotate your device to landscape mode 🔄',
+      landscapeHint: 'Landscape mode unlocks the full viewport',
     },
     language: 'Language',
     gallery: {
@@ -217,6 +230,12 @@ export const translations: Record<Language, {
     auth: {
       signInPrompt: '登录以保存场景并解锁 VIP 功能。',
     },
+    immersive: {
+      enterCockpit: '进入座舱 · 开启声音',
+      rotateLabel: '屏幕方向',
+      rotateToLandscape: '为了获得最佳星舰座舱体验，请将手机旋转为横向模式 🔄',
+      landscapeHint: '横屏模式将解锁完整视窗',
+    },
     language: '语言',
     gallery: {
       title: '社区画廊',
@@ -310,6 +329,12 @@ export const translations: Record<Language, {
     },
     auth: {
       signInPrompt: '登入以儲存場景並解鎖 VIP 功能。',
+    },
+    immersive: {
+      enterCockpit: '進入座艙 · 開啟聲音',
+      rotateLabel: '螢幕方向',
+      rotateToLandscape: '為了獲得最佳星艦座艙體驗，請將手機旋轉為橫向模式 🔄',
+      landscapeHint: '橫向模式將解鎖完整視窗',
     },
     language: '語言',
     gallery: {
@@ -405,6 +430,13 @@ export const translations: Record<Language, {
     auth: {
       signInPrompt: 'サインインしてシーンを保存し、VIP機能を解除してください。',
     },
+    immersive: {
+      enterCockpit: 'コックピットに入る · 音声をオン',
+      rotateLabel: '画面の向き',
+      rotateToLandscape:
+        '最高の星艦コックピット体験のため、デバイスを横向きに回転してください 🔄',
+      landscapeHint: '横向きモードで全画面ビューが有効になります',
+    },
     language: '言語',
     gallery: {
       title: 'コミュニティギャラリー',
@@ -498,6 +530,13 @@ export const translations: Record<Language, {
     },
     auth: {
       signInPrompt: '로그인하여 장면을 저장하고 VIP 기능을 잠금 해제하세요.',
+    },
+    immersive: {
+      enterCockpit: '콕핏 입장 · 사운드 켜기',
+      rotateLabel: '화면 방향',
+      rotateToLandscape:
+        '최고의 스타십 콕핏 경험을 위해 기기를 가로 모드로 회전해 주세요 🔄',
+      landscapeHint: '가로 모드에서 전체 화면이 활성화됩니다',
     },
     language: '언어',
     gallery: {
@@ -593,6 +632,13 @@ export const translations: Record<Language, {
     auth: {
       signInPrompt: 'Inicia sesión para guardar escenas y desbloquear funciones VIP.',
     },
+    immersive: {
+      enterCockpit: 'Entrar a la cabina · Activar sonido',
+      rotateLabel: 'Orientación',
+      rotateToLandscape:
+        'Para la mejor experiencia de cabina estelar, gira tu dispositivo al modo horizontal 🔄',
+      landscapeHint: 'El modo horizontal desbloquea la vista completa',
+    },
     language: 'Idioma',
     gallery: {
       title: 'Galería Comunitaria',
@@ -687,6 +733,13 @@ export const translations: Record<Language, {
     auth: {
       signInPrompt: 'Connectez-vous pour enregistrer vos scènes et débloquer les fonctionnalités VIP.',
     },
+    immersive: {
+      enterCockpit: 'Entrer dans le cockpit · Activer le son',
+      rotateLabel: 'Orientation',
+      rotateToLandscape:
+        'Pour la meilleure expérience de cockpit stellaire, veuillez pivoter votre appareil en mode paysage 🔄',
+      landscapeHint: 'Le mode paysage débloque la vue complète',
+    },
     language: 'Langue',
     gallery: {
       title: 'Galerie Communautaire',
@@ -780,6 +833,13 @@ export const translations: Record<Language, {
     },
     auth: {
       signInPrompt: 'Melden Sie sich an, um Szenen zu speichern und VIP-Funktionen freizuschalten.',
+    },
+    immersive: {
+      enterCockpit: 'Cockpit betreten · Ton aktivieren',
+      rotateLabel: 'Ausrichtung',
+      rotateToLandscape:
+        'Für das beste Sternenschiff-Cockpit-Erlebnis drehen Sie Ihr Gerät bitte ins Querformat 🔄',
+      landscapeHint: 'Im Querformat wird die Vollansicht freigeschaltet',
     },
     language: 'Sprache',
     gallery: {

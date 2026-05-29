@@ -3,8 +3,13 @@ import type { GeneratedWorldRow, PublicGeneratedWorld, UserProfile } from './sup
 
 const SIGNED_URL_EXPIRES_IN_SECONDS = 60 * 60 * 24
 
+function readEnv(name: string) {
+  const value = process.env[name]?.trim()
+  return value && value.length > 0 ? value : undefined
+}
+
 function requiredEnv(name: string) {
-  const value = process.env[name]
+  const value = readEnv(name)
   if (!value) throw new Error(`Missing required environment variable: ${name}`)
   return value
 }

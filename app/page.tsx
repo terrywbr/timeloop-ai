@@ -2,10 +2,18 @@
 
 import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { Menu, ImageIcon, Volume2 } from 'lucide-react'
+import { Menu, ImageIcon } from 'lucide-react'
 import { AmbientWorld } from '@/components/ui/ambient-world'
 import ControlPanel from '@/components/control-panel'
 import GoogleSignInButton from '@/components/google-sign-in-button'
+import {
+  exitAppFullscreen,
+  getFullscreenElement,
+  requestAppFullscreen,
+  subscribeFullscreenChange,
+} from '@/lib/fullscreen'
+import AudioUnlockButton from '@/components/audio-unlock-button'
+import PortraitRotateOverlay from '@/components/portrait-rotate-overlay'
 import CommunityGallery from '@/components/community-gallery'
 import StreamAudioPlayer from '@/components/stream-audio-player'
 import { LanguageProvider, useLanguage } from '@/lib/language-context'
@@ -14,6 +22,7 @@ import { MUSIC_CHANNELS as STREAM_MUSIC_CHANNELS, type MusicChannelKey } from '@
 import { AMBIENT_WORLDS, WORLD_MUSIC_CHANNELS } from '@/lib/worlds'
 import { createSupabaseBrowserClient } from '@/lib/supabase-client'
 import { signInWithGoogle } from '@/lib/auth-google'
+import { useOrientation } from '@/hooks/use-orientation'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import {
   deleteWorld,
@@ -143,6 +152,7 @@ export default function TimeLoopPage() {
   const [regionPreference, setRegionPreference] = useState<'global' | 'cn' | null>(null)
   const [isCnHost, setIsCnHost] = useState(false)
   const [showRegionPrompt, setShowRegionPrompt] = useState(false)
+  const { isMobilePortrait } = useOrientation()
   const supabase = useMemo(() => {
     try {
       return createSupabaseBrowserClient()
@@ -291,6 +301,7 @@ export default function TimeLoopPage() {
   }, [])
 
   const handleRequireAuth = useCallback(async () => {
+    void requestAppFullscreen()
     if (authUser) return true
     if (!supabase) {
       window.alert('Supabase 尚未設定，請先補上 NEXT_PUBLIC_SUPABASE_URL 與 NEXT_PUBLIC_SUPABASE_ANON_KEY。')
@@ -473,7 +484,13 @@ export default function TimeLoopPage() {
         }),
       })
 
-      const res = (await response.json()) as GenerateApiResponse
+      let res: GenerateApiResponse
+      try {
+        res = (await response.json()) as GenerateApiResponse
+      } catch {
+        window.alert(`生圖請求失敗（HTTP ${response.status}）。請確認 Cloudflare Workers Paid 已啟用。`)
+        return
+      }
 
       if (!response.ok || !res.success) {
         const message = res.success ? 'Generation failed' : res.error
@@ -580,17 +597,11 @@ export default function TimeLoopPage() {
           loop
         />
 
-        {!isAudioUnlocked ? (
-          <button
-            type="button"
-            onClick={handleUnlockAudio}
-            className="glass pointer-events-auto fixed bottom-5 left-1/2 z-[90] flex -translate-x-1/2 items-center gap-2 rounded-full border border-accent/40 bg-popover/75 px-4 py-2 text-sm font-medium text-foreground shadow-[0_0_24px_rgba(80,180,255,0.25)] backdrop-blur-md transition hover:border-accent/70 hover:bg-popover/90"
-            aria-label="開啟聲音"
-          >
-            <Volume2 className="h-4 w-4 text-accent" />
-            開啟聲音
-          </button>
+        {!isAudioUnlocked && !isMobilePortrait ? (
+          <AudioUnlockButton onUnlock={handleUnlockAudio} />
         ) : null}
+
+        <PortraitRotateOverlay visible={isMobilePortrait} />
 
         {showRegionPrompt ? (
           <div className="fixed inset-x-4 top-20 z-[95] mx-auto max-w-md rounded-2xl border border-accent/30 bg-popover/90 p-4 text-sm text-foreground shadow-[0_0_32px_rgba(80,180,255,0.22)] backdrop-blur-md">
@@ -650,18 +661,22 @@ export default function TimeLoopPage() {
         />
 
         {/* Mobile: Corner icons with drawer support */}
-        <div className="pointer-events-auto fixed left-4 top-4 z-[80] md:hidden">
+        <div
+          className={`pointer-events-auto fixed left-4 top-4 z-[80] md:hidden max-md:landscape:left-3 max-md:landscape:top-3 ${
+            isMobilePortrait ? 'pointer-events-none opacity-0' : ''
+          }`}
+        >
           <Drawer open={leftDrawerOpen} onOpenChange={setLeftDrawerOpen} direction="left">
             <DrawerTrigger asChild>
               <button
                 type="button"
                 onClick={() => setLeftDrawerOpen(true)}
-                className="glass flex h-10 w-10 touch-manipulation items-center justify-center rounded-xl border border-foreground/10 bg-popover/50 text-foreground/70 transition-all hover:bg-popover/70 hover:text-foreground"
+                className="glass flex h-10 w-10 touch-manipulation items-center justify-center rounded-xl border border-foreground/10 bg-popover/50 text-foreground/70 transition-all hover:bg-popover/70 hover:text-foreground max-md:landscape:h-9 max-md:landscape:w-9"
               >
                 <Menu className="h-5 w-5" />
               </button>
             </DrawerTrigger>
-            <DrawerContent className="glass h-full w-[85%] max-w-[320px] bg-popover/90">
+            <DrawerContent className="glass h-full w-[85%] max-w-[320px] bg-popover/90 max-md:landscape:w-[min(42vw,280px)] max-md:landscape:max-w-none">
               <DrawerHeader className="sr-only">
                 <DrawerTitle>Control Panel</DrawerTitle>
               </DrawerHeader>
@@ -692,18 +707,22 @@ export default function TimeLoopPage() {
           </Drawer>
         </div>
 
-        <div className="pointer-events-auto fixed right-4 top-4 z-[80] md:hidden">
+        <div
+          className={`pointer-events-auto fixed right-4 top-4 z-[80] md:hidden max-md:landscape:right-3 max-md:landscape:top-3 ${
+            isMobilePortrait ? 'pointer-events-none opacity-0' : ''
+          }`}
+        >
           <Drawer open={rightDrawerOpen} onOpenChange={setRightDrawerOpen} direction="right">
             <DrawerTrigger asChild>
               <button
                 type="button"
                 onClick={() => setRightDrawerOpen(true)}
-                className="glass flex h-10 w-10 touch-manipulation items-center justify-center rounded-xl border border-foreground/10 bg-popover/50 text-foreground/70 transition-all hover:bg-popover/70 hover:text-foreground"
+                className="glass flex h-10 w-10 touch-manipulation items-center justify-center rounded-xl border border-foreground/10 bg-popover/50 text-foreground/70 transition-all hover:bg-popover/70 hover:text-foreground max-md:landscape:h-9 max-md:landscape:w-9"
               >
                 <ImageIcon className="h-5 w-5" />
               </button>
             </DrawerTrigger>
-            <DrawerContent className="glass h-full w-[85%] max-w-[320px] bg-popover/90">
+            <DrawerContent className="glass h-full w-[85%] max-w-[320px] bg-popover/90 max-md:landscape:w-[min(42vw,280px)] max-md:landscape:max-w-none">
               <DrawerHeader className="sr-only">
                 <DrawerTitle>Community Gallery</DrawerTitle>
               </DrawerHeader>
@@ -877,22 +896,18 @@ function MobileControlContent({
 
   // Fullscreen toggle handler
   const handleFullscreenToggle = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {})
+    if (!getFullscreenElement()) {
+      void requestAppFullscreen()
     } else {
-      document.exitFullscreen().catch(() => {})
+      void exitAppFullscreen()
     }
   }, [])
 
   // Listen for fullscreen changes
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement)
-    }
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange)
-    }
+    return subscribeFullscreenChange(() => {
+      setIsFullscreen(Boolean(getFullscreenElement()))
+    })
   }, [])
 
   const handlePlayPause = () => {
@@ -916,16 +931,16 @@ function MobileControlContent({
   const handleGenerate = () => {
     if (!prompt.trim()) return
     if (!isAuthenticated) {
-      onRequireAuth()
+      void onRequireAuth()
       return
     }
     onGenerate(prompt, selectedScene)
   }
 
   return (
-    <div className="no-scrollbar flex h-full flex-col overflow-y-auto p-4">
+    <div className="no-scrollbar flex h-full flex-col overflow-y-auto p-4 max-md:landscape:p-3 max-md:landscape:text-[13px]">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between max-md:landscape:mb-3">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/20">
             <Sparkles className="h-4 w-4 text-accent" />
@@ -949,7 +964,7 @@ function MobileControlContent({
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           placeholder={t.inputPlaceholder}
-          className="glass h-24 w-full resize-none rounded-lg border border-foreground/10 bg-input/50 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-accent/50 focus:outline-none"
+          className="glass h-24 w-full resize-none rounded-lg border border-foreground/10 bg-input/50 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-accent/50 focus:outline-none max-md:landscape:h-16"
         />
 
         <div className="space-y-1.5">
