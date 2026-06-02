@@ -22,7 +22,7 @@ import {
 import { useLanguage } from '@/lib/language-context'
 import LanguageSelector from './language-selector'
 import type { VideoBackgroundRef } from './ui/video-background'
-import { MUSIC_CHANNELS, type MusicChannelKey } from '@/lib/music-channels'
+import type { RadioStation } from '@/lib/radio-station'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import type { UserAccountProfile } from '@/lib/api-client'
 import GoogleSignInButton from '@/components/google-sign-in-button'
@@ -41,8 +41,16 @@ interface ControlPanelProps {
   isGenerating: boolean
   isExpanded: boolean
   onExpandedChange: (expanded: boolean) => void
-  musicChannelIndex: number
-  onMusicChannelIndexChange: (index: number) => void
+  currentStation: RadioStation | null
+  isStationLoading: boolean
+  isCurrentFavorited: boolean
+  favoriteStations: RadioStation[]
+  onNextStation: () => void
+  onPrevStation: () => void
+  onToggleFavorite: () => void
+  onPlayFavorite: (station: RadioStation) => void
+  onRemoveFavorite: (stationuuid: string) => void
+  onReopenMusicOnboarding: () => void
   isMusicPlaying: boolean
   onMusicPlayingChange: (playing: boolean) => void
   musicVolume: number
@@ -68,8 +76,16 @@ export default function ControlPanel({
   isGenerating,
   isExpanded,
   onExpandedChange,
-  musicChannelIndex: currentChannelIndex,
-  onMusicChannelIndexChange: setCurrentChannelIndex,
+  currentStation,
+  isStationLoading,
+  isCurrentFavorited,
+  favoriteStations,
+  onNextStation,
+  onPrevStation,
+  onToggleFavorite,
+  onPlayFavorite,
+  onRemoveFavorite,
+  onReopenMusicOnboarding,
   isMusicPlaying,
   onMusicPlayingChange: setIsMusicPlaying,
   musicVolume,
@@ -87,7 +103,6 @@ export default function ControlPanel({
   const [isPaused, setIsPaused] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [favoriteChannels, setFavoriteChannels] = useState<MusicChannelKey[]>([])
   const [showFavoriteToast, setShowFavoriteToast] = useState(false)
   const [showSceneInput, setShowSceneInput] = useState(false)
   const [newSceneName, setNewSceneName] = useState('')
@@ -97,18 +112,6 @@ export default function ControlPanel({
   const panelRef = useRef<HTMLDivElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { t } = useLanguage()
-
-  // Load favorites from localStorage on mount
-  useEffect(() => {
-    const savedFavorites = localStorage.getItem('musicFavorites')
-    if (savedFavorites) {
-      try {
-        setFavoriteChannels(JSON.parse(savedFavorites))
-      } catch {
-        // Invalid JSON, ignore
-      }
-    }
-  }, [])
 
   const scenes: SceneKey[] = ['cyberpunk', 'nature', 'space', 'ocean', 'city', 'desert']
 
@@ -164,52 +167,16 @@ export default function ControlPanel({
     setIsMusicPlaying(!isMusicPlaying)
   }
 
-  const handlePrevChannel = () => {
-    setCurrentChannelIndex(
-      currentChannelIndex === 0 ? MUSIC_CHANNELS.length - 1 : currentChannelIndex - 1
-    )
-  }
-
-  const handleNextChannel = () => {
-    setCurrentChannelIndex((currentChannelIndex + 1) % MUSIC_CHANNELS.length)
-  }
-
-  const currentChannel = MUSIC_CHANNELS[currentChannelIndex]
-  const isCurrentFavorited = favoriteChannels.includes(currentChannel.key)
-
-  // Toggle favorite for current channel
-  const handleToggleFavorite = () => {
-    if (isCurrentFavorited) {
-      // Remove from favorites
-      const newFavorites = favoriteChannels.filter(key => key !== currentChannel.key)
-      setFavoriteChannels(newFavorites)
-      localStorage.setItem('musicFavorites', JSON.stringify(newFavorites))
-    } else {
-      // Add to favorites
-      const newFavorites = [...favoriteChannels, currentChannel.key]
-      setFavoriteChannels(newFavorites)
-      localStorage.setItem('musicFavorites', JSON.stringify(newFavorites))
-      // Show toast briefly
+  const handleToggleFavoriteClick = () => {
+    if (!currentStation) return
+    if (!isCurrentFavorited) {
       setShowFavoriteToast(true)
-      setTimeout(() => setShowFavoriteToast(false), 2000)
+      window.setTimeout(() => setShowFavoriteToast(false), 2000)
     }
+    onToggleFavorite()
   }
 
-  // Remove specific channel from favorites
-  const handleRemoveFavorite = (key: MusicChannelKey) => {
-    const newFavorites = favoriteChannels.filter(k => k !== key)
-    setFavoriteChannels(newFavorites)
-    localStorage.setItem('musicFavorites', JSON.stringify(newFavorites))
-  }
-
-  // Switch to a favorite channel
-  const handlePlayFavorite = (key: MusicChannelKey) => {
-    const index = MUSIC_CHANNELS.findIndex(ch => ch.key === key)
-    if (index !== -1) {
-      setCurrentChannelIndex(index)
-      setIsMusicPlaying(true)
-    }
-  }
+  const stationLabel = currentStation?.name ?? t.music.scanning
 
   const handleSaveScene = () => {
     if (!isAuthenticated) {
@@ -291,7 +258,7 @@ export default function ControlPanel({
 
         {/* Expanded content */}
         <div
-          className={`no-scrollbar relative flex h-full flex-col overflow-y-auto p-4 transition-opacity duration-300 ${
+          className={`no-scrollbar relative flex h-full min-w-0 flex-col overflow-y-auto overflow-x-hidden p-4 transition-opacity duration-300 ${
             isExpanded ? 'opacity-100' : 'pointer-events-none opacity-0'
           }`}
         >
@@ -363,9 +330,9 @@ export default function ControlPanel({
                 tooltip={userProfile?.isVip ? t.controls.download : `${t.controls.download} (VIP)`}
               />
               <ControlButton
-                onClick={() => {}}
+                onClick={onReopenMusicOnboarding}
                 icon={Settings}
-                tooltip={t.controls.settings}
+                tooltip={t.music.changeMoods}
               />
             </div>
           </div>
@@ -379,54 +346,60 @@ export default function ControlPanel({
               <span className="text-xs font-medium text-muted-foreground">{t.music.title}</span>
             </div>
             
-            <div className="flex items-center gap-2">
-              {/* Prev Channel */}
-              <button
-                onClick={handlePrevChannel}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-foreground/10 bg-secondary/50 text-foreground/70 transition-all hover:border-foreground/20 hover:bg-secondary hover:text-foreground"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              
-              {/* Channel Display */}
-              <div className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-foreground/10 bg-secondary/30 px-3 py-1.5">
-                <span className="truncate text-xs font-medium text-foreground">
-                  {t.music.channels[currentChannel.key]}
-                </span>
+            <div className="space-y-2">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <button
+                  onClick={onPrevStation}
+                  disabled={isStationLoading}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-foreground/10 bg-secondary/50 text-foreground/70 transition-all hover:border-foreground/20 hover:bg-secondary hover:text-foreground disabled:opacity-40"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                <div
+                  className="min-w-0 flex-1 overflow-hidden rounded-lg border border-foreground/10 bg-secondary/30 px-2 py-1.5"
+                  title={isStationLoading ? undefined : stationLabel}
+                >
+                  <span className="block truncate text-xs font-medium text-foreground">
+                    {isStationLoading ? t.music.scanning : stationLabel}
+                  </span>
+                </div>
+
+                <button
+                  onClick={onNextStation}
+                  disabled={isStationLoading}
+                  title={t.music.nextStation}
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-foreground/10 bg-secondary/50 text-foreground/70 transition-all hover:border-foreground/20 hover:bg-secondary hover:text-foreground disabled:opacity-40"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
               </div>
-              
-              {/* Next Channel */}
-              <button
-                onClick={handleNextChannel}
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-foreground/10 bg-secondary/50 text-foreground/70 transition-all hover:border-foreground/20 hover:bg-secondary hover:text-foreground"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-              
-              {/* Play/Pause Music */}
-              <button
-                onClick={handleMusicToggle}
-                className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-all ${
-                  isMusicPlaying 
-                    ? 'border-accent/50 bg-accent/20 text-accent' 
-                    : 'border-foreground/10 bg-secondary/50 text-foreground/70 hover:border-foreground/20 hover:bg-secondary hover:text-foreground'
-                }`}
-              >
-                {isMusicPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              </button>
-              
-              {/* Favorite Button */}
-              <button
-                onClick={handleToggleFavorite}
-                className={`flex h-8 w-8 items-center justify-center rounded-lg border transition-all duration-300 ${
-                  isCurrentFavorited 
-                    ? 'border-red-500/60 bg-red-500/25 text-red-500 shadow-[0_0_16px_rgba(239,68,68,0.7),0_0_32px_rgba(239,68,68,0.4)]' 
-                    : 'border-foreground/10 bg-secondary/50 text-foreground/70 hover:border-red-500/50 hover:bg-red-500/15 hover:text-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.5)] hover:scale-105'
-                }`}
-                title={isCurrentFavorited ? t.music.alreadyFavorited : t.music.favorites}
-              >
-                <Heart className={`h-4 w-4 transition-all duration-300 ${isCurrentFavorited ? 'fill-current scale-110 heart-glow-active' : ''}`} />
-              </button>
+
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={handleMusicToggle}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition-all ${
+                    isMusicPlaying
+                      ? 'border-accent/50 bg-accent/20 text-accent'
+                      : 'border-foreground/10 bg-secondary/50 text-foreground/70 hover:border-foreground/20 hover:bg-secondary hover:text-foreground'
+                  }`}
+                >
+                  {isMusicPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                </button>
+
+                <button
+                  onClick={handleToggleFavoriteClick}
+                  disabled={!currentStation}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition-all duration-300 disabled:opacity-40 ${
+                    isCurrentFavorited
+                      ? 'border-red-500/60 bg-red-500/25 text-red-500 shadow-[0_0_16px_rgba(239,68,68,0.7),0_0_32px_rgba(239,68,68,0.4)]'
+                      : 'border-foreground/10 bg-secondary/50 text-foreground/70 hover:border-red-500/50 hover:bg-red-500/15 hover:text-red-500 hover:shadow-[0_0_20px_rgba(239,68,68,0.5)] hover:scale-105'
+                  }`}
+                  title={isCurrentFavorited ? t.music.alreadyFavorited : t.music.favorites}
+                >
+                  <Heart className={`h-4 w-4 transition-all duration-300 ${isCurrentFavorited ? 'fill-current scale-110 heart-glow-active' : ''}`} />
+                </button>
+              </div>
             </div>
             
             {/* Already favorited toast */}
@@ -466,34 +439,8 @@ export default function ControlPanel({
               <span className="text-xs text-muted-foreground w-6 text-right">{musicVolume}</span>
             </div>
 
-            {/* Station list — tap to play stream */}
-            <div className="space-y-1">
-              <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/80">
-                {t.music.stations}
-              </p>
-              <div className="space-y-1">
-                {MUSIC_CHANNELS.map((ch, index) => (
-                  <button
-                    key={ch.key}
-                    type="button"
-                    onClick={() => {
-                      setCurrentChannelIndex(index)
-                      setIsMusicPlaying(true)
-                    }}
-                    className={`flex w-full items-center justify-between rounded-lg border px-2.5 py-1.5 text-left text-xs transition-all ${
-                      index === currentChannelIndex
-                        ? 'border-accent/50 bg-accent/15 text-foreground shadow-[0_0_12px_rgba(var(--accent)/0.2)]'
-                        : 'border-foreground/10 bg-secondary/30 text-foreground/80 hover:border-foreground/20 hover:bg-secondary/50'
-                    }`}
-                  >
-                    <span className="truncate">{t.music.channels[ch.key]}</span>
-                    {index === currentChannelIndex && isMusicPlaying ? (
-                      <span className="ml-2 shrink-0 text-[10px] text-accent">{t.music.live}</span>
-                    ) : null}
-                  </button>
-                ))}
-              </div>
-            </div>
+            {/* Station list removed — use Next to discover global stations */}
+
           </div>
 
           {/* My Favorites Section */}
@@ -506,23 +453,26 @@ export default function ControlPanel({
               <span className="text-xs font-medium text-muted-foreground">{t.music.favorites}</span>
             </button>
             
-            {favoriteChannels.length === 0 ? (
+            {favoriteStations.length === 0 ? (
               <p className="text-xs text-muted-foreground/60 italic">{t.music.noFavorites}</p>
             ) : (
               <div className="space-y-1">
-                {favoriteChannels.map((key) => (
+                {favoriteStations.map((station) => (
                   <div
-                    key={key}
+                    key={station.stationuuid}
                     className="group flex items-center justify-between rounded-lg border border-foreground/10 bg-secondary/30 px-2 py-1.5 transition-all hover:border-foreground/20 hover:bg-secondary/50"
                   >
                     <button
-                      onClick={() => handlePlayFavorite(key)}
+                      onClick={() => {
+                        onPlayFavorite(station)
+                        setIsMusicPlaying(true)
+                      }}
                       className="flex-1 text-left text-xs text-foreground/80 transition-colors hover:text-foreground"
                     >
-                      {t.music.channels[key]}
+                      {station.name}
                     </button>
                     <button
-                      onClick={() => handleRemoveFavorite(key)}
+                      onClick={() => onRemoveFavorite(station.stationuuid)}
                       className="ml-2 flex h-5 w-5 items-center justify-center rounded opacity-0 transition-all hover:bg-red-500/20 group-hover:opacity-100"
                     >
                       <X className="h-3 w-3 text-red-500" />

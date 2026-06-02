@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { stopPrimedStreamAudio } from '@/lib/prime-stream-audio'
 
 type StreamAudioPlayerProps = {
   streamUrl: string
@@ -9,24 +10,23 @@ type StreamAudioPlayerProps = {
   volume: number
   loop?: boolean
   muted?: boolean
+  onPlaybackError?: (streamUrl: string) => void
 }
 
 const CROSSFADE_DURATION_MS = 2200
+const STALL_CHECK_MS = 12000
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
 const toAudioVolume = (volume: number) => clamp01(volume / 100)
 const lerp = (start: number, end: number, progress: number) => start + (end - start) * progress
 
-/**
- * Hidden HTML5 audio for live streams. Two elements allow station/world changes
- * to crossfade instead of hard-reloading the currently audible stream.
- */
 export default function StreamAudioPlayer({
   streamUrl,
   playing,
   volume,
   loop = false,
   muted = false,
+  onPlaybackError,
 }: StreamAudioPlayerProps) {
   const primaryAudioRef = useRef<HTMLAudioElement>(null)
   const secondaryAudioRef = useRef<HTMLAudioElement>(null)
@@ -36,8 +36,41 @@ export default function StreamAudioPlayer({
   const playingRef = useRef(playing)
   const mutedRef = useRef(muted)
   const animationFrameRef = useRef<number | null>(null)
+  const stallTimerRef = useRef<number | null>(null)
+  const onPlaybackErrorRef = useRef(onPlaybackError)
+
+  useEffect(() => {
+    onPlaybackErrorRef.current = onPlaybackError
+  }, [onPlaybackError])
 
   const getAudio = (index: number) => (index === 0 ? primaryAudioRef.current : secondaryAudioRef.current)
+
+  const clearStallTimer = () => {
+    if (stallTimerRef.current !== null) {
+      window.clearTimeout(stallTimerRef.current)
+      stallTimerRef.current = null
+    }
+  }
+
+  const reportFailure = (url: string) => {
+    onPlaybackErrorRef.current?.(url)
+  }
+
+  const scheduleStallCheck = (url: string, audio: HTMLAudioElement) => {
+    clearStallTimer()
+    if (!playingRef.current || !url) return
+
+    stallTimerRef.current = window.setTimeout(() => {
+      if (currentStreamUrlRef.current !== url) return
+      const stuck =
+        audio.paused ||
+        audio.error !== null ||
+        (audio.readyState >= 2 && audio.currentTime < 0.5)
+      if (stuck) {
+        reportFailure(url)
+      }
+    }, STALL_CHECK_MS)
+  }
 
   const stopFade = () => {
     if (animationFrameRef.current !== null) {
@@ -109,8 +142,28 @@ export default function StreamAudioPlayer({
     const secondary = secondaryAudioRef.current
     if (!primary || !secondary) return
 
+    const handleError = (event: Event) => {
+      const target = event.currentTarget as HTMLAudioElement
+      const url = target.dataset.streamUrl ?? currentStreamUrlRef.current
+      if (url) reportFailure(url)
+    }
+
+    primary.addEventListener('error', handleError)
+    secondary.addEventListener('error', handleError)
+    return () => {
+      primary.removeEventListener('error', handleError)
+      secondary.removeEventListener('error', handleError)
+    }
+  }, [])
+
+  useEffect(() => {
+    const primary = primaryAudioRef.current
+    const secondary = secondaryAudioRef.current
+    if (!primary || !secondary) return
+
     if (!streamUrl) {
       currentStreamUrlRef.current = ''
+      clearStallTimer()
       stopFade()
       primary.pause()
       secondary.pause()
@@ -142,7 +195,15 @@ export default function StreamAudioPlayer({
       return
     }
 
-    void nextAudio.play().catch(() => {})
+    void nextAudio
+      .play()
+      .then(() => {
+        stopPrimedStreamAudio()
+        scheduleStallCheck(streamUrl, nextAudio)
+      })
+      .catch(() => {
+        reportFailure(streamUrl)
+      })
     fadeVolumes(
       nextIndex === 0 ? targetVolumeRef.current : 0,
       nextIndex === 1 ? targetVolumeRef.current : 0,
@@ -164,15 +225,22 @@ export default function StreamAudioPlayer({
 
     if (playing) {
       activeAudio.muted = mutedRef.current
-      void activeAudio.play().catch(() => {
-        // Blocked autoplay or unsupported stream; retry on the next user gesture.
-      })
+      void activeAudio
+        .play()
+        .then(() => {
+          stopPrimedStreamAudio()
+          scheduleStallCheck(currentStreamUrlRef.current, activeAudio)
+        })
+        .catch(() => {
+          reportFailure(currentStreamUrlRef.current)
+        })
       fadeVolumes(
         activeIndexRef.current === 0 ? targetVolumeRef.current : 0,
         activeIndexRef.current === 1 ? targetVolumeRef.current : 0,
         CROSSFADE_DURATION_MS,
       )
     } else {
+      clearStallTimer()
       fadeVolumes(0, 0, CROSSFADE_DURATION_MS, () => {
         primaryAudioRef.current?.pause()
         secondaryAudioRef.current?.pause()
@@ -180,14 +248,18 @@ export default function StreamAudioPlayer({
     }
   }, [playing])
 
-  // iOS Safari: retry play on user gestures (useEffect play() may fall outside gesture window)
   useEffect(() => {
     const tryPlay = () => {
       if (!playing || !streamUrl) return
       const activeAudio = getAudio(activeIndexRef.current)
       if (!activeAudio) return
       activeAudio.muted = mutedRef.current
-      void activeAudio.play().catch(() => {})
+      void activeAudio
+        .play()
+        .then(() => {
+          stopPrimedStreamAudio()
+        })
+        .catch(() => {})
     }
 
     document.addEventListener('pointerdown', tryPlay, { passive: true })
@@ -201,6 +273,7 @@ export default function StreamAudioPlayer({
   useEffect(() => {
     return () => {
       stopFade()
+      clearStallTimer()
     }
   }, [])
 

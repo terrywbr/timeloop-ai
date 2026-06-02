@@ -16,17 +16,16 @@ function isMusicChannelKey(value: string): value is MusicChannelKey {
   return stationUrlByKey.has(value as MusicChannelKey)
 }
 
-export async function GET(req: Request) {
-  const url = new URL(req.url)
-  const station = url.searchParams.get('station')
-
-  if (!station || !isMusicChannelKey(station)) {
-    return jsonError('Unsupported station', 400)
+function isAllowedStreamUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
   }
+}
 
-  const streamUrl = stationUrlByKey.get(station)
-  if (!streamUrl) return jsonError('Station not found', 404)
-
+async function proxyStream(streamUrl: string) {
   const upstream = await fetch(streamUrl, {
     headers: {
       'User-Agent': 'TimeLoopAI/1.0',
@@ -46,4 +45,27 @@ export async function GET(req: Request) {
       'X-Accel-Buffering': 'no',
     },
   })
+}
+
+export async function GET(req: Request) {
+  const url = new URL(req.url)
+  const station = url.searchParams.get('station')
+  const streamUrlParam = url.searchParams.get('url')
+
+  if (streamUrlParam) {
+    const decoded = decodeURIComponent(streamUrlParam)
+    if (!isAllowedStreamUrl(decoded)) {
+      return jsonError('Invalid stream URL', 400)
+    }
+    return proxyStream(decoded)
+  }
+
+  if (!station || !isMusicChannelKey(station)) {
+    return jsonError('Unsupported station or missing url', 400)
+  }
+
+  const streamUrl = stationUrlByKey.get(station)
+  if (!streamUrl) return jsonError('Station not found', 404)
+
+  return proxyStream(streamUrl)
 }

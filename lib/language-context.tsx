@@ -1,12 +1,17 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react'
 import { type Language, translations } from './translations'
+import { MUSIC_I18N } from './music-i18n'
+
+type MergedTranslations = typeof translations['en'] & {
+  music: typeof translations['en']['music'] & (typeof MUSIC_I18N)['en']
+}
 
 type LanguageContextType = {
   language: Language
   setLanguage: (lang: Language) => void
-  t: typeof translations['en']
+  t: MergedTranslations
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
@@ -47,12 +52,23 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('timeloop-language', lang)
   }
 
+  const t = useMemo(
+    (): MergedTranslations => ({
+      ...translations[language],
+      music: {
+        ...translations[language].music,
+        ...MUSIC_I18N[language],
+      },
+    }),
+    [language],
+  )
+
   return (
     <LanguageContext.Provider
       value={{
         language,
         setLanguage: handleSetLanguage,
-        t: translations[language],
+        t,
       }}
     >
       {children}
