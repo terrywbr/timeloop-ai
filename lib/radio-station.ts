@@ -63,12 +63,33 @@ export function pickInitialStation(moodIds: MusicMoodId[]): RadioStation {
   return defaultStationForMood(moodId)
 }
 
-/** Build playback URL — always proxy for consistent CORS / CN support. */
-export function buildStreamPlaybackUrl(station: RadioStation): string {
+/** Build proxied playback URL (fallback for CN or when direct fails). */
+export function buildProxiedStreamUrl(station: RadioStation): string {
   if (station.stationuuid.startsWith('default-')) {
     return `/api/stream?url=${encodeURIComponent(station.urlResolved)}`
   }
   return `/api/stream?uuid=${encodeURIComponent(station.stationuuid)}&url=${encodeURIComponent(station.urlResolved)}`
+}
+
+/** Prefer direct stream URLs — HTML audio does not need CORS and avoids Worker proxy timeouts. */
+export function buildStreamPlaybackUrl(station: RadioStation, preferProxy = false): string {
+  if (preferProxy) return buildProxiedStreamUrl(station)
+  return station.urlResolved
+}
+
+export function isStreamUrlForStation(station: RadioStation, playbackUrl: string): boolean {
+  return (
+    playbackUrl === station.urlResolved ||
+    playbackUrl === buildProxiedStreamUrl(station)
+  )
+}
+
+export function shouldPreferStreamProxy(): boolean {
+  if (typeof window === 'undefined') return false
+  if (window.location.hostname.startsWith('cn.') || window.location.hostname === 'cn.localhost') {
+    return true
+  }
+  return localStorage.getItem('timeloop-region') === 'cn'
 }
 
 export function loadSelectedMoods(): MusicMoodId[] {

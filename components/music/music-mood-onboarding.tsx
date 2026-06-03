@@ -3,8 +3,6 @@
 import { useState } from 'react'
 import { ChevronRight, Music2 } from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
-import { useIsMobile } from '@/hooks/use-mobile'
-import { useOrientation } from '@/hooks/use-orientation'
 import { MUSIC_MOODS, type MusicMoodId } from '@/lib/music-moods'
 
 type MusicMoodOnboardingProps = {
@@ -13,8 +11,6 @@ type MusicMoodOnboardingProps = {
 
 export default function MusicMoodOnboarding({ onComplete }: MusicMoodOnboardingProps) {
   const { t } = useLanguage()
-  const isMobile = useIsMobile()
-  const { isLandscape } = useOrientation()
   const [selected, setSelected] = useState<Set<MusicMoodId>>(new Set(['deep-night']))
 
   const toggleMood = (id: MusicMoodId) => {
@@ -61,9 +57,6 @@ export default function MusicMoodOnboarding({ onComplete }: MusicMoodOnboardingP
               <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-muted-foreground max-md:landscape:text-[11px]">
                 {t.music.onboarding.subtitle}
               </p>
-              {isMobile && !isLandscape ? (
-                <p className="mt-1 text-[10px] text-accent/80">{t.music.onboarding.rotateHint}</p>
-              ) : null}
             </div>
           </div>
         </header>

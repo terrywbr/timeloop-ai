@@ -103,77 +103,178 @@ const djZhCn: DjUiCopy = {
   },
 }
 
-function cloneEnPersonas(names: Partial<Record<MusicMoodId, { name: string; sceneTitle: string }>>): DjUiCopy['personas'] {
-  return { ...djEn.personas, ...names }
+const djJa: DjUiCopy = {
+  label: 'AI DJ',
+  connecting: 'DJ接続中…',
+  voiceOn: 'DJ音声オン',
+  voiceOff: 'DJ音声オフ',
+  subtitlesOnly: '字幕のみ',
+  autoDjComingSoon: 'Auto DJ — 近日公開',
+  intervalCompanion: '30分お付き添い',
+  personas: {
+    'neon-tokyo': { name: 'アンダーグラウンドDJ', sceneTitle: 'ブレードランナー：ネオン雨の屋上' },
+    'deep-night': { name: 'ヒューストン管制官', sceneTitle: 'ISS観測デッキ' },
+    'deep-space': { name: '潜水艦AI', sceneTitle: '深海潜水艦3000ft' },
+    'galactic-tavern': { name: 'ジャズバーテンダー', sceneTitle: '1920スモーキージャズラウンジ' },
+    'galactic-classical': { name: 'デジタル秘書', sceneTitle: '北欧ガラスキャビン' },
+    'retro-earth': { name: 'アウトドア探検家', sceneTitle: 'アルプスキャンプファイア' },
+  },
+  fallbacks: {
+    'neon-tokyo':
+      '艦長、ネオン東京へようこそ。街は眠っても、俺たちのサイバーな夜は始まったばかりだ。ランダム周波数ロック済み、現在 {time}。電子波に接続して、コードを仕上げよう。',
+    'deep-night':
+      'こんにちは、艦長。深宇宙は静かだ。この時間帯に合った深夜リズムだけが残っている。現在 {time}。地上の雑音は完全に遮断された。コーヒーを片手に、集中モードへ入ろう。',
+    'deep-space':
+      'リラックスしてください、艦長。深度3000フィート。外部ノイズは遮断済み、現在 {time}。深空低周波に接続——最大集中モードへ。',
+    'galactic-tavern':
+      'こんにちは、古い友よ。今日は忙しかっただろう？ あなたの席へようこそ。音楽のブラインドボックスを用意した。現在 {time}。予定を話すか、すぐ仕事に入るか？',
+    'galactic-classical':
+      '艦長、こんにちは。銀河クラシックにチューニング済み。現在 {time}。ミニマル空間の準備完了——優雅なピアノが今夜の生産性を守る。',
+    'retro-earth':
+      'タイムジャンプ成功！ レトロ地球のアルプスキャンプに戻った。焚き火のパチパチ、現在 {time}。キャンプ放送の懐かしいリズムで、今日の航海を始めよう。',
+  },
+}
+
+const djKo: DjUiCopy = {
+  label: 'AI DJ',
+  connecting: 'DJ 연결 중…',
+  voiceOn: 'DJ 음성 켜짐',
+  voiceOff: 'DJ 음성 꺼짐',
+  subtitlesOnly: '자막만',
+  autoDjComingSoon: 'Auto DJ — 곧 출시',
+  intervalCompanion: '30분 동행',
+  personas: {
+    'neon-tokyo': { name: '언더그라운드 DJ', sceneTitle: '블레이드 러너: 네온 비 옥상' },
+    'deep-night': { name: '휴스턴 지상 관제', sceneTitle: 'ISS 관측창' },
+    'deep-space': { name: '잠수함 AI', sceneTitle: '심해 잠수함 3000ft' },
+    'galactic-tavern': { name: '재즈 바텐더', sceneTitle: '1920 스모키 재즈 라운지' },
+    'galactic-classical': { name: '디지털 비서', sceneTitle: '북유럽 글래스 캐빈' },
+    'retro-earth': { name: '아웃도어 탐험가', sceneTitle: '알프스 캠프파이어' },
+  },
+  fallbacks: {
+    'neon-tokyo':
+      '함장님, 네온 도쿄에 오신 것을 환영합니다. 수백만 명이 잠들었지만, 우리의 사이버 밤은 이제 시작입니다. 랜덤 주파수 잠금, 지금 {time}. 전자 파동에 접속해 코드를 마무리합시다.',
+    'deep-night':
+      '안녕하세요, 함장님. 깊은 우주는 고요합니다. 지금 {time}, 지표면의 소음은 완전히 차단되었습니다. 커피 한 잔과 함께 집중 모드로 들어가세요.',
+    'deep-space':
+      '긴장을 풀으세요, 함장님. 수심 3000피트. 외부 소음 차단 완료, 지금 {time}. 심우 저주파에 접속 — 최대 집중 모드로 진입합니다.',
+    'galactic-tavern':
+      '안녕, 오랜 친구. 오늘 바깥은 바빴지? 네 자리로 돌아온 것을 환영해. 음악 블라인드 박스를 준비했어. 지금 {time}. 일정을 이야기할까, 바로 일 시작할까?',
+    'galactic-classical':
+      '함장님, 안녕하세요. 은하 클래식으로 튜닝 완료. 지금 {time}. 미니멀 공간 준비됐습니다 — 우아한 피아노가 오늘 밤의 생산성을 지켜드립니다.',
+    'retro-earth':
+      '시간 점프 성공! 레트로 지구 알프스 캠프에 돌아왔습니다. 모닥불 소리, 지금 {time}. 캠프 방송의 향수 어린 리듬으로 오늘의 항해를 시작합시다.',
+  },
+}
+
+const djEs: DjUiCopy = {
+  label: 'AI DJ',
+  connecting: 'Conectando DJ…',
+  voiceOn: 'Voz DJ activada',
+  voiceOff: 'Voz DJ desactivada',
+  subtitlesOnly: 'Solo subtítulos',
+  autoDjComingSoon: 'Auto DJ — próximamente',
+  intervalCompanion: 'Compañía 30 min',
+  personas: {
+    'neon-tokyo': { name: 'DJ Rebelde Underground', sceneTitle: 'Blade Runner: Azotea bajo la lluvia neón' },
+    'deep-night': { name: 'Comandante de Houston', sceneTitle: 'Cubierta de observación ISS' },
+    'deep-space': { name: 'IA Submarina', sceneTitle: 'Submarino de aguas profundas 3000ft' },
+    'galactic-tavern': { name: 'Camarero de Jazz', sceneTitle: 'Salón de jazz ahumado 1920' },
+    'galactic-classical': { name: 'Secretaria Digital', sceneTitle: 'Cabaña de cristal nórdica' },
+    'retro-earth': { name: 'Explorador Outdoor', sceneTitle: 'Tienda junto a la hoguera alpina' },
+  },
+  fallbacks: {
+    'neon-tokyo':
+      'Capitán, bienvenido a Tokio Neón. Millones duermen, pero nuestra noche cibernética acaba de empezar. Frecuencia aleatoria bloqueada — son las {time}. Conéctate a la onda electrónica y terminemos el código.',
+    'deep-night':
+      'Buenas tardes, Capitán. El cosmos profundo está en silencio; solo queda tu ritmo nocturno. Son las {time}. Ruido superficial aislado — toma un café y entra en modo enfoque.',
+    'deep-space':
+      'Relájate, Capitán. Profundidad: 3000 pies. Ruido externo bloqueado. Son las {time}. Frecuencia de zumbido espacial activada — entrando en máximo enfoque.',
+    'galactic-tavern':
+      'Buenas tardes, viejo amigo. ¿Día ajetreado? Bienvenido a tu rincón. Preparé una caja musical sorpresa — son las {time}. ¿Hablamos de planes o empezamos a trabajar?',
+    'galactic-classical':
+      'Capitán, buenas tardes. Audio sintonizado a clásica galáctica. Son las {time}. Espacio minimalista listo — deja que el piano elegante guarde tu productividad.',
+    'retro-earth':
+      '¡Salto temporal exitoso! De vuelta en el campamento alpino retro. Escucha la hoguera — son las {time}. Ritmos nostálgicos en la radio del campamento. ¡Que comience el viaje!',
+  },
+}
+
+const djFr: DjUiCopy = {
+  label: 'AI DJ',
+  connecting: 'Connexion DJ…',
+  voiceOn: 'Voix DJ activée',
+  voiceOff: 'Voix DJ désactivée',
+  subtitlesOnly: 'Sous-titres seulement',
+  autoDjComingSoon: 'Auto DJ — bientôt',
+  intervalCompanion: 'Compagnon 30 min',
+  personas: {
+    'neon-tokyo': { name: 'DJ Rebelle Underground', sceneTitle: 'Blade Runner : Toit sous la pluie néon' },
+    'deep-night': { name: 'Commandant Houston', sceneTitle: 'Pont d\'observation ISS' },
+    'deep-space': { name: 'IA Sous-marine', sceneTitle: 'Sous-marin des profondeurs 3000ft' },
+    'galactic-tavern': { name: 'Barman Jazz', sceneTitle: 'Salon jazz enfumé 1920' },
+    'galactic-classical': { name: 'Secrétaire Numérique', sceneTitle: 'Cabane vitrée nordique' },
+    'retro-earth': { name: 'Explorateur Outdoor', sceneTitle: 'Tente au feu de camp alpin' },
+  },
+  fallbacks: {
+    'neon-tokyo':
+      'Capitaine, bienvenue à Tokyo Néon. Des millions dorment, mais notre nuit cyber vient de commencer. Fréquence aléatoire verrouillée — il est {time}. Branchez-vous sur l\'onde électronique et finissons le code.',
+    'deep-night':
+      'Bon après-midi, Capitaine. Le cosmos profond est silencieux ; seul votre rythme nocturne reste. Il est {time}. Bruit de surface isolé — prenez un café et entrez en mode focus.',
+    'deep-space':
+      'Détendez-vous, Capitaine. Profondeur : 3000 pieds. Bruit externe bloqué. Il est {time}. Fréquence de bourdonnement spatial activée — concentration maximale.',
+    'galactic-tavern':
+      'Bon après-midi, vieil ami. Journée chargée dehors ? Bienvenue dans votre coin. J\'ai préparé une boîte musicale surprise — il est {time}. On parle plans ou on attaque le travail ?',
+    'galactic-classical':
+      'Capitaine, bon après-midi. Audio réglé sur classique galactique. Il est {time}. Espace minimal prêt — laissez le piano élégant garder votre productivité.',
+    'retro-earth':
+      'Saut temporel réussi ! Retour au camp alpin rétro. Écoutez le feu de camp — il est {time}. Rythmes nostalgiques à la radio du camp. Que le voyage commence !',
+  },
+}
+
+const djDe: DjUiCopy = {
+  label: 'AI DJ',
+  connecting: 'DJ verbindet…',
+  voiceOn: 'DJ-Stimme an',
+  voiceOff: 'DJ-Stimme aus',
+  subtitlesOnly: 'Nur Untertitel',
+  autoDjComingSoon: 'Auto DJ — demnächst',
+  intervalCompanion: '30-Min-Begleitung',
+  personas: {
+    'neon-tokyo': { name: 'Underground-Rebell-DJ', sceneTitle: 'Blade Runner: Neonregen-Dach' },
+    'deep-night': { name: 'Houston-Bodenkommandant', sceneTitle: 'ISS-Beobachtungsdeck' },
+    'deep-space': { name: 'U-Boot-KI', sceneTitle: 'Tiefsee-U-Boot 3000ft' },
+    'galactic-tavern': { name: 'Jazz-Barkeeper', sceneTitle: '1920 Rauchige Jazz-Lounge' },
+    'galactic-classical': { name: 'Digitale Sekretärin', sceneTitle: 'Nordische Glashütte' },
+    'retro-earth': { name: 'Outdoor-Entdecker', sceneTitle: 'Alpines Lagerfeuer-Zelt' },
+  },
+  fallbacks: {
+    'neon-tokyo':
+      'Kapitän, willkommen in Neon Tokio. Millionen schlafen, aber unsere Cyber-Nacht beginnt gerade. Zufallsfrequenz gesperrt — es ist {time}. Schalte dich auf die elektronische Welle und lass uns den Code fertigstellen.',
+    'deep-night':
+      'Guten Tag, Kapitän. Der tiefe Kosmos ist still; nur dein Nachtrhythmus bleibt. Es ist {time}. Oberflächenlärm vollständig isoliert — nimm einen Kaffee und starte den Fokusmodus.',
+    'deep-space':
+      'Entspann dich, Kapitän. Tiefe: 3000 Fuß. Außenlärm abgeschirmt. Es ist {time}. Weltraum-Drone-Frequenz aktiv — maximaler Fokus.',
+    'galactic-tavern':
+      'Guten Tag, alter Freund. Hektischer Tag draußen? Willkommen in deiner Ecke. Ich habe eine musikalische Überraschungsbox gemischt — es ist {time}. Pläne besprechen oder direkt arbeiten?',
+    'galactic-classical':
+      'Kapitän, guten Tag. Audio auf galaktische Klassik eingestellt. Es ist {time}. Minimaler Raum bereit — elegantes Klavier bewacht deine Produktivität.',
+    'retro-earth':
+      'Zeitsprung erfolgreich! Zurück im retro-alpinen Camp. Hör das Lagerfeuer knistern — es ist {time}. Nostalgische Rhythmen im Camp-Radio. Lasst die Reise beginnen!',
+  },
 }
 
 export const DJ_I18N: Record<Language, DjUiCopy> = {
   en: djEn,
   'zh-TW': djZhTw,
   'zh-CN': djZhCn,
-  ja: {
-    ...djEn,
-    label: 'AI DJ',
-    connecting: 'DJ接続中…',
-    voiceOn: 'DJ音声オン',
-    voiceOff: 'DJ音声オフ',
-    subtitlesOnly: '字幕のみ',
-    autoDjComingSoon: 'Auto DJ — 近日公開',
-    intervalCompanion: '30分お付き添い',
-    personas: cloneEnPersonas({
-      'neon-tokyo': { name: 'アンダーグラウンドDJ', sceneTitle: 'ブレードランナー：ネオン雨の屋上' },
-      'deep-night': { name: 'ヒューストン管制官', sceneTitle: 'ISS観測デッキ' },
-      'deep-space': { name: '潜水艦AI', sceneTitle: '深海潜水艦3000ft' },
-      'galactic-tavern': { name: 'ジャズバーテンダー', sceneTitle: '1920スモーキージャズラウンジ' },
-      'galactic-classical': { name: 'デジタル秘書', sceneTitle: '北欧ガラスキャビン' },
-      'retro-earth': { name: 'アウトドア探検家', sceneTitle: 'アルプスキャンプファイア' },
-    }),
-  },
-  ko: {
-    ...djEn,
-    connecting: 'DJ 연결 중…',
-    voiceOn: 'DJ 음성 켜짐',
-    voiceOff: 'DJ 음성 꺼짐',
-    subtitlesOnly: '자막만',
-    autoDjComingSoon: 'Auto DJ — 곧 출시',
-    intervalCompanion: '30분 동행',
-    personas: cloneEnPersonas({
-      'neon-tokyo': { name: '언더그라운드 DJ', sceneTitle: '블레이드 러너: 네온 비 옥상' },
-      'deep-night': { name: '휴스턴 지상 관제', sceneTitle: 'ISS 관측창' },
-      'deep-space': { name: '잠수함 AI', sceneTitle: '심해 잠수함 3000ft' },
-      'galactic-tavern': { name: '재즈 바텐더', sceneTitle: '1920 스모키 재즈 라운지' },
-      'galactic-classical': { name: '디지털 비서', sceneTitle: '북유럽 글래스 캐빈' },
-      'retro-earth': { name: '아웃도어 탐험가', sceneTitle: '알프스 캠프파이어' },
-    }),
-  },
-  es: {
-    ...djEn,
-    connecting: 'Conectando DJ…',
-    voiceOn: 'Voz DJ activada',
-    voiceOff: 'Voz DJ desactivada',
-    subtitlesOnly: 'Solo subtítulos',
-    autoDjComingSoon: 'Auto DJ — próximamente',
-    intervalCompanion: 'Compañía 30 min',
-  },
-  fr: {
-    ...djEn,
-    connecting: 'Connexion DJ…',
-    voiceOn: 'Voix DJ activée',
-    voiceOff: 'Voix DJ désactivée',
-    subtitlesOnly: 'Sous-titres seulement',
-    autoDjComingSoon: 'Auto DJ — bientôt',
-    intervalCompanion: 'Compagnon 30 min',
-  },
-  de: {
-    ...djEn,
-    connecting: 'DJ verbindet…',
-    voiceOn: 'DJ-Stimme an',
-    voiceOff: 'DJ-Stimme aus',
-    subtitlesOnly: 'Nur Untertitel',
-    autoDjComingSoon: 'Auto DJ — demnächst',
-    intervalCompanion: '30-Min-Begleitung',
-  },
+  ja: djJa,
+  ko: djKo,
+  es: djEs,
+  fr: djFr,
+  de: djDe,
 }
+
+export const DJ_SUPPORTED_LANGUAGES = Object.keys(DJ_I18N) as Language[]
 
 export function fillDjTemplate(
   template: string,

@@ -7,12 +7,14 @@ import {
   buildStreamPlaybackUrl,
   defaultStationForMood,
   isMusicOnboarded,
+  isStreamUrlForStation,
   loadFavoriteStations,
   loadSelectedMoods,
   markMusicOnboarded,
   pickInitialStation,
   saveFavoriteStations,
   saveSelectedMoods,
+  shouldPreferStreamProxy,
   toggleFavoriteStation,
   toRadioStation,
   isDefaultStation,
@@ -51,9 +53,11 @@ export function useMusicStation() {
   const failedStationIdsRef = useRef<Set<string>>(new Set())
   const fallbackInProgressRef = useRef(false)
   const currentStationRef = useRef<RadioStation | null>(null)
+  const [streamViaProxy, setStreamViaProxy] = useState(false)
 
   useEffect(() => {
     currentStationRef.current = currentStation
+    setStreamViaProxy(shouldPreferStreamProxy())
   }, [currentStation])
 
   useEffect(() => {
@@ -175,12 +179,19 @@ export function useMusicStation() {
 
       const station = currentStationRef.current
       if (!station) return
-      if (buildStreamPlaybackUrl(station) !== failedStreamUrl) return
+      if (!isStreamUrlForStation(station, failedStreamUrl)) return
 
       fallbackInProgressRef.current = true
-      failedStationIdsRef.current.add(station.stationuuid)
 
       try {
+        if (!streamViaProxy && !shouldPreferStreamProxy()) {
+          setStreamViaProxy(true)
+          fallbackInProgressRef.current = false
+          return
+        }
+
+        failedStationIdsRef.current.add(station.stationuuid)
+
         const moods = selectedMoods.length > 0 ? selectedMoods : loadSelectedMoods()
         const moodId = station.moodId ?? moods[0] ?? 'deep-night'
 
@@ -204,7 +215,7 @@ export function useMusicStation() {
         }, 1500)
       }
     },
-    [applyStation, fetchRandomStation, selectedMoods],
+    [applyStation, fetchRandomStation, selectedMoods, streamViaProxy],
   )
 
   const handlePrevStation = useCallback(() => {
@@ -250,8 +261,8 @@ export function useMusicStation() {
 
   const activeMusicStreamUrl = useMemo(() => {
     if (!currentStation) return ''
-    return buildStreamPlaybackUrl(currentStation)
-  }, [currentStation])
+    return buildStreamPlaybackUrl(currentStation, streamViaProxy)
+  }, [currentStation, streamViaProxy])
 
   const loadStationForWorld = useCallback(
     (worldId: AmbientWorldId) => {

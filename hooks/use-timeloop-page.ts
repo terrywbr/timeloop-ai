@@ -5,6 +5,7 @@ import type { User } from '@supabase/supabase-js'
 import { requestAppFullscreen, requestLandscapeOrientation } from '@/lib/fullscreen'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useOrientation } from '@/hooks/use-orientation'
+import { useClientMounted } from '@/hooks/use-client-mounted'
 import { useAiDj } from '@/hooks/use-ai-dj'
 import { useCompanion } from '@/hooks/use-companion'
 import { useGoogleCalendar } from '@/hooks/use-google-calendar'
@@ -64,7 +65,8 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   const [showRegionPrompt, setShowRegionPrompt] = useState(false)
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const isMobile = useIsMobile()
-  const { isLandscape } = useOrientation()
+  const { isLandscape, isMobilePortrait } = useOrientation()
+  const isClientMounted = useClientMounted()
 
   const {
     aiDj,
@@ -164,8 +166,10 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     }
   }, [music.activeMusicStreamUrl, musicVolume])
 
-  const showMusicOnboarding = !music.musicOnboarded
-  const showCockpit = music.musicOnboarded && (!isMobile || isLandscape)
+  const showPortraitRotateGate = isClientMounted && isMobilePortrait
+  const showMobileLandscapeUi = isClientMounted && (!isMobile || isLandscape)
+  const showMusicOnboarding = showMobileLandscapeUi && !music.musicOnboarded
+  const showCockpit = showMobileLandscapeUi && music.musicOnboarded
   const preferCreditPack = regionPreference === 'cn' || isCnHost
 
   const handleCompanionEvent = useCallback(
@@ -682,10 +686,13 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     savedWorlds,
     activeWorldId,
     showRegionPrompt,
+    showPortraitRotateGate,
     showMusicOnboarding,
     showCockpit,
     preferCreditPack,
+    isClientMounted,
     isMobile,
+    isMobilePortrait,
     ambientLayers,
     activeMusicStreamUrl,
     activeAmbienceUrl,

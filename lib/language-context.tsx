@@ -1,10 +1,16 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react'
+import { createContext, useContext, useState, useMemo, type ReactNode } from 'react'
 import { type Language, translations } from './translations'
 import { MUSIC_I18N } from './music-i18n'
 import { DJ_I18N } from './dj-i18n'
 import { COMPANION_I18N } from './companion-i18n'
+import {
+  FALLBACK_LANGUAGE,
+  LANGUAGE_STORAGE_KEY,
+  getInitialLanguage,
+  isSupportedLanguage,
+} from './resolve-language'
 
 type MergedTranslations = typeof translations['en'] & {
   music: typeof translations['en']['music'] & (typeof MUSIC_I18N)['en']
@@ -21,39 +27,13 @@ type LanguageContextType = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>('en')
-
-  useEffect(() => {
-    // Try to detect browser language
-    const browserLang = navigator.language
-    if (browserLang.startsWith('zh')) {
-      if (browserLang.includes('TW') || browserLang.includes('HK')) {
-        setLanguage('zh-TW')
-      } else {
-        setLanguage('zh-CN')
-      }
-    } else if (browserLang.startsWith('ja')) {
-      setLanguage('ja')
-    } else if (browserLang.startsWith('ko')) {
-      setLanguage('ko')
-    } else if (browserLang.startsWith('es')) {
-      setLanguage('es')
-    } else if (browserLang.startsWith('fr')) {
-      setLanguage('fr')
-    } else if (browserLang.startsWith('de')) {
-      setLanguage('de')
-    }
-    
-    // Check localStorage for saved preference
-    const saved = localStorage.getItem('timeloop-language') as Language
-    if (saved && translations[saved]) {
-      setLanguage(saved)
-    }
-  }, [])
+  const [language, setLanguage] = useState<Language>(() =>
+    typeof window !== 'undefined' ? getInitialLanguage() : FALLBACK_LANGUAGE,
+  )
 
   const handleSetLanguage = (lang: Language) => {
     setLanguage(lang)
-    localStorage.setItem('timeloop-language', lang)
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, lang)
   }
 
   const t = useMemo(
@@ -89,3 +69,5 @@ export function useLanguage() {
   }
   return context
 }
+
+export { isSupportedLanguage, resolveLanguageFromBrowser } from './resolve-language'

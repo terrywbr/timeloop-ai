@@ -14,6 +14,7 @@ import TimeloopMobileDrawers from '@/components/timeloop/mobile-drawers'
 import MusicMoodOnboarding from '@/components/music/music-mood-onboarding'
 import NowPlayingTuner from '@/components/music/now-playing-tuner'
 import AiDjOverlay from '@/components/music/ai-dj-overlay'
+import PortraitRotateOverlay from '@/components/portrait-rotate-overlay'
 import { LanguageProvider } from '@/lib/language-context'
 
 function TimeLoopPageInner() {
@@ -31,6 +32,12 @@ function TimeLoopPageInner() {
 
   return (
     <>
+      {!page.isClientMounted ? (
+        <div className="fixed inset-0 z-[240] bg-zinc-950" aria-hidden />
+      ) : null}
+
+      {page.showPortraitRotateGate ? <PortraitRotateOverlay /> : null}
+
       {page.showMusicOnboarding ? (
         <MusicMoodOnboarding onComplete={page.handleCompleteMusicOnboarding} />
       ) : null}

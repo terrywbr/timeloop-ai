@@ -22,6 +22,7 @@ import {
   shouldGreetToday,
 } from '@/lib/dj-settings'
 import { isDjTtsSupported, primeDjVoices, speakDjText, stopDjSpeech } from '@/lib/dj-tts'
+import { speechLangForLocale } from '@/lib/dj-speech-locale'
 
 export type AiDjState = {
   visible: boolean
@@ -176,7 +177,7 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
       const hideDelay = sessionType === 'interval' ? 7000 : 9000
       const speechProfile = {
         ...persona.speechProfile,
-        lang: locale.startsWith('zh') ? locale : locale === 'ja' ? 'ja-JP' : locale === 'ko' ? 'ko-KR' : 'en-US',
+        lang: speechLangForLocale(locale),
       }
 
       if (voiceEnabled && isDjTtsSupported()) {

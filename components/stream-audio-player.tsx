@@ -14,7 +14,9 @@ type StreamAudioPlayerProps = {
 }
 
 const CROSSFADE_DURATION_MS = 2200
-const STALL_CHECK_MS = 12000
+const STALL_CHECK_MS = 20000
+const MAX_SOFT_RECONNECTS = 3
+const SOFT_RECONNECT_DELAY_MS = 800
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
 const toAudioVolume = (volume: number) => clamp01(volume / 100)
@@ -37,6 +39,9 @@ export default function StreamAudioPlayer({
   const mutedRef = useRef(muted)
   const animationFrameRef = useRef<number | null>(null)
   const stallTimerRef = useRef<number | null>(null)
+  const softReconnectTimerRef = useRef<number | null>(null)
+  const softReconnectCountRef = useRef(0)
+  const lastProgressAtRef = useRef(0)
   const onPlaybackErrorRef = useRef(onPlaybackError)
 
   useEffect(() => {
@@ -52,8 +57,21 @@ export default function StreamAudioPlayer({
     }
   }
 
+  const clearSoftReconnectTimer = () => {
+    if (softReconnectTimerRef.current !== null) {
+      window.clearTimeout(softReconnectTimerRef.current)
+      softReconnectTimerRef.current = null
+    }
+  }
+
   const reportFailure = (url: string) => {
+    softReconnectCountRef.current = 0
     onPlaybackErrorRef.current?.(url)
+  }
+
+  const markProgress = () => {
+    lastProgressAtRef.current = Date.now()
+    softReconnectCountRef.current = 0
   }
 
   const scheduleStallCheck = (url: string, audio: HTMLAudioElement) => {
@@ -62,14 +80,53 @@ export default function StreamAudioPlayer({
 
     stallTimerRef.current = window.setTimeout(() => {
       if (currentStreamUrlRef.current !== url) return
+
+      const silentTooLong = Date.now() - lastProgressAtRef.current > STALL_CHECK_MS - 2000
       const stuck =
-        audio.paused ||
         audio.error !== null ||
-        (audio.readyState >= 2 && audio.currentTime < 0.5)
+        (playingRef.current && !mutedRef.current && (audio.paused || silentTooLong))
+
       if (stuck) {
-        reportFailure(url)
+        attemptSoftReconnect(url, audio)
+      } else {
+        scheduleStallCheck(url, audio)
       }
     }, STALL_CHECK_MS)
+  }
+
+  const attemptSoftReconnect = (url: string, audio: HTMLAudioElement) => {
+    if (!playingRef.current || currentStreamUrlRef.current !== url) return
+
+    if (softReconnectCountRef.current >= MAX_SOFT_RECONNECTS) {
+      reportFailure(url)
+      return
+    }
+
+    softReconnectCountRef.current += 1
+    clearStallTimer()
+    clearSoftReconnectTimer()
+
+    softReconnectTimerRef.current = window.setTimeout(() => {
+      if (currentStreamUrlRef.current !== url || !playingRef.current) return
+
+      audio.volume = activeIndexRef.current === (audio === primaryAudioRef.current ? 0 : 1)
+        ? targetVolumeRef.current
+        : 0
+      audio.muted = mutedRef.current
+      audio.src = url
+      audio.load()
+
+      void audio
+        .play()
+        .then(() => {
+          stopPrimedStreamAudio()
+          markProgress()
+          scheduleStallCheck(url, audio)
+        })
+        .catch(() => {
+          attemptSoftReconnect(url, audio)
+        })
+    }, SOFT_RECONNECT_DELAY_MS)
   }
 
   const stopFade = () => {
@@ -145,14 +202,42 @@ export default function StreamAudioPlayer({
     const handleError = (event: Event) => {
       const target = event.currentTarget as HTMLAudioElement
       const url = target.dataset.streamUrl ?? currentStreamUrlRef.current
-      if (url) reportFailure(url)
+      if (url) attemptSoftReconnect(url, target)
     }
 
-    primary.addEventListener('error', handleError)
-    secondary.addEventListener('error', handleError)
+    const handleStreamInterrupt = (event: Event) => {
+      const target = event.currentTarget as HTMLAudioElement
+      const url = target.dataset.streamUrl ?? currentStreamUrlRef.current
+      if (!url || !playingRef.current) return
+      if (target !== getAudio(activeIndexRef.current)) return
+      if (Date.now() - lastProgressAtRef.current < 8000) return
+      attemptSoftReconnect(url, target)
+    }
+
+    const handleTimeUpdate = (event: Event) => {
+      const target = event.currentTarget as HTMLAudioElement
+      if (target !== getAudio(activeIndexRef.current)) return
+      markProgress()
+    }
+
+    for (const audio of [primary, secondary]) {
+      audio.addEventListener('error', handleError)
+      audio.addEventListener('stalled', handleStreamInterrupt)
+      audio.addEventListener('waiting', handleStreamInterrupt)
+      audio.addEventListener('ended', handleStreamInterrupt)
+      audio.addEventListener('timeupdate', handleTimeUpdate)
+      audio.addEventListener('playing', markProgress)
+    }
+
     return () => {
-      primary.removeEventListener('error', handleError)
-      secondary.removeEventListener('error', handleError)
+      for (const audio of [primary, secondary]) {
+        audio.removeEventListener('error', handleError)
+        audio.removeEventListener('stalled', handleStreamInterrupt)
+        audio.removeEventListener('waiting', handleStreamInterrupt)
+        audio.removeEventListener('ended', handleStreamInterrupt)
+        audio.removeEventListener('timeupdate', handleTimeUpdate)
+        audio.removeEventListener('playing', markProgress)
+      }
     }
   }, [])
 
@@ -164,6 +249,8 @@ export default function StreamAudioPlayer({
     if (!streamUrl) {
       currentStreamUrlRef.current = ''
       clearStallTimer()
+      clearSoftReconnectTimer()
+      softReconnectCountRef.current = 0
       stopFade()
       primary.pause()
       secondary.pause()
@@ -183,6 +270,8 @@ export default function StreamAudioPlayer({
     if (!previousAudio || !nextAudio) return
 
     currentStreamUrlRef.current = streamUrl
+    softReconnectCountRef.current = 0
+    lastProgressAtRef.current = Date.now()
     nextAudio.dataset.streamUrl = streamUrl
     nextAudio.src = streamUrl
     nextAudio.load()
@@ -199,6 +288,7 @@ export default function StreamAudioPlayer({
       .play()
       .then(() => {
         stopPrimedStreamAudio()
+        markProgress()
         scheduleStallCheck(streamUrl, nextAudio)
       })
       .catch(() => {
@@ -229,6 +319,7 @@ export default function StreamAudioPlayer({
         .play()
         .then(() => {
           stopPrimedStreamAudio()
+          markProgress()
           scheduleStallCheck(currentStreamUrlRef.current, activeAudio)
         })
         .catch(() => {
@@ -241,6 +332,7 @@ export default function StreamAudioPlayer({
       )
     } else {
       clearStallTimer()
+      clearSoftReconnectTimer()
       fadeVolumes(0, 0, CROSSFADE_DURATION_MS, () => {
         primaryAudioRef.current?.pause()
         secondaryAudioRef.current?.pause()
@@ -258,6 +350,7 @@ export default function StreamAudioPlayer({
         .play()
         .then(() => {
           stopPrimedStreamAudio()
+          markProgress()
         })
         .catch(() => {})
     }
@@ -274,6 +367,7 @@ export default function StreamAudioPlayer({
     return () => {
       stopFade()
       clearStallTimer()
+      clearSoftReconnectTimer()
     }
   }, [])
 
@@ -286,7 +380,7 @@ export default function StreamAudioPlayer({
         loop={loop}
         muted={muted}
         playsInline
-        preload="none"
+        preload="auto"
       />
       <audio
         ref={secondaryAudioRef}
@@ -295,7 +389,7 @@ export default function StreamAudioPlayer({
         loop={loop}
         muted={muted}
         playsInline
-        preload="none"
+        preload="auto"
       />
     </>
   )

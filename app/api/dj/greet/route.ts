@@ -10,6 +10,7 @@ import {
 import { isMusicMoodId, type MusicMoodId } from '@/lib/music-moods'
 import type { DjSessionType, DjSpeakContext } from '@/lib/dj-types'
 import { togetherChatCompletion } from '@/lib/together-chat'
+import { LOCALE_RESPONSE_INSTRUCTION } from '@/lib/dj-speech-locale'
 import type { Language } from '@/lib/translations'
 
 export const runtime = 'nodejs'
@@ -102,10 +103,7 @@ function buildUserContext(
   locale: Language,
   context?: DjSpeakContext,
 ): string {
-  const localeInstruction =
-    locale.startsWith('zh') || locale === 'ja' || locale === 'ko'
-      ? `Respond in ${locale} language.`
-      : `Respond in ${locale}.`
+  const localeInstruction = LOCALE_RESPONSE_INSTRUCTION[locale]
 
   const lines: string[] = [`Mood: ${moodId}`, `Local time: ${localTime}`, localeInstruction]
 
