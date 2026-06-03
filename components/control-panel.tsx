@@ -6,6 +6,8 @@ import {
   Pause,
   Volume2,
   VolumeX,
+  Mic,
+  MicOff,
   Download,
   Settings,
   Sparkles,
@@ -26,6 +28,9 @@ import type { RadioStation } from '@/lib/radio-station'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import type { UserAccountProfile } from '@/lib/api-client'
 import GoogleSignInButton from '@/components/google-sign-in-button'
+import CompanionPanel from '@/components/companion/companion-panel'
+import type { useCompanion } from '@/hooks/use-companion'
+import type { useGoogleCalendar } from '@/hooks/use-google-calendar'
 import {
   exitAppFullscreen,
   getFullscreenElement,
@@ -51,6 +56,12 @@ interface ControlPanelProps {
   onPlayFavorite: (station: RadioStation) => void
   onRemoveFavorite: (stationuuid: string) => void
   onReopenMusicOnboarding: () => void
+  djVoiceEnabled: boolean
+  onDjVoiceEnabledChange: (enabled: boolean) => void
+  djIntervalEnabled: boolean
+  onDjIntervalEnabledChange: (enabled: boolean) => void
+  companion: ReturnType<typeof useCompanion>
+  calendar: ReturnType<typeof useGoogleCalendar>
   isMusicPlaying: boolean
   onMusicPlayingChange: (playing: boolean) => void
   musicVolume: number
@@ -86,6 +97,12 @@ export default function ControlPanel({
   onPlayFavorite,
   onRemoveFavorite,
   onReopenMusicOnboarding,
+  djVoiceEnabled,
+  onDjVoiceEnabledChange,
+  djIntervalEnabled,
+  onDjIntervalEnabledChange,
+  companion,
+  calendar,
   isMusicPlaying,
   onMusicPlayingChange: setIsMusicPlaying,
   musicVolume,
@@ -339,11 +356,38 @@ export default function ControlPanel({
 
           {/* Music Player Section */}
           <div className="mb-6 space-y-3">
-            <div className="flex items-center gap-2">
-              <div className={`flex h-6 w-6 items-center justify-center ${isMusicPlaying ? 'animate-pulse' : ''}`}>
-                <Music2 className={`h-4 w-4 text-accent transition-all ${isMusicPlaying ? 'scale-110' : ''}`} />
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className={`flex h-6 w-6 items-center justify-center ${isMusicPlaying ? 'animate-pulse' : ''}`}>
+                  <Music2 className={`h-4 w-4 text-accent transition-all ${isMusicPlaying ? 'scale-110' : ''}`} />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground">{t.music.title}</span>
               </div>
-              <span className="text-xs font-medium text-muted-foreground">{t.music.title}</span>
+              <button
+                type="button"
+                onClick={() => onDjIntervalEnabledChange(!djIntervalEnabled)}
+                title={t.dj.intervalCompanion}
+                className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] transition-all ${
+                  djIntervalEnabled
+                    ? 'border-accent/40 bg-accent/10 text-accent'
+                    : 'border-foreground/10 bg-secondary/30 text-muted-foreground'
+                }`}
+              >
+                <span>{t.dj.intervalCompanion}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onDjVoiceEnabledChange(!djVoiceEnabled)}
+                title={djVoiceEnabled ? t.dj.voiceOn : t.dj.voiceOff}
+                className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] transition-all ${
+                  djVoiceEnabled
+                    ? 'border-accent/40 bg-accent/10 text-accent'
+                    : 'border-foreground/10 bg-secondary/30 text-muted-foreground'
+                }`}
+              >
+                {djVoiceEnabled ? <Mic className="h-3 w-3" /> : <MicOff className="h-3 w-3" />}
+                <span>{t.dj.label}</span>
+              </button>
             </div>
             
             <div className="space-y-2">
@@ -442,6 +486,23 @@ export default function ControlPanel({
             {/* Station list removed — use Next to discover global stations */}
 
           </div>
+
+          <CompanionPanel
+            pomodoro={companion.pomodoro}
+            onStartPomodoro={companion.startPomodoroTimer}
+            onPausePomodoro={companion.pausePomodoroTimer}
+            onResetPomodoro={companion.resetPomodoroTimer}
+            onSkipPomodoro={companion.skipPomodoroTimer}
+            alarms={companion.alarms}
+            onAddAlarm={companion.addAlarm}
+            onRemoveAlarm={companion.removeAlarm}
+            onToggleAlarm={companion.toggleAlarm}
+            calendarEvents={calendar.calendarEvents}
+            calendarConnected={calendar.calendarConnected}
+            calendarLoading={calendar.calendarLoading}
+            isAuthenticated={isAuthenticated}
+            onConnectCalendar={() => void calendar.connectCalendar()}
+          />
 
           {/* My Favorites Section */}
           <div className="mb-6 space-y-2">

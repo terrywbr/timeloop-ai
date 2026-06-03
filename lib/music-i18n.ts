@@ -12,6 +12,7 @@ export type MusicExtensionCopy = {
     title: string
     subtitle: string
     next: string
+    rotateHint: string
   }
   changeMoods: string
   nextStation: string
@@ -145,6 +146,7 @@ export const MUSIC_I18N: Record<Language, MusicExtensionCopy> = {
       title: 'Choose your music moods',
       subtitle: 'Select one or more — Next will tune random stations from your picks.',
       next: 'Next',
+      rotateHint: 'Rotate your device to landscape for the best view.',
     },
     changeMoods: 'Change music moods',
     nextStation: 'Next station',
@@ -156,6 +158,7 @@ export const MUSIC_I18N: Record<Language, MusicExtensionCopy> = {
       title: '選擇你喜歡的音樂情境',
       subtitle: '可複選多個 — 點 Next 將依偏好隨機調頻全球電台。',
       next: 'Next',
+      rotateHint: '建議將手機轉為橫向以獲得最佳瀏覽體驗。',
     },
     changeMoods: '重新選擇音樂情境',
     nextStation: '下一台',
@@ -167,6 +170,7 @@ export const MUSIC_I18N: Record<Language, MusicExtensionCopy> = {
       title: '选择你喜欢的音乐情境',
       subtitle: '可多选 — 点 Next 将依偏好随机调频全球电台。',
       next: 'Next',
+      rotateHint: '建议将手机转为横向以获得最佳浏览体验。',
     },
     changeMoods: '重新选择音乐情境',
     nextStation: '下一台',
@@ -174,35 +178,60 @@ export const MUSIC_I18N: Record<Language, MusicExtensionCopy> = {
     moods: moodZhCn,
   },
   ja: {
-    onboarding: { title: '音楽ムードを選択', subtitle: '複数選択可 — Nextで好みの局からランダム再生。', next: 'Next' },
+    onboarding: {
+      title: '音楽ムードを選択',
+      subtitle: '複数選択可 — Nextで好みの局からランダム再生。',
+      next: 'Next',
+      rotateHint: '横向きに回転すると見やすくなります。',
+    },
     changeMoods: 'ムードを変更',
     nextStation: '次の局',
     scanning: '周波数をスキャン中…',
     moods: moodJa,
   },
   ko: {
-    onboarding: { title: '음악 무드 선택', subtitle: '복수 선택 가능 — Next로 무작위 방송.', next: 'Next' },
+    onboarding: {
+      title: '음악 무드 선택',
+      subtitle: '복수 선택 가능 — Next로 무작위 방송.',
+      next: 'Next',
+      rotateHint: '가로 모드로 회전하면 더 보기 좋습니다.',
+    },
     changeMoods: '무드 변경',
     nextStation: '다음 방송',
     scanning: '주파수 스캔 중…',
     moods: moodKo,
   },
   es: {
-    onboarding: { title: 'Elige tus moods musicales', subtitle: 'Selección múltiple — Next sintoniza al azar.', next: 'Next' },
+    onboarding: {
+      title: 'Elige tus moods musicales',
+      subtitle: 'Selección múltiple — Next sintoniza al azar.',
+      next: 'Next',
+      rotateHint: 'Gira el dispositivo a horizontal para una mejor vista.',
+    },
     changeMoods: 'Cambiar moods',
     nextStation: 'Siguiente emisora',
     scanning: 'Escaneando frecuencias…',
     moods: moodEs,
   },
   fr: {
-    onboarding: { title: 'Choisissez vos ambiances', subtitle: 'Sélection multiple — Next règle au hasard.', next: 'Next' },
+    onboarding: {
+      title: 'Choisissez vos ambiances',
+      subtitle: 'Sélection multiple — Next règle au hasard.',
+      next: 'Next',
+      rotateHint: 'Pivotez en paysage pour une meilleure vue.',
+    },
     changeMoods: 'Changer les ambiances',
     nextStation: 'Station suivante',
     scanning: 'Balayage des fréquences…',
     moods: moodFr,
   },
   de: {
-    onboarding: { title: 'Musikstimmungen wählen', subtitle: 'Mehrfachauswahl — Next wählt zufällig.', next: 'Next' },
+    onboarding: {
+      title: 'Musikstimmungen wählen',
+      subtitle: 'Mehrfachauswahl — Next wählt zufällig.',
+      next: 'Next',
+      rotateHint: 'Drehen Sie das Gerät ins Querformat für die beste Ansicht.',
+    },
     changeMoods: 'Stimmungen ändern',
     nextStation: 'Nächster Sender',
     scanning: 'Frequenzen scannen…',

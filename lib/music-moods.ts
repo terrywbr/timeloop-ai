@@ -22,7 +22,7 @@ export type MusicMoodConfig = {
 export const MUSIC_MOODS: MusicMoodConfig[] = [
   {
     id: 'neon-tokyo',
-    tags: ['synthwave', 'cyberpunk', 'electronic'],
+    tags: ['synthwave', 'retrowave', 'darksynth', 'electronic'],
     defaultStation: {
       stationuuid: 'default-neon-tokyo',
       name: 'Synphaera Radio',
@@ -31,7 +31,7 @@ export const MUSIC_MOODS: MusicMoodConfig[] = [
   },
   {
     id: 'deep-night',
-    tags: ['lofi', 'chillhop', 'chill'],
+    tags: ['space', 'ambient', 'cosmic', 'piano'],
     defaultStation: {
       stationuuid: 'default-deep-night',
       name: 'Groove Salad',
@@ -40,7 +40,7 @@ export const MUSIC_MOODS: MusicMoodConfig[] = [
   },
   {
     id: 'deep-space',
-    tags: ['ambient', 'drone', 'space'],
+    tags: ['ambient', 'drone', 'deep', 'dark'],
     defaultStation: {
       stationuuid: 'default-deep-space',
       name: 'Drone Zone',
@@ -49,7 +49,7 @@ export const MUSIC_MOODS: MusicMoodConfig[] = [
   },
   {
     id: 'galactic-tavern',
-    tags: ['jazz', 'blues'],
+    tags: ['jazz', 'blues', 'lounge', 'vintage'],
     defaultStation: {
       stationuuid: 'default-galactic-tavern',
       name: 'Secret Agent',
@@ -58,7 +58,7 @@ export const MUSIC_MOODS: MusicMoodConfig[] = [
   },
   {
     id: 'galactic-classical',
-    tags: ['classical', 'piano'],
+    tags: ['lofi', 'chillhop', 'classical', 'piano'],
     defaultStation: {
       stationuuid: 'default-galactic-classical',
       name: 'Lush',
@@ -67,7 +67,7 @@ export const MUSIC_MOODS: MusicMoodConfig[] = [
   },
   {
     id: 'retro-earth',
-    tags: ['80s', '90s', 'retro'],
+    tags: ['folk', 'acoustic', 'nature', 'campfire'],
     defaultStation: {
       stationuuid: 'default-retro-earth',
       name: 'PopTron',

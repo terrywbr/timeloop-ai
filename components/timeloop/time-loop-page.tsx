@@ -1,8 +1,10 @@
 'use client'
 
+import { useLanguage } from '@/lib/language-context'
+import type { MusicMoodId } from '@/lib/music-moods'
+import { useTimeloopPage } from '@/hooks/use-timeloop-page'
 import ControlPanel from '@/components/control-panel'
 import AudioUnlockButton from '@/components/audio-unlock-button'
-import MobileEntryGate from '@/components/mobile-entry-gate'
 import CommunityGallery from '@/components/community-gallery'
 import StreamAudioPlayer from '@/components/stream-audio-player'
 import AmbientBackground from '@/components/timeloop/ambient-background'
@@ -11,11 +13,15 @@ import RegionPrompt from '@/components/timeloop/region-prompt'
 import TimeloopMobileDrawers from '@/components/timeloop/mobile-drawers'
 import MusicMoodOnboarding from '@/components/music/music-mood-onboarding'
 import NowPlayingTuner from '@/components/music/now-playing-tuner'
+import AiDjOverlay from '@/components/music/ai-dj-overlay'
 import { LanguageProvider } from '@/lib/language-context'
-import { useTimeloopPage } from '@/hooks/use-timeloop-page'
 
-export default function TimeLoopPage() {
-  const page = useTimeloopPage()
+function TimeLoopPageInner() {
+  const { language, t } = useLanguage()
+  const page = useTimeloopPage({
+    language,
+    getDjPersonaName: (moodId: MusicMoodId) => t.dj.personas[moodId].name,
+  })
 
   const handleToggleFavorite = () => {
     if (page.currentStation) {
@@ -24,18 +30,16 @@ export default function TimeLoopPage() {
   }
 
   return (
-    <LanguageProvider>
-      {page.showMobileGate ? <MobileEntryGate onTap={page.handleMobileGateTap} /> : null}
-
+    <>
       {page.showMusicOnboarding ? (
         <MusicMoodOnboarding onComplete={page.handleCompleteMusicOnboarding} />
       ) : null}
 
-      {page.pastMobileGate && page.activeMusicStreamUrl ? (
+      {page.musicOnboarded && page.activeMusicStreamUrl ? (
         <StreamAudioPlayer
           streamUrl={page.activeMusicStreamUrl}
           playing={page.isMusicPlaying}
-          volume={page.musicVolume}
+          volume={page.effectiveMusicVolume}
           muted={!page.isAudioUnlocked}
           onPlaybackError={(url) => void page.handleStreamFailure(url)}
         />
@@ -54,6 +58,7 @@ export default function TimeLoopPage() {
           />
 
           <NowPlayingTuner station={page.tunerStation} />
+          <AiDjOverlay aiDj={page.aiDj} onDismiss={page.dismissAiDj} />
 
           {!page.isAudioUnlocked && !page.isMobile && !page.musicOnboarded ? (
             <AudioUnlockButton onUnlock={page.handleUnlockAudio} />
@@ -83,7 +88,13 @@ export default function TimeLoopPage() {
             onToggleFavorite={handleToggleFavorite}
             onPlayFavorite={page.handlePlayFavorite}
             onRemoveFavorite={page.handleRemoveFavorite}
-            onReopenMusicOnboarding={page.reopenMusicOnboarding}
+            onReopenMusicOnboarding={page.handleReopenMusicOnboarding}
+            djVoiceEnabled={page.aiDj.voiceEnabled}
+            onDjVoiceEnabledChange={page.setDjVoiceEnabled}
+            djIntervalEnabled={page.aiDj.intervalEnabled}
+            onDjIntervalEnabledChange={page.setDjIntervalEnabled}
+            companion={page.companion}
+            calendar={page.calendar}
             isMusicPlaying={page.isMusicPlaying}
             onMusicPlayingChange={page.handleMusicPlayingChange}
             musicVolume={page.musicVolume}
@@ -124,7 +135,13 @@ export default function TimeLoopPage() {
             onToggleFavorite={handleToggleFavorite}
             onPlayFavorite={page.handlePlayFavorite}
             onRemoveFavorite={page.handleRemoveFavorite}
-            onReopenMusicOnboarding={page.reopenMusicOnboarding}
+            onReopenMusicOnboarding={page.handleReopenMusicOnboarding}
+            djVoiceEnabled={page.aiDj.voiceEnabled}
+            onDjVoiceEnabledChange={page.setDjVoiceEnabled}
+            djIntervalEnabled={page.aiDj.intervalEnabled}
+            onDjIntervalEnabledChange={page.setDjIntervalEnabled}
+            companion={page.companion}
+            calendar={page.calendar}
             isMusicPlaying={page.isMusicPlaying}
             onMusicPlayingChange={page.handleMusicPlayingChange}
             musicVolume={page.musicVolume}
@@ -144,6 +161,14 @@ export default function TimeLoopPage() {
           {page.isGenerating ? <GeneratingOverlay /> : null}
         </main>
       ) : null}
+    </>
+  )
+}
+
+export default function TimeLoopPage() {
+  return (
+    <LanguageProvider>
+      <TimeLoopPageInner />
     </LanguageProvider>
   )
 }

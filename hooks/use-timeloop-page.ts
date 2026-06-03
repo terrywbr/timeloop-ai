@@ -5,9 +5,17 @@ import type { User } from '@supabase/supabase-js'
 import { requestAppFullscreen, requestLandscapeOrientation } from '@/lib/fullscreen'
 import { useIsMobile } from '@/hooks/use-mobile'
 import { useOrientation } from '@/hooks/use-orientation'
+import { useAiDj } from '@/hooks/use-ai-dj'
+import { useCompanion } from '@/hooks/use-companion'
+import { useGoogleCalendar } from '@/hooks/use-google-calendar'
+import type { CompanionEvent } from '@/lib/companion/types'
+import { DJ_INTERVAL_MS } from '@/lib/dj-types'
+import { markIntervalSpoken, shouldSpeakInterval, clearGreetDate } from '@/lib/dj-settings'
+import type { Language } from '@/lib/translations'
 import { type SceneGalleryItem as GallerySceneItem } from '@/lib/scene-gallery-data'
 import { useMusicStation } from '@/hooks/use-music-station'
 import type { MusicMoodId } from '@/lib/music-moods'
+import { resolveMoodWorldLayer } from '@/lib/mood-worlds'
 import { createSupabaseBrowserClient } from '@/lib/supabase-client'
 import { signInWithGoogle } from '@/lib/auth-google'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
@@ -20,19 +28,21 @@ import {
   type UserAccountProfile,
 } from '@/lib/api-client'
 import type { VideoBackgroundRef } from '@/components/ui/video-background'
-import {
-  AMBIENCE_AUDIO_SOURCES,
-  AMBIENCE_VOLUME_RATIO,
-  MOBILE_GESTURE_SESSION_KEY,
-} from '@/lib/timeloop/constants'
+import { AMBIENCE_AUDIO_SOURCES, AMBIENCE_VOLUME_RATIO } from '@/lib/timeloop/constants'
 import type { AmbientWorldLayer, GalleryWorldAssets, GenerateApiResponse } from '@/lib/timeloop/types'
 import { resolveParticlePreset, resolvePresetWorld } from '@/lib/timeloop/world-resolver'
 import { buildStreamPlaybackUrl } from '@/lib/radio-station'
 import { primeStreamAudio } from '@/lib/prime-stream-audio'
 
-export function useTimeloopPage() {
+type UseTimeloopPageOptions = {
+  language: Language
+  getDjPersonaName: (moodId: MusicMoodId) => string
+}
+
+export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageOptions) {
   const music = useMusicStation()
   const videoRef = useRef<VideoBackgroundRef>(null)
+  const greetTriggeredRef = useRef(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [leftPanelExpanded, setLeftPanelExpanded] = useState(false)
   const [rightPanelExpanded, setRightPanelExpanded] = useState(false)
@@ -41,7 +51,9 @@ export function useTimeloopPage() {
   const [isMusicPlaying, setIsMusicPlaying] = useState(false)
   const [isAudioUnlocked, setIsAudioUnlocked] = useState(false)
   const [musicVolume, setMusicVolume] = useState(70)
-  const [currentWorldId, setCurrentWorldId] = useState('cyberpunk')
+  const [musicDuckActive, setMusicDuckActive] = useState(false)
+  const [worldOverrideActive, setWorldOverrideActive] = useState(false)
+  const [currentWorldId, setCurrentWorldId] = useState('neon-tokyo')
   const [currentGalleryAssets, setCurrentGalleryAssets] = useState<GalleryWorldAssets | null>(null)
   const [authUser, setAuthUser] = useState<User | null>(null)
   const [userProfile, setUserProfile] = useState<UserAccountProfile | null>(null)
@@ -50,32 +62,50 @@ export function useTimeloopPage() {
   const [regionPreference, setRegionPreference] = useState<'global' | 'cn' | null>(null)
   const [isCnHost, setIsCnHost] = useState(false)
   const [showRegionPrompt, setShowRegionPrompt] = useState(false)
-  const [hasUserGestured, setHasUserGestured] = useState(false)
+  const [accessToken, setAccessToken] = useState<string | null>(null)
   const isMobile = useIsMobile()
   const { isLandscape } = useOrientation()
-  const supabase = useMemo(() => {
-    try {
-      return createSupabaseBrowserClient()
-    } catch (error) {
-      console.warn('[auth] Supabase client unavailable:', error)
-      return null
-    }
-  }, [])
+
+  const {
+    aiDj,
+    speakLine,
+    triggerGreeting,
+    setVoiceEnabled,
+    setIntervalEnabled,
+    resetGreetSchedule,
+    dismiss: dismissAiDj,
+    isBusy,
+  } = useAiDj({
+    locale: language,
+    getPersonaName: getDjPersonaName,
+    onDuckMusic: setMusicDuckActive,
+  })
+
+  const effectiveMusicVolume = musicDuckActive ? Math.round(musicVolume * 0.7) : musicVolume
+
+  const moodAmbientLayer = useMemo(() => {
+    if (worldOverrideActive || !music.primaryMood) return null
+    return resolveMoodWorldLayer(music.primaryMood)
+  }, [music.primaryMood, worldOverrideActive])
+
   const presetWorld = resolvePresetWorld(currentWorldId, currentGalleryAssets?.particlePreset)
-  const activeBackgroundImage = currentGalleryAssets?.backgroundImage ?? presetWorld.backgroundImage
-  const activeDepthMap = currentGalleryAssets?.depthMap ?? presetWorld.depthMap
-  const activeParticlePreset = resolveParticlePreset(
-    currentGalleryAssets?.particlePreset,
-    presetWorld.particlePreset,
-  )
-  const activeShaderPreset = presetWorld.shaderPreset
-  const activeAmbienceAudio = presetWorld.ambienceAudio
+  const activeBackgroundImage =
+    moodAmbientLayer?.backgroundImage ??
+    currentGalleryAssets?.backgroundImage ??
+    presetWorld.backgroundImage
+  const activeDepthMap =
+    moodAmbientLayer?.depthMap ?? currentGalleryAssets?.depthMap ?? presetWorld.depthMap
+  const activeParticlePreset = moodAmbientLayer
+    ? moodAmbientLayer.particlePreset
+    : resolveParticlePreset(currentGalleryAssets?.particlePreset, presetWorld.particlePreset)
+  const activeShaderPreset = moodAmbientLayer?.shaderPreset ?? presetWorld.shaderPreset
+  const activeAmbienceAudio = moodAmbientLayer?.ambienceAudio ?? presetWorld.ambienceAudio
   const activeMusicStreamUrl = music.activeMusicStreamUrl
   const activeAmbienceUrl = AMBIENCE_AUDIO_SOURCES[activeAmbienceAudio] ?? ''
   const ambienceVolume = Math.round(musicVolume * AMBIENCE_VOLUME_RATIO)
   const activeAmbientLayer = useMemo<AmbientWorldLayer>(
     () => ({
-      key: [
+      key: moodAmbientLayer?.key ?? [
         currentWorldId,
         activeBackgroundImage,
         activeDepthMap,
@@ -90,6 +120,7 @@ export function useTimeloopPage() {
       isActive: true,
     }),
     [
+      moodAmbientLayer?.key,
       currentWorldId,
       activeBackgroundImage,
       activeDepthMap,
@@ -99,6 +130,26 @@ export function useTimeloopPage() {
     ],
   )
   const [ambientLayers, setAmbientLayers] = useState<AmbientWorldLayer[]>(() => [activeAmbientLayer])
+
+  const supabase = useMemo(() => {
+    try {
+      return createSupabaseBrowserClient()
+    } catch (error) {
+      console.warn('[auth] Supabase client unavailable:', error)
+      return null
+    }
+  }, [])
+
+  const loadMoodWorld = useCallback(
+    (moodId: MusicMoodId) => {
+      music.setPrimaryMood(moodId)
+      setWorldOverrideActive(false)
+      setActiveWorldId(null)
+      setCurrentWorldId(moodId)
+      setCurrentGalleryAssets(null)
+    },
+    [music],
+  )
 
   const handleMusicPlayingChange = useCallback((playing: boolean) => {
     if (playing) setIsAudioUnlocked(true)
@@ -113,23 +164,60 @@ export function useTimeloopPage() {
     }
   }, [music.activeMusicStreamUrl, musicVolume])
 
-  const handleMobileGateTap = useCallback(() => {
-    void requestAppFullscreen()
-    void requestLandscapeOrientation()
-    sessionStorage.setItem(MOBILE_GESTURE_SESSION_KEY, '1')
-    setHasUserGestured(true)
-    if (music.musicOnboarded && music.activeMusicStreamUrl) {
-      setIsAudioUnlocked(true)
-      setIsMusicPlaying(true)
-      primeStreamAudio(music.activeMusicStreamUrl, musicVolume)
-    }
-  }, [music.activeMusicStreamUrl, music.musicOnboarded, musicVolume])
-
-  const showMobileGate = isMobile && (!hasUserGestured || !isLandscape)
-  const pastMobileGate = !isMobile || (hasUserGestured && isLandscape)
-  const showMusicOnboarding = pastMobileGate && !music.musicOnboarded
-  const showCockpit = pastMobileGate && music.musicOnboarded
+  const showMusicOnboarding = !music.musicOnboarded
+  const showCockpit = music.musicOnboarded && (!isMobile || isLandscape)
   const preferCreditPack = regionPreference === 'cn' || isCnHost
+
+  const handleCompanionEvent = useCallback(
+    (event: CompanionEvent) => {
+      const moodId = music.primaryMood ?? 'deep-night'
+      if (event.type === 'pomodoro') {
+        if (event.phase === 'idle') return
+        if (event.previousPhase === 'idle' && event.phase === 'focus') {
+          void speakLine({ moodId, sessionType: 'pomodoro', context: { phase: 'focus' }, force: true })
+        } else if (event.previousPhase === 'focus' && event.phase !== 'focus') {
+          void speakLine({ moodId, sessionType: 'pomodoro', context: { phase: event.phase }, force: true })
+        }
+        return
+      }
+      if (event.type === 'alarm') {
+        void speakLine({
+          moodId,
+          sessionType: 'alarm',
+          context: { alarmLabel: event.alarm.label || 'Alarm' },
+          force: true,
+        })
+      }
+    },
+    [music.primaryMood, speakLine],
+  )
+
+  const handleCalendarReminder = useCallback(
+    (context: { eventTitle?: string; minutesUntil?: number }) => {
+      const moodId = music.primaryMood ?? 'deep-night'
+      void speakLine({
+        moodId,
+        sessionType: 'calendar',
+        context,
+        force: true,
+      })
+    },
+    [music.primaryMood, speakLine],
+  )
+
+  const companion = useCompanion({
+    cockpitActive: showCockpit,
+    onCompanionEvent: handleCompanionEvent,
+    isDjBusy: isBusy,
+  })
+
+  const calendar = useGoogleCalendar({
+    cockpitActive: showCockpit,
+    isAuthenticated: Boolean(authUser),
+    accessToken,
+    onCalendarReminder: handleCalendarReminder,
+    isDjBusy: isBusy,
+  })
 
   const refreshAccountData = useCallback(async () => {
     if (!supabase) return
@@ -164,11 +252,15 @@ export function useTimeloopPage() {
 
     let mounted = true
     supabase.auth.getSession().then(({ data }) => {
-      if (mounted) setAuthUser(data.session?.user ?? null)
+      if (mounted) {
+        setAuthUser(data.session?.user ?? null)
+        setAccessToken(data.session?.access_token ?? null)
+      }
     })
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       setAuthUser(session?.user ?? null)
+      setAccessToken(session?.access_token ?? null)
     })
 
     return () => {
@@ -178,24 +270,10 @@ export function useTimeloopPage() {
   }, [supabase])
 
   useEffect(() => {
-    if (sessionStorage.getItem(MOBILE_GESTURE_SESSION_KEY) === '1') {
-      setHasUserGestured(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (isMobile && hasUserGestured && isLandscape && !isAudioUnlocked) {
-      setIsAudioUnlocked(true)
-      setIsMusicPlaying(true)
-    }
-  }, [isMobile, hasUserGestured, isLandscape, isAudioUnlocked])
-
-  // Always start music once onboarded and a station is ready
-  useEffect(() => {
-    if (!pastMobileGate || !music.musicOnboarded || !music.currentStation) return
+    if (!music.musicOnboarded || !music.currentStation) return
     setIsAudioUnlocked(true)
     setIsMusicPlaying(true)
-  }, [pastMobileGate, music.musicOnboarded, music.currentStation])
+  }, [music.musicOnboarded, music.currentStation])
 
   useEffect(() => {
     const hostname = window.location.hostname
@@ -259,6 +337,7 @@ export function useTimeloopPage() {
       depthMap: world.depthMap,
       particlePreset: world.particlePreset,
     })
+    setWorldOverrideActive(true)
     setIsAudioUnlocked(true)
     setIsMusicPlaying(true)
     setLeftPanelExpanded(false)
@@ -370,13 +449,33 @@ export function useTimeloopPage() {
 
   const handleCompleteMusicOnboarding = useCallback(
     (moods: MusicMoodId[]) => {
-      const initial = music.completeMusicOnboarding(moods)
+      const { initial, primaryMood } = music.completeMusicOnboarding(moods)
+      loadMoodWorld(primaryMood)
       setIsAudioUnlocked(true)
       setIsMusicPlaying(true)
       primeStreamAudio(buildStreamPlaybackUrl(initial), musicVolume)
+      resetGreetSchedule()
+      greetTriggeredRef.current = true
+      markIntervalSpoken()
+      void triggerGreeting({
+        moodId: primaryMood,
+        stationName: initial.name,
+        sessionType: 'enter',
+        force: true,
+      })
+      if (isMobile) {
+        void requestAppFullscreen()
+        void requestLandscapeOrientation()
+      }
     },
-    [music, musicVolume],
+    [isMobile, loadMoodWorld, music, musicVolume, resetGreetSchedule, triggerGreeting],
   )
+
+  const handleReopenMusicOnboarding = useCallback(() => {
+    clearGreetDate()
+    resetGreetSchedule()
+    music.reopenMusicOnboarding()
+  }, [music, resetGreetSchedule])
 
   const handleEnterGalleryScene = useCallback(
     (item: GallerySceneItem) => {
@@ -387,6 +486,7 @@ export function useTimeloopPage() {
       setActiveWorldId(null)
       setCurrentWorldId(nextWorldId)
       setCurrentGalleryAssets({ backgroundImage, depthMap })
+      setWorldOverrideActive(true)
       setIsAudioUnlocked(true)
       music.loadStationForWorld(nextWorldId)
       setIsMusicPlaying(true)
@@ -452,6 +552,7 @@ export function useTimeloopPage() {
           depthMap: res.world.depthMap,
           particlePreset: res.world.particlePreset,
         })
+        setWorldOverrideActive(true)
         setIsAudioUnlocked(true)
         setIsMusicPlaying(true)
         setLeftPanelExpanded(false)
@@ -503,6 +604,62 @@ export function useTimeloopPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!music.musicOnboarded || !music.primaryMood || showMusicOnboarding) return
+    if (!showCockpit) return
+    if (greetTriggeredRef.current) return
+
+    loadMoodWorld(music.primaryMood)
+    greetTriggeredRef.current = true
+
+    void triggerGreeting({
+      moodId: music.primaryMood,
+      stationName: music.currentStation?.name,
+      sessionType: 'return',
+    })
+  }, [
+    loadMoodWorld,
+    music.currentStation?.name,
+    music.musicOnboarded,
+    music.primaryMood,
+    showCockpit,
+    showMusicOnboarding,
+    triggerGreeting,
+  ])
+
+  useEffect(() => {
+    if (!showCockpit || !music.primaryMood) return
+    markIntervalSpoken()
+  }, [showCockpit, music.primaryMood])
+
+  useEffect(() => {
+    if (!showCockpit || !music.primaryMood || !aiDj.intervalEnabled) return
+
+    const checkInterval = () => {
+      if (document.visibilityState !== 'visible') return
+      if (isBusy()) return
+      const now = Date.now()
+      if (!shouldSpeakInterval(now, DJ_INTERVAL_MS)) return
+      void speakLine({
+        moodId: music.primaryMood!,
+        sessionType: 'interval',
+        stationName: music.currentStation?.name,
+        force: true,
+      })
+      markIntervalSpoken(now)
+    }
+
+    const id = window.setInterval(checkInterval, 60_000)
+    return () => window.clearInterval(id)
+  }, [
+    aiDj.intervalEnabled,
+    isBusy,
+    music.currentStation?.name,
+    music.primaryMood,
+    showCockpit,
+    speakLine,
+  ])
+
   return {
     videoRef,
     isGenerating,
@@ -518,14 +675,13 @@ export function useTimeloopPage() {
     setIsMusicPlaying,
     isAudioUnlocked,
     musicVolume,
+    effectiveMusicVolume,
     setMusicVolume,
     authUser,
     userProfile,
     savedWorlds,
     activeWorldId,
     showRegionPrompt,
-    showMobileGate,
-    pastMobileGate,
     showMusicOnboarding,
     showCockpit,
     preferCreditPack,
@@ -536,7 +692,6 @@ export function useTimeloopPage() {
     ambienceVolume,
     handleMusicPlayingChange,
     handleUnlockAudio,
-    handleMobileGateTap,
     handleCompleteMusicOnboarding,
     chooseRegion,
     handleRequireAuth,
@@ -548,5 +703,12 @@ export function useTimeloopPage() {
     handleEnterGalleryScene,
     handleGenerate,
     ...music,
+    handleReopenMusicOnboarding,
+    aiDj,
+    setDjVoiceEnabled: setVoiceEnabled,
+    setDjIntervalEnabled: setIntervalEnabled,
+    dismissAiDj,
+    companion,
+    calendar,
   }
 }

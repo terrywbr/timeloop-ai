@@ -66,6 +66,33 @@ const presetConfigs: Record<string, ParticlePresetConfig> = {
     riseSpeed: 0.032,
     horizontalDrift: 0.016,
   },
+  'jazz-golden-dust': {
+    count: 280,
+    colorA: '#ffd978',
+    colorB: '#c9a227',
+    opacity: 0.38,
+    size: 0.032,
+    riseSpeed: 0.024,
+    horizontalDrift: 0.01,
+  },
+  'nordic-snow-dust': {
+    count: 320,
+    colorA: '#f5f8ff',
+    colorB: '#b8cce8',
+    opacity: 0.4,
+    size: 0.028,
+    riseSpeed: 0.022,
+    horizontalDrift: 0.018,
+  },
+  'campfire-embers': {
+    count: 360,
+    colorA: '#ffb347',
+    colorB: '#ff6b2b',
+    opacity: 0.52,
+    size: 0.022,
+    riseSpeed: 0.078,
+    horizontalDrift: 0.024,
+  },
 }
 
 const defaultPreset: ParticlePresetConfig = {

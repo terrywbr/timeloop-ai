@@ -15,6 +15,8 @@ import {
 } from '@/components/ui/drawer'
 import MobileControlContent from '@/components/mobile/mobile-control-content'
 import MobileGalleryContent from '@/components/mobile/mobile-gallery-content'
+import type { useCompanion } from '@/hooks/use-companion'
+import type { useGoogleCalendar } from '@/hooks/use-google-calendar'
 
 type TimeloopMobileDrawersProps = {
   videoRef: React.RefObject<VideoBackgroundRef | null>
@@ -36,6 +38,12 @@ type TimeloopMobileDrawersProps = {
   onPlayFavorite: (station: RadioStation) => void
   onRemoveFavorite: (stationuuid: string) => void
   onReopenMusicOnboarding: () => void
+  djVoiceEnabled: boolean
+  onDjVoiceEnabledChange: (enabled: boolean) => void
+  djIntervalEnabled: boolean
+  onDjIntervalEnabledChange: (enabled: boolean) => void
+  companion: ReturnType<typeof useCompanion>
+  calendar: ReturnType<typeof useGoogleCalendar>
   isMusicPlaying: boolean
   onMusicPlayingChange: (playing: boolean) => void
   musicVolume: number
@@ -72,6 +80,12 @@ export default function TimeloopMobileDrawers({
   onPlayFavorite,
   onRemoveFavorite,
   onReopenMusicOnboarding,
+  djVoiceEnabled,
+  onDjVoiceEnabledChange,
+  djIntervalEnabled,
+  onDjIntervalEnabledChange,
+  companion,
+  calendar,
   isMusicPlaying,
   onMusicPlayingChange,
   musicVolume,
@@ -122,6 +136,12 @@ export default function TimeloopMobileDrawers({
                   onPlayFavorite={onPlayFavorite}
                   onRemoveFavorite={onRemoveFavorite}
                   onReopenMusicOnboarding={onReopenMusicOnboarding}
+                  djVoiceEnabled={djVoiceEnabled}
+                  onDjVoiceEnabledChange={onDjVoiceEnabledChange}
+                  djIntervalEnabled={djIntervalEnabled}
+                  onDjIntervalEnabledChange={onDjIntervalEnabledChange}
+                  companion={companion}
+                  calendar={calendar}
                   isMusicPlaying={isMusicPlaying}
                   onMusicPlayingChange={onMusicPlayingChange}
                   musicVolume={musicVolume}

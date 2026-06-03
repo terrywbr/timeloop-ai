@@ -18,6 +18,7 @@ import {
   isDefaultStation,
   type RadioStation,
 } from '@/lib/radio-station'
+import { loadPrimaryMood, savePrimaryMood } from '@/lib/dj-settings'
 import { WORLD_MUSIC_MOODS } from '@/lib/worlds'
 import type { AmbientWorldId } from '@/lib/ambient-worlds'
 
@@ -40,6 +41,7 @@ export function useMusicStation() {
     typeof window !== 'undefined' ? isMusicOnboarded() : false,
   )
   const [selectedMoods, setSelectedMoods] = useState<MusicMoodId[]>([])
+  const [primaryMood, setPrimaryMoodState] = useState<MusicMoodId | null>(null)
   const [currentStation, setCurrentStation] = useState<RadioStation | null>(null)
   const [favoriteStations, setFavoriteStations] = useState<RadioStation[]>([])
   const [isStationLoading, setIsStationLoading] = useState(false)
@@ -62,6 +64,9 @@ export function useMusicStation() {
       saveSelectedMoods(moods)
     }
     setSelectedMoods(moods)
+    const storedPrimary = loadPrimaryMood()
+    const primary = storedPrimary && moods.includes(storedPrimary) ? storedPrimary : moods[0] ?? null
+    setPrimaryMoodState(primary)
     setFavoriteStations(loadFavoriteStations())
     if (isMusicOnboarded() && moods.length > 0) {
       const initial = pickInitialStation(moods)
@@ -126,17 +131,25 @@ export function useMusicStation() {
     }
   }, [])
 
+  const setPrimaryMood = useCallback((moodId: MusicMoodId) => {
+    savePrimaryMood(moodId)
+    setPrimaryMoodState(moodId)
+  }, [])
+
   const completeMusicOnboarding = useCallback(
     (moods: MusicMoodId[]) => {
       saveSelectedMoods(moods)
       markMusicOnboarded()
       setSelectedMoods(moods)
       setMusicOnboarded(true)
+      const primary = moods[0] ?? 'deep-night'
+      savePrimaryMood(primary)
+      setPrimaryMoodState(primary)
       const initial = pickInitialStation(moods)
       historyRef.current = [initial]
       historyIndexRef.current = 0
       setCurrentStation(initial)
-      return initial
+      return { initial, primaryMood: primary }
     },
     [],
   )
@@ -252,6 +265,8 @@ export function useMusicStation() {
   return {
     musicOnboarded,
     selectedMoods,
+    primaryMood,
+    setPrimaryMood,
     currentStation,
     favoriteStations,
     isStationLoading,
