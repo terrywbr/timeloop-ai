@@ -6,20 +6,24 @@ import { MUSIC_MOOD_IDS } from '@/lib/music-moods'
 import {
   buildStreamPlaybackUrl,
   defaultStationForMood,
+  isDefaultStation,
+  isExternalProxyUrl,
   isMusicOnboarded,
   isStreamUrlForStation,
   loadFavoriteStations,
   loadSelectedMoods,
   markMusicOnboarded,
   pickInitialStation,
+  resolveInitialProxyTier,
   saveFavoriteStations,
   saveSelectedMoods,
   shouldPreferStreamProxy,
   toggleFavoriteStation,
   toRadioStation,
-  isDefaultStation,
   type RadioStation,
+  type StreamProxyTier,
 } from '@/lib/radio-station'
+import { GEO_UPDATED_EVENT } from '@/lib/geo-region'
 import { loadPrimaryMood, savePrimaryMood } from '@/lib/dj-settings'
 import { WORLD_MUSIC_MOODS } from '@/lib/worlds'
 import type { AmbientWorldId } from '@/lib/ambient-worlds'
@@ -53,12 +57,24 @@ export function useMusicStation() {
   const failedStationIdsRef = useRef<Set<string>>(new Set())
   const fallbackInProgressRef = useRef(false)
   const currentStationRef = useRef<RadioStation | null>(null)
-  const [streamViaProxy, setStreamViaProxy] = useState(false)
+  const [streamProxyTier, setStreamProxyTier] = useState<StreamProxyTier>(() =>
+    typeof window !== 'undefined' ? resolveInitialProxyTier() : 'direct',
+  )
+
+  const syncProxyTier = useCallback(() => {
+    setStreamProxyTier(shouldPreferStreamProxy() ? 'external' : 'direct')
+  }, [])
 
   useEffect(() => {
     currentStationRef.current = currentStation
-    setStreamViaProxy(shouldPreferStreamProxy())
-  }, [currentStation])
+    syncProxyTier()
+  }, [currentStation, syncProxyTier])
+
+  useEffect(() => {
+    const onGeoUpdated = () => syncProxyTier()
+    window.addEventListener(GEO_UPDATED_EVENT, onGeoUpdated)
+    return () => window.removeEventListener(GEO_UPDATED_EVENT, onGeoUpdated)
+  }, [syncProxyTier])
 
   useEffect(() => {
     setMusicOnboarded(isMusicOnboarded())
@@ -184,8 +200,14 @@ export function useMusicStation() {
       fallbackInProgressRef.current = true
 
       try {
-        if (!streamViaProxy && !shouldPreferStreamProxy()) {
-          setStreamViaProxy(true)
+        if (streamProxyTier === 'direct') {
+          setStreamProxyTier(shouldPreferStreamProxy() ? 'external' : 'external')
+          fallbackInProgressRef.current = false
+          return
+        }
+
+        if (streamProxyTier === 'external' && isExternalProxyUrl(failedStreamUrl)) {
+          setStreamProxyTier('api')
           fallbackInProgressRef.current = false
           return
         }
@@ -215,7 +237,7 @@ export function useMusicStation() {
         }, 1500)
       }
     },
-    [applyStation, fetchRandomStation, selectedMoods, streamViaProxy],
+    [applyStation, fetchRandomStation, selectedMoods, streamProxyTier],
   )
 
   const handlePrevStation = useCallback(() => {
@@ -261,8 +283,8 @@ export function useMusicStation() {
 
   const activeMusicStreamUrl = useMemo(() => {
     if (!currentStation) return ''
-    return buildStreamPlaybackUrl(currentStation, streamViaProxy)
-  }, [currentStation, streamViaProxy])
+    return buildStreamPlaybackUrl(currentStation, streamProxyTier)
+  }, [currentStation, streamProxyTier])
 
   const loadStationForWorld = useCallback(
     (worldId: AmbientWorldId) => {

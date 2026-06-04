@@ -41,6 +41,14 @@ import type { AmbientWorldLayer, GalleryWorldAssets, GenerateApiResponse } from 
 import { resolveParticlePreset, resolvePresetWorld } from '@/lib/timeloop/world-resolver'
 import { buildStreamPlaybackUrl } from '@/lib/radio-station'
 import { primeStreamAudio } from '@/lib/prime-stream-audio'
+import {
+  fetchGeoFromApi,
+  getCachedGeoCountry,
+  getStoredRegionPreference,
+  isCachedGeoExpired,
+  notifyGeoUpdated,
+  setCachedGeoCountry,
+} from '@/lib/geo-region'
 
 type UseTimeloopPageOptions = {
   language: Language
@@ -293,15 +301,45 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     const currentIsCnHost = hostname === 'cn.localhost' || hostname.startsWith('cn.')
     setIsCnHost(currentIsCnHost)
 
-    const storedPreference = localStorage.getItem('timeloop-region')
-    if (storedPreference === 'global' || storedPreference === 'cn') {
+    const storedPreference = getStoredRegionPreference()
+    if (storedPreference) {
       setRegionPreference(storedPreference)
       return
     }
 
-    const language = navigator.language.toLowerCase()
-    if (!currentIsCnHost && language === 'zh-cn') {
-      setShowRegionPrompt(true)
+    let cancelled = false
+
+    void (async () => {
+      let suggestRegionPrompt = false
+
+      if (!isCachedGeoExpired()) {
+        if (getCachedGeoCountry() === 'CN') suggestRegionPrompt = true
+      } else {
+        const geo = await fetchGeoFromApi()
+        if (geo) {
+          setCachedGeoCountry(geo.country)
+          if (geo.suggestCn) suggestRegionPrompt = true
+        } else if (getCachedGeoCountry() === 'CN') {
+          suggestRegionPrompt = true
+        }
+      }
+
+      if (cancelled) return
+
+      if (!suggestRegionPrompt) {
+        const language = navigator.language.toLowerCase()
+        if (language === 'zh-cn') suggestRegionPrompt = true
+      }
+
+      if (!currentIsCnHost && suggestRegionPrompt) {
+        setShowRegionPrompt(true)
+      }
+
+      notifyGeoUpdated()
+    })()
+
+    return () => {
+      cancelled = true
     }
   }, [])
 
@@ -309,6 +347,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     localStorage.setItem('timeloop-region', region)
     setRegionPreference(region)
     setShowRegionPrompt(false)
+    notifyGeoUpdated()
 
     if (region === 'cn') {
       const cnSiteUrl = process.env.NEXT_PUBLIC_CN_SITE_URL

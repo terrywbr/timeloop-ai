@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "timeloop-stream-proxy",
+  "main": "workers/stream-proxy/src/index.ts",
+  "compatibility_date": "2025-04-01",
+  "observability": {
+    "enabled": true
+  },
+  "routes": [
+    { "pattern": "stream.timeloopai.net", "custom_domain": true }
+  ]
+}

@@ -1,5 +1,6 @@
 import type { MusicMoodId } from '@/lib/music-moods'
 import { MUSIC_MOOD_BY_ID } from '@/lib/music-moods'
+import { getCachedGeoCountry, getStoredRegionPreference } from '@/lib/geo-region'
 
 export type RadioStation = {
   stationuuid: string
@@ -10,9 +11,73 @@ export type RadioStation = {
   country?: string
 }
 
+export type StreamProxyTier = 'direct' | 'external' | 'api'
+
 export const MUSIC_ONBOARDED_KEY = 'timeloop-music-onboarded'
 export const MUSIC_MOODS_KEY = 'timeloop-music-moods'
 export const MUSIC_FAVORITES_KEY = 'musicFavorites'
+
+export function getExternalStreamProxyBase(): string {
+  const base = process.env.NEXT_PUBLIC_STREAM_PROXY_URL?.trim()
+  if (!base) return ''
+  return base.replace(/\/$/, '')
+}
+
+export function buildApiProxiedStreamUrl(station: RadioStation): string {
+  return `/api/stream?url=${encodeURIComponent(station.urlResolved)}`
+}
+
+export function buildExternalProxiedStreamUrl(station: RadioStation): string | null {
+  const base = getExternalStreamProxyBase()
+  if (!base) return null
+  return `${base}?url=${encodeURIComponent(station.urlResolved)}`
+}
+
+/** Build proxied playback URL (external worker preferred, else same-origin API). */
+export function buildProxiedStreamUrl(station: RadioStation, tier: 'external' | 'api' = 'external'): string {
+  if (tier === 'api') return buildApiProxiedStreamUrl(station)
+  return buildExternalProxiedStreamUrl(station) ?? buildApiProxiedStreamUrl(station)
+}
+
+export function resolveInitialProxyTier(): StreamProxyTier {
+  return shouldPreferStreamProxy() ? 'external' : 'direct'
+}
+
+export function buildStreamPlaybackUrl(station: RadioStation, tier: StreamProxyTier = 'direct'): string {
+  if (tier === 'direct') return station.urlResolved
+  return buildProxiedStreamUrl(station, tier === 'api' ? 'api' : 'external')
+}
+
+export function isStreamUrlForStation(station: RadioStation, playbackUrl: string): boolean {
+  if (playbackUrl === station.urlResolved) return true
+  if (playbackUrl === buildApiProxiedStreamUrl(station)) return true
+  const external = buildExternalProxiedStreamUrl(station)
+  if (external && playbackUrl === external) return true
+  return false
+}
+
+export function isExternalProxyUrl(playbackUrl: string): boolean {
+  const base = getExternalStreamProxyBase()
+  if (!base) return false
+  return playbackUrl.startsWith(`${base}?`)
+}
+
+export function shouldPreferStreamProxy(): boolean {
+  if (typeof window === 'undefined') return false
+
+  const region = getStoredRegionPreference()
+  if (region === 'global') return false
+  if (region === 'cn') return true
+
+  if (window.location.hostname.startsWith('cn.') || window.location.hostname === 'cn.localhost') {
+    return true
+  }
+
+  const geoCountry = getCachedGeoCountry()
+  if (geoCountry === 'CN') return true
+
+  return false
+}
 
 export function computeDisplayFreq(stationuuid: string): string {
   let hash = 0
@@ -61,35 +126,6 @@ export function isDefaultStation(stationuuid: string): boolean {
 export function pickInitialStation(moodIds: MusicMoodId[]): RadioStation {
   const moodId = moodIds[0] ?? 'deep-night'
   return defaultStationForMood(moodId)
-}
-
-/** Build proxied playback URL (fallback for CN or when direct fails). */
-export function buildProxiedStreamUrl(station: RadioStation): string {
-  if (station.stationuuid.startsWith('default-')) {
-    return `/api/stream?url=${encodeURIComponent(station.urlResolved)}`
-  }
-  return `/api/stream?uuid=${encodeURIComponent(station.stationuuid)}&url=${encodeURIComponent(station.urlResolved)}`
-}
-
-/** Prefer direct stream URLs — HTML audio does not need CORS and avoids Worker proxy timeouts. */
-export function buildStreamPlaybackUrl(station: RadioStation, preferProxy = false): string {
-  if (preferProxy) return buildProxiedStreamUrl(station)
-  return station.urlResolved
-}
-
-export function isStreamUrlForStation(station: RadioStation, playbackUrl: string): boolean {
-  return (
-    playbackUrl === station.urlResolved ||
-    playbackUrl === buildProxiedStreamUrl(station)
-  )
-}
-
-export function shouldPreferStreamProxy(): boolean {
-  if (typeof window === 'undefined') return false
-  if (window.location.hostname.startsWith('cn.') || window.location.hostname === 'cn.localhost') {
-    return true
-  }
-  return localStorage.getItem('timeloop-region') === 'cn'
 }
 
 export function loadSelectedMoods(): MusicMoodId[] {

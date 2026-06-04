@@ -8,9 +8,9 @@ type RegionPromptProps = {
 export default function RegionPrompt({ onChooseGlobal, onChooseCn }: RegionPromptProps) {
   return (
     <div className="fixed inset-x-4 top-20 z-[95] mx-auto max-w-md rounded-2xl border border-accent/30 bg-popover/90 p-4 text-sm text-foreground shadow-[0_0_32px_rgba(80,180,255,0.22)] backdrop-blur-md">
-      <p className="font-medium">偵測到你可能使用簡體中文環境</p>
+      <p className="font-medium">偵測到你可能在中國大陸或簡體中文環境</p>
       <p className="mt-1 text-muted-foreground">
-        是否切換到中國優化入口？系統會記住你的選擇，不會每次詢問。
+        是否切換到中國優化入口？音樂將經由代理播放，系統會記住你的選擇。
       </p>
       <div className="mt-4 flex gap-2">
         <button
