@@ -11,8 +11,18 @@ function matchesRepeat(alarm: AlarmConfig, now: Date): boolean {
   return true
 }
 
-function todayKey(now: Date): string {
-  return now.toISOString().slice(0, 10)
+function pad2(n: number): string {
+  return String(n).padStart(2, '0')
+}
+
+/** Local calendar date (not UTC). */
+export function localDateKey(now: Date): string {
+  return `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`
+}
+
+/** Local minute bucket for deduplication. */
+export function alarmFireKey(now: Date): string {
+  return `${localDateKey(now)}T${pad2(now.getHours())}:${pad2(now.getMinutes())}`
 }
 
 export function shouldFireAlarm(alarm: AlarmConfig, now = new Date()): boolean {
@@ -20,19 +30,32 @@ export function shouldFireAlarm(alarm: AlarmConfig, now = new Date()): boolean {
   if (alarm.hour !== now.getHours() || alarm.minute !== now.getMinutes()) return false
   if (!matchesRepeat(alarm, now)) return false
 
-  const fired = alarm.lastFiredDate === todayKey(now)
-  if (alarm.repeat === 'once' && fired) return false
-  if (alarm.repeat !== 'once' && fired) return false
+  const key = alarmFireKey(now)
+
+  if (alarm.repeat === 'once') {
+    if (alarm.lastFiredMinute || alarm.lastFiredDate) return false
+    return true
+  }
+
+  if (alarm.lastFiredMinute === key) return false
+
+  // Legacy: same local day already fired (daily/weekdays)
+  if (alarm.lastFiredDate === localDateKey(now) && !alarm.lastFiredMinute) return false
 
   return true
 }
 
 export function markAlarmFired(alarm: AlarmConfig, now = new Date()): AlarmConfig {
-  return { ...alarm, lastFiredDate: todayKey(now) }
+  const key = alarmFireKey(now)
+  return {
+    ...alarm,
+    lastFiredMinute: key,
+    lastFiredDate: localDateKey(now),
+  }
 }
 
 export function formatAlarmTime(hour: number, minute: number): string {
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+  return `${pad2(hour)}:${pad2(minute)}`
 }
 
 export function createAlarm(partial: Pick<AlarmConfig, 'hour' | 'minute'> & Partial<AlarmConfig>): AlarmConfig {

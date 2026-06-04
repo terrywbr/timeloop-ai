@@ -2,9 +2,6 @@
 
 import { useState, useCallback, useEffect, type ComponentType } from 'react'
 import {
-  Play,
-  Pause,
-  VolumeX,
   Volume2,
   Mic,
   MicOff,
@@ -27,6 +24,7 @@ import CompanionPanel from '@/components/companion/companion-panel'
 import type { useCompanion } from '@/hooks/use-companion'
 import type { useGoogleCalendar } from '@/hooks/use-google-calendar'
 import { useLanguage } from '@/lib/language-context'
+import { getCommunityStrings } from '@/lib/community-i18n'
 import type { RadioStation } from '@/lib/radio-station'
 import {
   exitAppFullscreen,
@@ -71,6 +69,7 @@ export interface MobileControlContentProps {
   onLoadWorld: (world: PublicGeneratedWorld) => void
   onDeleteWorld: (worldId: string) => void
   onRenameWorld: (worldId: string, title: string) => void
+  onPublishWorld: (worldId: string, isPublic: boolean) => void | Promise<void>
   onCheckout: (kind: 'subscription' | 'credits') => void
   onDownload: () => void
   preferCreditPack: boolean
@@ -111,12 +110,11 @@ export default function MobileControlContent({
   onLoadWorld,
   onDeleteWorld,
   onRenameWorld,
+  onPublishWorld,
   onCheckout,
   onDownload,
   preferCreditPack,
 }: MobileControlContentProps) {
-  const [isPaused, setIsPaused] = useState(false)
-  const [isMuted, setIsMuted] = useState(true)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showFavoriteToast, setShowFavoriteToast] = useState(false)
   const [showSceneInput, setShowSceneInput] = useState(false)
@@ -124,12 +122,11 @@ export default function MobileControlContent({
   const [isFavoritesHeartFilled, setIsFavoritesHeartFilled] = useState(false)
   const [prompt, setPrompt] = useState('')
   const [selectedScene, setSelectedScene] = useState<SceneKey>('cyberpunk')
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const ct = getCommunityStrings(language)
 
   const scenes: SceneKey[] = ['cyberpunk', 'nature', 'space', 'ocean', 'city', 'desert']
   const stationLabel = currentStation?.name ?? t.music.scanning
-
-  const handleMusicToggle = () => setIsMusicPlaying(!isMusicPlaying)
 
   const handleToggleFavoriteClick = () => {
     if (!currentStation) return
@@ -175,24 +172,6 @@ export default function MobileControlContent({
       setIsFullscreen(Boolean(getFullscreenElement()))
     })
   }, [])
-
-  const handlePlayPause = () => {
-    if (videoRef.current) {
-      if (isPaused) {
-        videoRef.current.play()
-      } else {
-        videoRef.current.pause()
-      }
-      setIsPaused(!isPaused)
-    }
-  }
-
-  const handleMuteToggle = () => {
-    if (videoRef.current) {
-      videoRef.current.toggleMute()
-      setIsMuted(!isMuted)
-    }
-  }
 
   const handleGenerate = () => {
     if (!prompt.trim()) return
@@ -265,16 +244,6 @@ export default function MobileControlContent({
       {/* Control Section */}
       <div className="mb-6 space-y-2">
         <div className="flex items-center justify-center gap-3">
-          <MobileControlButton
-            onClick={handlePlayPause}
-            icon={isPaused ? Play : Pause}
-            label={isPaused ? t.controls.play : t.controls.pause}
-          />
-          <MobileControlButton
-            onClick={handleMuteToggle}
-            icon={isMuted ? VolumeX : Volume2}
-            label={isMuted ? t.controls.unmute : t.controls.mute}
-          />
           <MobileControlButton
             onClick={onDownload}
             icon={Download}
@@ -353,17 +322,6 @@ export default function MobileControlContent({
           </div>
 
           <div className="flex items-center justify-center gap-2">
-            <button
-              onClick={handleMusicToggle}
-              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-all ${
-                isMusicPlaying
-                  ? 'border-accent/50 bg-accent/20 text-accent'
-                  : 'border-foreground/10 bg-secondary/50 text-foreground/70 hover:border-foreground/20 hover:bg-secondary hover:text-foreground'
-              }`}
-            >
-              {isMusicPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-            </button>
-
             <button
               onClick={handleToggleFavoriteClick}
               disabled={!currentStation}
@@ -541,11 +499,24 @@ export default function MobileControlContent({
               >
                 <button
                   onClick={() => handleLoadScene(world)}
-                  className="max-w-[140px] truncate text-xs text-foreground/80 transition-colors hover:text-foreground"
+                  className="max-w-[100px] truncate text-xs text-foreground/80 transition-colors hover:text-foreground"
                   title={world.title}
                 >
                   {world.title}
                 </button>
+                {isAuthenticated ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const makePublic = world.isPrivate !== false
+                      if (makePublic && !window.confirm(ct.publishConfirm)) return
+                      void onPublishWorld(world.id, makePublic)
+                    }}
+                    className="text-[9px] text-accent"
+                  >
+                    {world.isPrivate === false ? '●' : '○'}
+                  </button>
+                ) : null}
                 <button
                   onClick={() => handleRemoveScene(world.id)}
                   className="flex h-4 w-4 items-center justify-center rounded-full opacity-0 transition-all hover:bg-red-500/20 group-hover:opacity-100"

@@ -13,14 +13,23 @@ import {
 import { useLanguage } from '@/lib/language-context'
 import { SCENE_DATA, type SceneGalleryItem } from '@/lib/scene-gallery-data'
 import type { MusicChannelKey } from '@/lib/music-channels'
-import { translations } from '@/lib/translations'
+import type { GalleryWorld } from '@/lib/community/types'
+import { getCommunityStrings } from '@/lib/community-i18n'
+import { useCommunityGallery } from '@/hooks/use-community-gallery'
+import { submitWorldReport } from '@/lib/api-client'
+import { GalleryWorldCard } from '@/components/community/gallery-world-card'
 import type { ComponentType } from 'react'
 
 interface CommunityGalleryProps {
   isExpanded: boolean
   onExpandedChange: (expanded: boolean) => void
-  /** 點「進入此時空」：切背景 + 聯動電台（與手機抽屜共用邏輯） */
-  onEnterScene?: (item: SceneGalleryItem) => void
+  accessToken: string | null
+  onRequireAuth: () => void | Promise<boolean>
+  onEnterOfficialScene?: (item: SceneGalleryItem) => void
+  onEnterWorld?: (world: GalleryWorld) => void
+  coFocusEnabled: boolean
+  onCoFocusEnabledChange: (enabled: boolean) => void
+  presenceCount: number
 }
 
 const stationHintIcon: Partial<Record<MusicChannelKey, ComponentType<{ className?: string }>>> = {
@@ -32,53 +41,98 @@ const stationHintIcon: Partial<Record<MusicChannelKey, ComponentType<{ className
 export default function CommunityGallery({
   isExpanded,
   onExpandedChange,
-  onEnterScene,
+  accessToken,
+  onRequireAuth,
+  onEnterOfficialScene,
+  onEnterWorld,
+  coFocusEnabled,
+  onCoFocusEnabledChange,
+  presenceCount,
 }: CommunityGalleryProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [isAdExpanded, setIsAdExpanded] = useState(false)
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const ct = getCommunityStrings(language)
+  const gallery = useCommunityGallery(accessToken)
 
   const startCollapseTimer = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-    }
-    timeoutRef.current = setTimeout(() => {
-      onExpandedChange(false)
-    }, 3000)
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => onExpandedChange(false), 3000)
   }, [onExpandedChange])
 
-  const handleMouseEnter = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-    }
-    onExpandedChange(true)
-  }
+  const handleShare = useCallback((world: GalleryWorld) => {
+    const url = `${window.location.origin}/world/${world.id}`
+    void navigator.clipboard.writeText(url).then(() => {
+      window.alert(ct.shareCopied)
+    })
+  }, [ct.shareCopied])
 
-  const handleMouseLeave = () => {
-    startCollapseTimer()
-  }
+  const handleReport = useCallback(
+    async (world: GalleryWorld) => {
+      const ok = await onRequireAuth()
+      if (!ok || !accessToken) {
+        window.alert(ct.loginToInteract)
+        return
+      }
+      const reason = window.prompt(ct.reportPrompt)
+      if (!reason?.trim()) return
+      try {
+        await submitWorldReport(accessToken, world.id, reason.trim())
+        window.alert(ct.reportThanks)
+      } catch (e) {
+        window.alert(e instanceof Error ? e.message : 'Report failed')
+      }
+    },
+    [accessToken, ct, onRequireAuth],
+  )
 
-  const handleTouchStart = () => {
-    if (!isExpanded) {
-      onExpandedChange(true)
-    }
-  }
+  const handleLike = useCallback(
+    async (world: GalleryWorld) => {
+      if (!accessToken) {
+        window.alert(ct.loginToInteract)
+        return
+      }
+      await gallery.handleLike(world)
+    },
+    [accessToken, ct.loginToInteract, gallery],
+  )
+
+  const handleSave = useCallback(
+    async (world: GalleryWorld) => {
+      if (!accessToken) {
+        window.alert(ct.loginToInteract)
+        return
+      }
+      await gallery.handleSave(world)
+    },
+    [accessToken, ct.loginToInteract, gallery],
+  )
 
   useEffect(() => {
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
   }, [])
+
+  const uniqueTabs = [
+    { key: 'newest', label: ct.tabNewest, galleryTab: 'community' as const, sort: 'newest' as const },
+    { key: 'featured', label: ct.tabFeatured, galleryTab: 'community' as const, sort: 'featured' as const },
+    { key: 'following', label: ct.tabFollowing, galleryTab: 'community' as const, sort: 'following' as const },
+    { key: 'official', label: ct.tabOfficial, galleryTab: 'official' as const, sort: null },
+  ]
 
   return (
     <div
       ref={panelRef}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
+      onMouseEnter={() => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current)
+        onExpandedChange(true)
+      }}
+      onMouseLeave={startCollapseTimer}
+      onTouchStart={() => {
+        if (!isExpanded) onExpandedChange(true)
+      }}
       className={`fixed right-0 top-0 z-50 hidden h-full transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] md:block ${
         isExpanded ? 'w-[50vw]' : 'w-[40px]'
       }`}
@@ -101,25 +155,88 @@ export default function CommunityGallery({
         }`}
       >
         <div className="sticky top-0 z-10 glass border-b border-foreground/10 bg-popover/80 p-3">
-          <div className="flex items-center gap-2">
+          <div className="mb-2 flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent/20">
               <ImageIcon className="h-3.5 w-3.5 text-accent" />
             </div>
             <h2 className="text-sm font-semibold text-foreground">{t.gallery.title}</h2>
           </div>
+          <div className="flex flex-wrap gap-1">
+            {uniqueTabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => {
+                  gallery.setGalleryTab(tab.galleryTab)
+                  if (tab.sort) gallery.setSort(tab.sort)
+                }}
+                className={`rounded-md px-2 py-0.5 text-[10px] transition ${
+                  gallery.galleryTab === tab.galleryTab &&
+                  (tab.sort === null || gallery.sort === tab.sort)
+                    ? 'bg-accent/20 text-accent'
+                    : 'text-muted-foreground hover:bg-foreground/5'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {coFocusEnabled && presenceCount > 0 ? (
+            <p className="mt-2 text-[10px] text-muted-foreground">
+              {ct.coFocusCount.replace('{count}', String(presenceCount))}
+            </p>
+          ) : null}
+          <label className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={coFocusEnabled}
+              onChange={(e) => onCoFocusEnabledChange(e.target.checked)}
+              className="rounded border-foreground/20"
+            />
+            {coFocusEnabled ? ct.coFocusLeave : ct.coFocusJoin}
+          </label>
         </div>
 
         <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 md:grid-cols-3">
-          {SCENE_DATA.map((item, index) => (
-            <SceneGalleryCard
-              key={item.id}
-              item={item}
-              index={index}
-              t={t}
-              onEnterScene={onEnterScene}
-            />
-          ))}
+          {gallery.galleryTab === 'official'
+            ? SCENE_DATA.map((item) => (
+                <OfficialSceneCard
+                  key={item.id}
+                  item={item}
+                  enterLabel={t.gallery.enterScene}
+                  onEnterScene={onEnterOfficialScene}
+                />
+              ))
+            : gallery.worlds.map((world) => (
+                <GalleryWorldCard
+                  key={world.id}
+                  world={world}
+                  ct={ct}
+                  enterLabel={t.gallery.enterScene}
+                  onEnter={() => onEnterWorld?.(world)}
+                  onLike={handleLike}
+                  onSave={handleSave}
+                  onShare={handleShare}
+                  onReport={handleReport}
+                />
+              ))}
+          {gallery.galleryTab === 'community' && gallery.worlds.length === 0 && !gallery.loading ? (
+            <p className="col-span-full text-center text-xs text-muted-foreground">—</p>
+          ) : null}
         </div>
+
+        {gallery.galleryTab === 'community' && gallery.hasMore ? (
+          <div className="px-4 pb-4">
+            <button
+              type="button"
+              disabled={gallery.loading}
+              onClick={() => gallery.loadMore()}
+              className="w-full rounded-lg border border-foreground/10 py-2 text-xs text-muted-foreground hover:bg-foreground/5"
+            >
+              {gallery.loading ? '…' : 'More'}
+            </button>
+          </div>
+        ) : null}
 
         <div className="sticky bottom-0 z-10 p-2">
           <div className="glass overflow-hidden rounded-xl border border-foreground/10 bg-popover/50">
@@ -128,13 +245,8 @@ export default function CommunityGallery({
               className="flex w-full items-center justify-between px-3 py-2 text-xs text-muted-foreground/60 transition-all hover:bg-foreground/5"
             >
               <span>Sponsored</span>
-              {isAdExpanded ? (
-                <ChevronDown className="h-3 w-3" />
-              ) : (
-                <ChevronUp className="h-3 w-3" />
-              )}
+              {isAdExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
             </button>
-
             <div
               className={`overflow-hidden transition-all duration-300 ease-out ${
                 isAdExpanded ? 'max-h-[150px] opacity-100' : 'max-h-0 opacity-0'
@@ -151,96 +263,32 @@ export default function CommunityGallery({
   )
 }
 
-interface SceneGalleryCardProps {
+function OfficialSceneCard({
+  item,
+  enterLabel,
+  onEnterScene,
+}: {
   item: SceneGalleryItem
-  index: number
-  t: (typeof translations)['en']
+  enterLabel: string
   onEnterScene?: (item: SceneGalleryItem) => void
-}
-
-function SceneGalleryCard({ item, index, t, onEnterScene }: SceneGalleryCardProps) {
-  const sponsorSlot = item.type === '贊助'
-  const typeLabel = item.type === 'NFT' ? t.gallery.typeNft : t.gallery.typeSponsor
-
-  const inner = (
+}) {
+  return (
     <button
       type="button"
       onClick={() => onEnterScene?.(item)}
-      className="group flex w-full flex-col gap-1 text-left"
+      className="group relative aspect-video w-full overflow-hidden rounded-md ring-1 ring-foreground/10 text-left"
     >
-      <div className="relative aspect-video w-full overflow-hidden rounded-md ring-1 ring-foreground/10">
-        <img
-          src={item.thumbnail}
-          alt={`Gallery scene ${item.id}`}
-          className="h-full w-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
-          loading="lazy"
-        />
-
-        <div className="pointer-events-none absolute left-1 top-1 flex items-center gap-1">
-          <span className="rounded bg-black/65 px-1 py-px text-[8px] font-mono text-white/90">
-            #{item.id}
-          </span>
-          <span
-            className={`rounded px-1 py-px text-[8px] font-medium ${
-              item.type === '贊助'
-                ? 'bg-amber-500/90 text-black'
-                : 'bg-accent/90 text-accent-foreground'
-            }`}
-          >
-            {typeLabel}
-          </span>
-        </div>
-
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-300 group-hover:bg-black/25" />
-
-        <div className="absolute inset-0 flex items-center justify-center p-2 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-          <span className="pointer-events-none rounded-lg border border-white/25 bg-background/55 px-2.5 py-1.5 text-[10px] font-medium text-foreground shadow-lg backdrop-blur-md transition group-hover:bg-background/70">
-            {t.gallery.enterScene}
-          </span>
-        </div>
-      </div>
-
-      <div className="min-w-0 px-0.5">
-        <div className="flex items-center justify-between gap-1">
-          <div className="flex items-center gap-0.5" title={t.music.title}>
-            {item.stationHints.map((key) => {
-              const Icon = stationHintIcon[key] ?? Headphones
-              return (
-                <span
-                  key={key}
-                  className="flex h-4 w-4 items-center justify-center rounded-sm bg-secondary/80 text-muted-foreground ring-1 ring-foreground/10"
-                  title={t.music.channels[key]}
-                >
-                  <Icon className="h-2.5 w-2.5" />
-                </span>
-              )
-            })}
-          </div>
-          {item.type === 'NFT' ? (
-            <span className="shrink-0 text-[9px] font-medium text-accent">{item.price} ETH</span>
-          ) : (
-            <span className="shrink-0 text-[9px] text-muted-foreground">{item.price}</span>
-          )}
-        </div>
+      <img
+        src={item.thumbnail}
+        alt={item.title}
+        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        loading="lazy"
+      />
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100 group-hover:bg-black/25">
+        <span className="rounded-lg border border-white/25 bg-background/55 px-2 py-1 text-[10px] font-medium">
+          {enterLabel}
+        </span>
       </div>
     </button>
   )
-
-  if (sponsorSlot) {
-    return (
-      <div
-        className={[
-          'rounded-xl p-[2px]',
-          'bg-gradient-to-br from-amber-100/95 via-zinc-200/90 to-amber-900/70',
-          'shadow-[0_0_22px_rgba(251,191,36,0.35),inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(0,0,0,0.2)]',
-          'dark:from-amber-200/40 dark:via-zinc-400/35 dark:to-amber-950/80',
-          'dark:shadow-[0_0_26px_rgba(251,191,36,0.22),inset_0_1px_0_rgba(255,255,255,0.12)]',
-        ].join(' ')}
-      >
-        <div className="rounded-[10px] bg-popover/95 p-1 dark:bg-popover/90">{inner}</div>
-      </div>
-    )
-  }
-
-  return inner
 }

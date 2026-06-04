@@ -31,7 +31,9 @@ export function useCompanion({ cockpitActive, onCompanionEvent, isDjBusy }: UseC
   )
   const [alarms, setAlarms] = useState<AlarmConfig[]>(() => loadAlarms())
   const pomodoroRef = useRef(pomodoro)
+  const alarmsRef = useRef(alarms)
   pomodoroRef.current = pomodoro
+  alarmsRef.current = alarms
 
   useEffect(() => {
     savePomodoroState(pomodoro)
@@ -61,26 +63,31 @@ export function useCompanion({ cockpitActive, onCompanionEvent, isDjBusy }: UseC
     if (!cockpitActive) return
 
     const checkAlarms = () => {
-      if (isDjBusy()) return
       const now = new Date()
-      setAlarms((prev) => {
-        let changed = false
-        const next = prev.map((alarm) => {
-          if (shouldFireAlarm(alarm, now)) {
-            changed = true
-            onCompanionEvent({ type: 'alarm', alarm })
-            return markAlarmFired(alarm, now)
-          }
-          return alarm
-        })
-        return changed ? next : prev
-      })
+      const current = alarmsRef.current
+      const fired: { prev: AlarmConfig; next: AlarmConfig }[] = []
+
+      for (const alarm of current) {
+        if (shouldFireAlarm(alarm, now)) {
+          fired.push({ prev: alarm, next: markAlarmFired(alarm, now) })
+        }
+      }
+
+      if (fired.length === 0) return
+
+      setAlarms((prev) =>
+        prev.map((alarm) => fired.find((f) => f.prev.id === alarm.id)?.next ?? alarm),
+      )
+
+      for (const { prev } of fired) {
+        onCompanionEvent({ type: 'alarm', alarm: prev })
+      }
     }
 
     checkAlarms()
-    const id = window.setInterval(checkAlarms, 30_000)
+    const id = window.setInterval(checkAlarms, 1000)
     return () => window.clearInterval(id)
-  }, [cockpitActive, isDjBusy, onCompanionEvent])
+  }, [cockpitActive, onCompanionEvent])
 
   const startPomodoroTimer = useCallback(() => {
     setPomodoro((prev) => {

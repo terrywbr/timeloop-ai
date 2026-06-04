@@ -76,11 +76,20 @@ create table if not exists public.generated_worlds (
   is_featured boolean not null default false,
   is_private boolean not null default true,
 
+  published_at timestamptz,
+  mood_id text,
+  description text,
+  tags text[] default '{}'::text[],
+  view_count integer not null default 0,
+  like_count integer not null default 0,
+
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 comment on table public.generated_worlds is 'User-generated ambient worlds; featured+public visible in gallery';
+
+-- Community tables: see supabase/migrations/20250604_community.sql
 
 -- -----------------------------------------------------------------------------
 -- 3. public.credit_transactions — 點數流水帳（購買 / 生成扣點 / 每月重置）

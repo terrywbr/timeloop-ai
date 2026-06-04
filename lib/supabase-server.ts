@@ -214,6 +214,11 @@ export async function serializeGeneratedWorld(
     shaderPreset: row.shader_preset ?? undefined,
     ambienceAudio: row.ambience_audio ?? undefined,
     isFeatured: row.is_featured,
+    isPrivate: row.is_private,
+    publishedAt: row.published_at ?? null,
+    moodId: row.mood_id ?? null,
+    viewCount: row.view_count ?? 0,
+    likeCount: row.like_count ?? 0,
     createdAt: row.created_at,
   }
 }

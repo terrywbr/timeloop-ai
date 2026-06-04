@@ -8,6 +8,7 @@ import {
   getCalendarDjFallback,
   getIntervalDjFallback,
   getPomodoroDjFallback,
+  getCoFocusDjFallback,
 } from '@/lib/companion-i18n'
 import { formatDjLocalTime, getDjFallback } from '@/lib/dj-i18n'
 import type { DjSessionType, DjSpeakContext, DjSpeakParams } from '@/lib/dj-types'
@@ -64,6 +65,9 @@ function resolveLocalFallback(
   }
   if (sessionType === 'calendar') {
     return getCalendarDjFallback(locale, context?.eventTitle ?? 'Event', context?.minutesUntil ?? 5)
+  }
+  if (sessionType === 'cofocus') {
+    return getCoFocusDjFallback(locale, context?.coFocusCount ?? 1)
   }
   return getDjFallback(locale, moodId, { time: localTime, stationName: context?.eventTitle })
 }

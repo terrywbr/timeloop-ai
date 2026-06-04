@@ -68,7 +68,7 @@ export function requestLandscapeOrientation() {
   if (typeof screen === 'undefined') return Promise.resolve()
 
   const orientation = screen.orientation as ScreenOrientation & {
-    lock?: (orientation: OrientationLockType) => Promise<void>
+    lock?: (orientation: 'landscape' | 'portrait' | 'natural' | 'any') => Promise<void>
   }
 
   if (!orientation?.lock) return Promise.resolve()

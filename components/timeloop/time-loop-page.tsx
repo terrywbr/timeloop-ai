@@ -112,6 +112,7 @@ function TimeLoopPageInner() {
             onLoadWorld={page.handleLoadWorld}
             onDeleteWorld={page.handleDeleteWorld}
             onRenameWorld={page.handleRenameWorld}
+            onPublishWorld={page.handlePublishWorld}
             onCheckout={page.handleCheckout}
             onDownload={page.handleDownload}
             preferCreditPack={page.preferCreditPack}
@@ -120,7 +121,13 @@ function TimeLoopPageInner() {
           <CommunityGallery
             isExpanded={page.rightPanelExpanded}
             onExpandedChange={page.setRightPanelExpanded}
-            onEnterScene={page.handleEnterGalleryScene}
+            accessToken={page.accessToken}
+            onRequireAuth={page.handleRequireAuth}
+            onEnterOfficialScene={page.handleEnterGalleryScene}
+            onEnterWorld={page.handleEnterPublicWorld}
+            coFocusEnabled={page.coFocusEnabled}
+            onCoFocusEnabledChange={page.setCoFocusEnabled}
+            presenceCount={page.presenceCount}
           />
 
           <TimeloopMobileDrawers
@@ -162,7 +169,13 @@ function TimeLoopPageInner() {
             onCheckout={page.handleCheckout}
             onDownload={page.handleDownload}
             preferCreditPack={page.preferCreditPack}
-            onEnterScene={page.handleEnterGalleryScene}
+            onPublishWorld={page.handlePublishWorld}
+            accessToken={page.accessToken}
+            onEnterOfficialScene={page.handleEnterGalleryScene}
+            onEnterWorld={page.handleEnterPublicWorld}
+            coFocusEnabled={page.coFocusEnabled}
+            onCoFocusEnabledChange={page.setCoFocusEnabled}
+            presenceCount={page.presenceCount}
           />
 
           {page.isGenerating ? <GeneratingOverlay /> : null}

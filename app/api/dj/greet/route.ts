@@ -6,6 +6,7 @@ import {
   getCalendarDjFallback,
   getIntervalDjFallback,
   getPomodoroDjFallback,
+  getCoFocusDjFallback,
 } from '@/lib/companion-i18n'
 import { isMusicMoodId, type MusicMoodId } from '@/lib/music-moods'
 import type { DjSessionType, DjSpeakContext } from '@/lib/dj-types'
@@ -43,6 +44,7 @@ const SESSION_TYPES: DjSessionType[] = [
   'pomodoro',
   'alarm',
   'calendar',
+  'cofocus',
 ]
 
 function isLocale(value: string): value is Language {
@@ -87,6 +89,9 @@ function resolveFallback(
   if (sessionType === 'calendar') {
     return getCalendarDjFallback(locale, context?.eventTitle ?? 'Event', context?.minutesUntil ?? 5)
   }
+  if (sessionType === 'cofocus') {
+    return getCoFocusDjFallback(locale, context?.coFocusCount ?? 1)
+  }
 
   return getDjFallback(locale, moodId, {
     time: localTime,
@@ -130,6 +135,11 @@ function buildUserContext(
         `Upcoming event "${context?.eventTitle ?? 'Meeting'}" in ${context?.minutesUntil ?? 5} minutes. Remind Captain gently.`,
       )
       break
+    case 'cofocus':
+      lines.push(
+        `${context?.coFocusCount ?? 1} people are co-focusing in this shared world. One short encouraging line about shared focus.`,
+      )
+      break
   }
 
   if (stationName) lines.push(`Current station: ${stationName}`)
@@ -140,7 +150,12 @@ function systemPromptForSession(personaPrompt: string, sessionType: DjSessionTyp
   if (sessionType === 'interval') {
     return `${personaPrompt} Keep this reply to 1-2 short sentences. Companion check-in, not a full welcome.`
   }
-  if (sessionType === 'pomodoro' || sessionType === 'alarm' || sessionType === 'calendar') {
+  if (
+    sessionType === 'pomodoro' ||
+    sessionType === 'alarm' ||
+    sessionType === 'calendar' ||
+    sessionType === 'cofocus'
+  ) {
     return `${personaPrompt} Keep this reply to 1-2 short sentences. Be supportive and concise.`
   }
   return personaPrompt

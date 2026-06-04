@@ -6,7 +6,7 @@ export function primeStreamAudio(streamUrl: string, volume = 70) {
 
   if (!primedAudio) {
     primedAudio = new Audio()
-    primedAudio.playsInline = true
+    primedAudio.setAttribute('playsinline', '')
   }
 
   primedAudio.volume = Math.min(1, Math.max(0, volume / 100))

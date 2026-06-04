@@ -14,6 +14,8 @@ import { DJ_INTERVAL_MS } from '@/lib/dj-types'
 import { markIntervalSpoken, shouldSpeakInterval, clearGreetDate } from '@/lib/dj-settings'
 import type { Language } from '@/lib/translations'
 import { type SceneGalleryItem as GallerySceneItem } from '@/lib/scene-gallery-data'
+import type { GalleryWorld } from '@/lib/community/types'
+import { isMusicMoodId } from '@/lib/music-moods'
 import { useMusicStation } from '@/hooks/use-music-station'
 import type { MusicMoodId } from '@/lib/music-moods'
 import { resolveMoodWorldLayer } from '@/lib/mood-worlds'
@@ -23,11 +25,16 @@ import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import {
   deleteWorld,
   fetchUserProfile,
+  fetchWorldById,
   fetchWorlds,
+  publishWorld,
+  recordWorldView,
   startCheckout,
   updateWorldTitle,
   type UserAccountProfile,
 } from '@/lib/api-client'
+import { useCoFocus } from '@/hooks/use-cofocus'
+import { markCoFocusSpokenToday, shouldSpeakCoFocusToday } from '@/lib/dj-settings'
 import type { VideoBackgroundRef } from '@/components/ui/video-background'
 import { AMBIENCE_AUDIO_SOURCES, AMBIENCE_VOLUME_RATIO } from '@/lib/timeloop/constants'
 import type { AmbientWorldLayer, GalleryWorldAssets, GenerateApiResponse } from '@/lib/timeloop/types'
@@ -64,6 +71,8 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   const [isCnHost, setIsCnHost] = useState(false)
   const [showRegionPrompt, setShowRegionPrompt] = useState(false)
   const [accessToken, setAccessToken] = useState<string | null>(null)
+  const [coFocusEnabled, setCoFocusEnabled] = useState(false)
+  const [enteredPublicWorldId, setEnteredPublicWorldId] = useState<string | null>(null)
   const isMobile = useIsMobile()
   const { isLandscape, isMobilePortrait } = useOrientation()
   const isClientMounted = useClientMounted()
@@ -334,6 +343,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   }, [supabase])
 
   const handleLoadWorld = useCallback((world: PublicGeneratedWorld) => {
+    setEnteredPublicWorldId(world.isPrivate === false ? world.id : null)
     setActiveWorldId(world.id)
     setCurrentWorldId(world.id)
     setCurrentGalleryAssets({
@@ -487,6 +497,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
       const backgroundImage = `/gallery/backgrounds/${item.id}-bg.jpg`
       const depthMap = `/gallery/depths/${item.id}-depth.jpg`
 
+      setEnteredPublicWorldId(null)
       setActiveWorldId(null)
       setCurrentWorldId(nextWorldId)
       setCurrentGalleryAssets({ backgroundImage, depthMap })
@@ -498,6 +509,91 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     },
     [music],
   )
+
+  const handleEnterPublicWorld = useCallback(
+    (world: GalleryWorld) => {
+      setEnteredPublicWorldId(world.id)
+      setActiveWorldId(world.id)
+      setCurrentWorldId(world.id)
+      setCurrentGalleryAssets({
+        backgroundImage: world.backgroundImage,
+        depthMap: world.depthMap,
+        particlePreset: world.particlePreset,
+      })
+      setWorldOverrideActive(true)
+      setIsAudioUnlocked(true)
+      const moodForStation =
+        world.moodId && isMusicMoodId(world.moodId)
+          ? world.moodId
+          : music.primaryMood ?? 'deep-night'
+      music.setPrimaryMood(moodForStation)
+      setIsMusicPlaying(true)
+      setRightPanelExpanded(false)
+      setRightDrawerOpen(false)
+      void recordWorldView(world.id)
+    },
+    [music],
+  )
+
+  const handlePublishWorld = useCallback(
+    async (worldId: string, isPublic: boolean) => {
+      const token = await getAccessToken()
+      if (!token) {
+        await handleRequireAuth()
+        return
+      }
+      try {
+        await publishWorld(token, worldId, { isPublic })
+        void refreshAccountData()
+      } catch (error) {
+        window.alert(error instanceof Error ? error.message : 'Publish failed')
+      }
+    },
+    [getAccessToken, handleRequireAuth, refreshAccountData],
+  )
+
+  const coFocusWorldId = coFocusEnabled && enteredPublicWorldId ? enteredPublicWorldId : null
+  const { presenceCount } = useCoFocus({
+    worldId: coFocusWorldId,
+    enabled: coFocusEnabled,
+    accessToken,
+    cockpitActive: showCockpit,
+  })
+
+  useEffect(() => {
+    if (!showCockpit || !coFocusEnabled || !enteredPublicWorldId || presenceCount < 2) return
+    if (!music.primaryMood || isBusy()) return
+    if (!shouldSpeakCoFocusToday(enteredPublicWorldId)) return
+
+    markCoFocusSpokenToday(enteredPublicWorldId)
+    void speakLine({
+      moodId: music.primaryMood,
+      sessionType: 'cofocus',
+      context: { coFocusCount: presenceCount },
+      force: true,
+    })
+  }, [
+    coFocusEnabled,
+    enteredPublicWorldId,
+    isBusy,
+    music.primaryMood,
+    presenceCount,
+    showCockpit,
+    speakLine,
+  ])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const worldId = params.get('world')?.trim()
+    if (!worldId || !showCockpit) return
+
+    void (async () => {
+      const token = await getAccessToken()
+      const world = await fetchWorldById(worldId, token)
+      if (world) handleEnterPublicWorld(world)
+    })()
+  }, [getAccessToken, handleEnterPublicWorld, showCockpit])
 
   const handleGenerate = useCallback(
     async (prompt: string, scene: string) => {
@@ -694,7 +790,6 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     isMobile,
     isMobilePortrait,
     ambientLayers,
-    activeMusicStreamUrl,
     activeAmbienceUrl,
     ambienceVolume,
     handleMusicPlayingChange,
@@ -708,6 +803,12 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     handleCheckout,
     handleDownload,
     handleEnterGalleryScene,
+    handleEnterPublicWorld,
+    handlePublishWorld,
+    accessToken,
+    coFocusEnabled,
+    setCoFocusEnabled,
+    presenceCount,
     handleGenerate,
     ...music,
     handleReopenMusicOnboarding,

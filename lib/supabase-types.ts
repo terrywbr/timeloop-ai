@@ -41,6 +41,12 @@ export type GeneratedWorldRow = {
   quality: WorldQuality
   is_featured: boolean
   is_private: boolean
+  published_at: string | null
+  mood_id: string | null
+  description: string | null
+  tags: string[] | null
+  view_count: number
+  like_count: number
   created_at: string
   updated_at: string
 }
@@ -55,5 +61,10 @@ export type PublicGeneratedWorld = {
   shaderPreset?: string
   ambienceAudio?: string
   isFeatured: boolean
+  isPrivate?: boolean
+  publishedAt?: string | null
+  moodId?: string | null
+  viewCount?: number
+  likeCount?: number
   createdAt: string
 }

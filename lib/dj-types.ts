@@ -7,6 +7,7 @@ export type DjSessionType =
   | 'pomodoro'
   | 'alarm'
   | 'calendar'
+  | 'cofocus'
 
 export type DjSpeakContext = {
   phase?: string
@@ -15,6 +16,7 @@ export type DjSpeakContext = {
   eventTitle?: string
   minutesUntil?: number
   pomodoroCycle?: number
+  coFocusCount?: number
 }
 
 export type DjSpeakParams = {

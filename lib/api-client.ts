@@ -1,3 +1,5 @@
+import type { CreatorProfile, GalleryWorld, PublicWorldsSort } from '@/lib/community/types'
+import type { MusicMoodId } from '@/lib/music-moods'
 import type { PublicGeneratedWorld } from './supabase-types'
 
 export type UserAccountProfile = {
@@ -18,9 +20,10 @@ type ApiErrorResponse = {
   error: string
 }
 
-function authHeaders(accessToken: string | null | undefined) {
+function authHeaders(accessToken: string | null | undefined, extra?: Record<string, string>) {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    ...extra,
   }
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`
@@ -56,6 +59,175 @@ export async function fetchWorlds(accessToken?: string | null): Promise<{
     featured: payload.featured,
     own: payload.own,
   }
+}
+
+export async function fetchPublicWorlds(
+  options: {
+    sort?: PublicWorldsSort
+    cursor?: string | null
+    limit?: number
+    accessToken?: string | null
+  } = {},
+): Promise<{ worlds: GalleryWorld[]; nextCursor: string | null }> {
+  const params = new URLSearchParams()
+  if (options.sort) params.set('sort', options.sort)
+  if (options.cursor) params.set('cursor', options.cursor)
+  if (options.limit) params.set('limit', String(options.limit))
+
+  const response = await fetch(`/api/worlds/public?${params.toString()}`, {
+    headers: authHeaders(options.accessToken ?? null),
+  })
+  const payload = (await response.json()) as
+    | { success: true; worlds: GalleryWorld[]; nextCursor: string | null }
+    | ApiErrorResponse
+
+  if (!response.ok || !payload.success) {
+    return { worlds: [], nextCursor: null }
+  }
+
+  return { worlds: payload.worlds, nextCursor: payload.nextCursor }
+}
+
+export async function fetchWorldById(
+  worldId: string,
+  accessToken?: string | null,
+): Promise<GalleryWorld | null> {
+  const response = await fetch(`/api/worlds/${worldId}`, {
+    headers: authHeaders(accessToken ?? null),
+  })
+  const payload = (await response.json()) as { success: true; world: GalleryWorld } | ApiErrorResponse
+  if (!response.ok || !payload.success) return null
+  return payload.world
+}
+
+export async function publishWorld(
+  accessToken: string,
+  worldId: string,
+  data: {
+    isPublic: boolean
+    title?: string
+    description?: string
+    moodId?: MusicMoodId
+    tags?: string[]
+  },
+): Promise<GalleryWorld> {
+  const response = await fetch(`/api/worlds/${worldId}/publish`, {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(data),
+  })
+  const payload = (await response.json()) as { success: true; world: GalleryWorld } | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.success ? 'Publish failed' : payload.error)
+  }
+  return payload.world
+}
+
+export async function recordWorldView(worldId: string) {
+  await fetch(`/api/worlds/${worldId}/view`, { method: 'POST' })
+}
+
+export async function toggleWorldLike(
+  accessToken: string,
+  worldId: string,
+  liked: boolean,
+): Promise<void> {
+  const response = await fetch(`/api/worlds/${worldId}/like`, {
+    method: liked ? 'POST' : 'DELETE',
+    headers: authHeaders(accessToken),
+  })
+  const payload = (await response.json()) as { success: true } | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.success ? 'Like failed' : payload.error)
+  }
+}
+
+export async function toggleWorldSave(
+  accessToken: string,
+  worldId: string,
+  saved: boolean,
+): Promise<void> {
+  const response = await fetch(`/api/worlds/${worldId}/save`, {
+    method: saved ? 'POST' : 'DELETE',
+    headers: authHeaders(accessToken),
+  })
+  const payload = (await response.json()) as { success: true } | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.success ? 'Save failed' : payload.error)
+  }
+}
+
+export async function fetchCreatorProfile(
+  userId: string,
+  accessToken?: string | null,
+): Promise<CreatorProfile | null> {
+  const response = await fetch(`/api/users/${userId}/profile`, {
+    headers: authHeaders(accessToken ?? null),
+  })
+  const payload = (await response.json()) as { success: true; profile: CreatorProfile } | ApiErrorResponse
+  if (!response.ok || !payload.success) return null
+  return payload.profile
+}
+
+export async function toggleFollowUser(
+  accessToken: string,
+  userId: string,
+  following: boolean,
+): Promise<void> {
+  const response = await fetch(`/api/users/${userId}/follow`, {
+    method: following ? 'POST' : 'DELETE',
+    headers: authHeaders(accessToken),
+  })
+  const payload = (await response.json()) as { success: true } | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.success ? 'Follow failed' : payload.error)
+  }
+}
+
+export async function submitWorldReport(
+  accessToken: string,
+  worldId: string,
+  reason: string,
+): Promise<void> {
+  const response = await fetch('/api/reports', {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify({ worldId, reason }),
+  })
+  const payload = (await response.json()) as { success: true } | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.success ? 'Report failed' : payload.error)
+  }
+}
+
+export async function sendFocusHeartbeat(
+  worldId: string,
+  options?: { accessToken?: string | null; guestId?: string },
+) {
+  await fetch('/api/focus/heartbeat', {
+    method: 'POST',
+    headers: authHeaders(options?.accessToken ?? null, options?.guestId ? { 'x-focus-guest': options.guestId } : undefined),
+    body: JSON.stringify({ worldId }),
+  })
+}
+
+export async function leaveFocusSession(
+  worldId: string,
+  options?: { accessToken?: string | null; guestId?: string },
+) {
+  const params = new URLSearchParams({ worldId })
+  await fetch(`/api/focus/heartbeat?${params.toString()}`, {
+    method: 'DELETE',
+    headers: authHeaders(options?.accessToken ?? null, options?.guestId ? { 'x-focus-guest': options.guestId } : undefined),
+  })
+}
+
+export async function fetchFocusPresence(worldId: string): Promise<number> {
+  const params = new URLSearchParams({ worldId })
+  const response = await fetch(`/api/focus/presence?${params.toString()}`)
+  const payload = (await response.json()) as { success: true; count: number } | ApiErrorResponse
+  if (!response.ok || !payload.success) return 0
+  return payload.count
 }
 
 export async function startCheckout(

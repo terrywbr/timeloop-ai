@@ -440,3 +440,29 @@ const INTERVAL_FALLBACKS: Record<
     'retro-earth': ['Lagerfeuer knistert noch, Kapitän. {time} — weiter auf Reise.', 'Alpennacht {time}. Du bist nicht allein.'],
   },
 }
+
+const COFOCUS_FALLBACKS: Record<Language, string[]> = {
+  en: [
+    'Captain, {count} souls are focusing in this timeline with you.',
+    'Gallery pulse: {count} captains co-focusing here right now.',
+  ],
+  'zh-TW': [
+    '艦長，此刻有 {count} 位夥伴與你在此時空共專注。',
+    '畫廊訊號：{count} 位艦長正在此處一起專注。',
+  ],
+  'zh-CN': [
+    '舰长，此刻有 {count} 位伙伴与你在此时空共专注。',
+    '画廊讯号：{count} 位舰长正在此处一起专注。',
+  ],
+  ja: ['艦長、今 {count} 人がこのタイムラインで集中しています。', 'ギャラリー：{count} 人が共集中中です。'],
+  ko: ['함장님, 지금 {count} 명이 이 타임라인에서 함께 집중 중입니다.', '갤러리: {count} 명이 공동 집중 중.'],
+  es: ['Capitán, {count} almas se concentran contigo en esta línea temporal.', 'Galería: {count} capitanes co-enfocados aquí.'],
+  fr: ['Capitaine, {count} âmes se concentrent avec toi dans cette timeline.', 'Galerie : {count} capitaines co-focus ici.'],
+  de: ['Kapitän, {count} Seelen fokussieren mit dir in dieser Zeitlinie.', 'Galerie: {count} Kapitäne co-fokussieren hier.'],
+}
+
+export function getCoFocusDjFallback(locale: Language, count: number): string {
+  const templates = COFOCUS_FALLBACKS[locale] ?? COFOCUS_FALLBACKS.en
+  const pick = templates[Math.floor(Date.now() / 86_400_000) % templates.length] ?? templates[0]
+  return pick.replace(/\{count\}/g, String(count))
+}

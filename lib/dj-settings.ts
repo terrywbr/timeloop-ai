@@ -5,6 +5,7 @@ export const DJ_LAST_GREET_DATE_KEY = 'timeloop-dj-last-greet-date'
 export const DJ_INTERVAL_ENABLED_KEY = 'timeloop-dj-interval-enabled'
 export const DJ_LAST_INTERVAL_AT_KEY = 'timeloop-dj-last-interval-at'
 export const PRIMARY_MOOD_KEY = 'timeloop-primary-mood'
+export const DJ_COFOCUS_SPOKEN_KEY = 'timeloop-dj-cofocus-spoken'
 
 export function loadDjVoiceEnabled(): boolean {
   if (typeof window === 'undefined') return true
@@ -72,4 +73,29 @@ export function loadPrimaryMood(): MusicMoodId | null {
 
 export function savePrimaryMood(moodId: MusicMoodId) {
   localStorage.setItem(PRIMARY_MOOD_KEY, moodId)
+}
+
+export function shouldSpeakCoFocusToday(worldId: string): boolean {
+  if (typeof window === 'undefined') return false
+  const today = new Date().toISOString().slice(0, 10)
+  const raw = localStorage.getItem(DJ_COFOCUS_SPOKEN_KEY)
+  try {
+    const map = raw ? (JSON.parse(raw) as Record<string, string>) : {}
+    return map[worldId] !== today
+  } catch {
+    return true
+  }
+}
+
+export function markCoFocusSpokenToday(worldId: string) {
+  const today = new Date().toISOString().slice(0, 10)
+  let map: Record<string, string> = {}
+  try {
+    const raw = localStorage.getItem(DJ_COFOCUS_SPOKEN_KEY)
+    if (raw) map = JSON.parse(raw) as Record<string, string>
+  } catch {
+    map = {}
+  }
+  map[worldId] = today
+  localStorage.setItem(DJ_COFOCUS_SPOKEN_KEY, JSON.stringify(map))
 }

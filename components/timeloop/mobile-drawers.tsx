@@ -2,6 +2,7 @@
 
 import { Menu, ImageIcon } from 'lucide-react'
 import type { SceneGalleryItem as GallerySceneItem } from '@/lib/scene-gallery-data'
+import type { GalleryWorld } from '@/lib/community/types'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import type { UserAccountProfile } from '@/lib/api-client'
 import type { VideoBackgroundRef } from '@/components/ui/video-background'
@@ -54,10 +55,16 @@ type TimeloopMobileDrawersProps = {
   onLoadWorld: (world: PublicGeneratedWorld) => void
   onDeleteWorld: (worldId: string) => void
   onRenameWorld: (worldId: string, title: string) => void
+  onPublishWorld: (worldId: string, isPublic: boolean) => void | Promise<void>
   onCheckout: (kind: 'subscription' | 'credits') => void
   onDownload: () => void
   preferCreditPack: boolean
-  onEnterScene: (item: GallerySceneItem) => void
+  accessToken: string | null
+  onEnterOfficialScene: (item: GallerySceneItem) => void
+  onEnterWorld: (world: GalleryWorld) => void
+  coFocusEnabled: boolean
+  onCoFocusEnabledChange: (enabled: boolean) => void
+  presenceCount: number
 }
 
 export default function TimeloopMobileDrawers({
@@ -96,10 +103,16 @@ export default function TimeloopMobileDrawers({
   onLoadWorld,
   onDeleteWorld,
   onRenameWorld,
+  onPublishWorld,
   onCheckout,
   onDownload,
   preferCreditPack,
-  onEnterScene,
+  accessToken,
+  onEnterOfficialScene,
+  onEnterWorld,
+  coFocusEnabled,
+  onCoFocusEnabledChange,
+  presenceCount,
 }: TimeloopMobileDrawersProps) {
   return (
     <>
@@ -152,6 +165,7 @@ export default function TimeloopMobileDrawers({
                   onLoadWorld={onLoadWorld}
                   onDeleteWorld={onDeleteWorld}
                   onRenameWorld={onRenameWorld}
+                  onPublishWorld={onPublishWorld}
                   onCheckout={onCheckout}
                   onDownload={onDownload}
                   preferCreditPack={preferCreditPack}
@@ -180,7 +194,13 @@ export default function TimeloopMobileDrawers({
                 </DrawerHeader>
                 <MobileGalleryContent
                   onClose={() => onRightDrawerOpenChange(false)}
-                  onEnterScene={onEnterScene}
+                  accessToken={accessToken}
+                  onRequireAuth={onRequireAuth}
+                  onEnterOfficialScene={onEnterOfficialScene}
+                  onEnterWorld={onEnterWorld}
+                  coFocusEnabled={coFocusEnabled}
+                  onCoFocusEnabledChange={onCoFocusEnabledChange}
+                  presenceCount={presenceCount}
                 />
               </>
             ) : null}

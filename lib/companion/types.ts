@@ -23,7 +23,10 @@ export type AlarmConfig = {
   minute: number
   repeat: AlarmRepeat
   enabled: boolean
+  /** @deprecated use lastFiredMinute */
   lastFiredDate?: string
+  /** Local YYYY-MM-DDTHH:mm — prevents double-fire within the same minute */
+  lastFiredMinute?: string
 }
 
 export type CompanionEvent =
