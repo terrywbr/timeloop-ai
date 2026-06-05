@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { getMissingBillingEnvVars, isBillingConfigured } from '@/lib/billing-config'
 
 export const runtime = 'nodejs'
 
@@ -6,8 +7,6 @@ function readEnv(name: string) {
   const value = process.env[name]?.trim()
   return value && value.length > 0 ? value : undefined
 }
-
-import { getMissingBillingEnvVars, isBillingConfigured } from '@/lib/billing-config'
 
 export async function GET(req: Request) {
   const url = new URL(req.url)
