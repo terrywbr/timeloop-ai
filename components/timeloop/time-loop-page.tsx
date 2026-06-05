@@ -116,6 +116,8 @@ function TimeLoopPageInner() {
             onCheckout={page.handleCheckout}
             onDownload={page.handleDownload}
             preferCreditPack={page.preferCreditPack}
+            selectedVisualEffect={page.selectedVisualEffect}
+            onVisualEffectChange={page.setSelectedVisualEffect}
           />
 
           <CommunityGallery
@@ -169,6 +171,8 @@ function TimeLoopPageInner() {
             onCheckout={page.handleCheckout}
             onDownload={page.handleDownload}
             preferCreditPack={page.preferCreditPack}
+            selectedVisualEffect={page.selectedVisualEffect}
+            onVisualEffectChange={page.setSelectedVisualEffect}
             onPublishWorld={page.handlePublishWorld}
             accessToken={page.accessToken}
             onEnterOfficialScene={page.handleEnterGalleryScene}

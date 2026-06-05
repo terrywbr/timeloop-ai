@@ -35,6 +35,8 @@ import {
 import type { VideoBackgroundRef } from '@/components/ui/video-background'
 import type { UserAccountProfile } from '@/lib/api-client'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
+import type { VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
+import { VISUAL_EFFECT_SCENE_KEYS } from '@/lib/timeloop/world-resolver'
 
 export interface MobileControlContentProps {
   videoRef: React.RefObject<VideoBackgroundRef | null>
@@ -73,9 +75,9 @@ export interface MobileControlContentProps {
   onCheckout: (kind: 'subscription' | 'credits') => void
   onDownload: () => void
   preferCreditPack: boolean
+  selectedVisualEffect: VisualEffectSceneKey
+  onVisualEffectChange: (scene: VisualEffectSceneKey) => void
 }
-
-type SceneKey = 'cyberpunk' | 'nature' | 'space' | 'ocean' | 'city' | 'desert'
 
 export default function MobileControlContent({
   videoRef,
@@ -114,6 +116,8 @@ export default function MobileControlContent({
   onCheckout,
   onDownload,
   preferCreditPack,
+  selectedVisualEffect,
+  onVisualEffectChange,
 }: MobileControlContentProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showFavoriteToast, setShowFavoriteToast] = useState(false)
@@ -121,11 +125,10 @@ export default function MobileControlContent({
   const [newSceneName, setNewSceneName] = useState('')
   const [isFavoritesHeartFilled, setIsFavoritesHeartFilled] = useState(false)
   const [prompt, setPrompt] = useState('')
-  const [selectedScene, setSelectedScene] = useState<SceneKey>('cyberpunk')
   const { t, language } = useLanguage()
   const ct = getCommunityStrings(language)
 
-  const scenes: SceneKey[] = ['cyberpunk', 'nature', 'space', 'ocean', 'city', 'desert']
+  const scenes = VISUAL_EFFECT_SCENE_KEYS
   const stationLabel = currentStation?.name ?? t.music.scanning
 
   const handleToggleFavoriteClick = () => {
@@ -179,7 +182,7 @@ export default function MobileControlContent({
       void onRequireAuth()
       return
     }
-    onGenerate(prompt, selectedScene)
+    onGenerate(prompt, selectedVisualEffect)
   }
 
   return (
@@ -215,8 +218,8 @@ export default function MobileControlContent({
         <div className="space-y-1.5">
           <label className="text-xs text-muted-foreground">{t.sceneLabel}</label>
           <select
-            value={selectedScene}
-            onChange={(e) => setSelectedScene(e.target.value as SceneKey)}
+            value={selectedVisualEffect}
+            onChange={(e) => onVisualEffectChange(e.target.value as VisualEffectSceneKey)}
             className="glass w-full rounded-lg border border-foreground/10 bg-input/50 px-3 py-2 text-sm text-foreground focus:border-accent/50 focus:outline-none"
           >
             {scenes.map((scene) => (

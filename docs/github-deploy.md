@@ -49,10 +49,20 @@ Repo → **Settings → Secrets and variables → Actions → New repository sec
 | `NEXT_PUBLIC_SITE_URL` | `https://app.timeloopai.net` |
 | `NEXT_PUBLIC_APP_SITE_URL` | `https://app.timeloopai.net` |
 | `NEXT_PUBLIC_CN_SITE_URL` | `https://cn.timeloopai.net` |
+| `NEXT_PUBLIC_STREAM_PROXY_URL` | `https://stream.timeloopai.net` |
+| `LEMON_SQUEEZY_API_KEY` | Lemon Squeezy API key（VIP 付費） |
+| `LEMON_SQUEEZY_STORE_ID` | Lemon Squeezy Store ID |
+| `LEMON_SQUEEZY_VIP_VARIANT_ID` | VIP 訂閱 variant ID |
+| `LEMON_SQUEEZY_CREDIT_PACK_VARIANT_ID` | 點數包 variant ID |
+| `LEMON_SQUEEZY_CREDIT_PACK_CREDITS` | `100`（點數包額度，可選） |
+| `LEMON_SQUEEZY_WEBHOOK_SECRET` | Webhook 簽章密鑰 |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role |
+| `TOGETHER_API_KEY` | AI 生圖 |
+| `REPLICATE_API_TOKEN` | 深度圖 |
 
-## 第五步：在 Cloudflare 設定 Worker 執行時機密（只需一次）
+## 第五步：在 Cloudflare 設定 Worker 執行時機密（可選）
 
-GitHub Actions 只負責建置與部署；**API 金鑰**需在 Cloudflare Worker 上設定（不會從 GitHub 覆寫）。
+GitHub Actions 部署 workflow 會自動同步上述 **Secret 類** 變數到 Worker（若已在 GitHub Secrets 設定）。也可手動在 Cloudflare 設定：
 
 **Workers & Pages → timeloop-ai → Settings → Variables and Secrets → Add**
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import { createLemonSqueezyCheckout, type CheckoutKind } from '@/lib/lemon-squeezy'
-import { getAuthenticatedUser } from '@/lib/supabase-server'
+import { billingNotConfiguredMessage, isBillingConfigured } from '@/lib/billing-config'
+import { createLemonSqueezyCheckout, type CheckoutKind } from '@/lib/lemon-squeezy'import { getAuthenticatedUser } from '@/lib/supabase-server'
 
 export const runtime = 'nodejs'
 
@@ -14,6 +14,10 @@ function isCheckoutKind(value: unknown): value is CheckoutKind {
 
 export async function POST(req: Request) {
   try {
+    if (!isBillingConfigured()) {
+      return jsonError(billingNotConfiguredMessage(), 503)
+    }
+
     const auth = await getAuthenticatedUser(req)
     const body = (await req.json()) as { kind?: unknown }
     const kind = isCheckoutKind(body.kind) ? body.kind : 'subscription'

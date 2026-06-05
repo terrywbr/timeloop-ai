@@ -38,7 +38,7 @@ import { markCoFocusSpokenToday, shouldSpeakCoFocusToday } from '@/lib/dj-settin
 import type { VideoBackgroundRef } from '@/components/ui/video-background'
 import { AMBIENCE_AUDIO_SOURCES, AMBIENCE_VOLUME_RATIO } from '@/lib/timeloop/constants'
 import type { AmbientWorldLayer, GalleryWorldAssets, GenerateApiResponse } from '@/lib/timeloop/types'
-import { resolveParticlePreset, resolvePresetWorld } from '@/lib/timeloop/world-resolver'
+import { normalizeVisualEffectScene, resolveParticlePreset, resolvePresetWorld, type VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
 import { buildStreamPlaybackUrl } from '@/lib/radio-station'
 import { primeStreamAudio } from '@/lib/prime-stream-audio'
 import {
@@ -81,6 +81,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [coFocusEnabled, setCoFocusEnabled] = useState(false)
   const [enteredPublicWorldId, setEnteredPublicWorldId] = useState<string | null>(null)
+  const [selectedVisualEffect, setSelectedVisualEffect] = useState<VisualEffectSceneKey>('cyberpunk')
   const isMobile = useIsMobile()
   const { isLandscape, isMobilePortrait } = useOrientation()
   const isClientMounted = useClientMounted()
@@ -114,9 +115,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     presetWorld.backgroundImage
   const activeDepthMap =
     moodAmbientLayer?.depthMap ?? currentGalleryAssets?.depthMap ?? presetWorld.depthMap
-  const activeParticlePreset = moodAmbientLayer
-    ? moodAmbientLayer.particlePreset
-    : resolveParticlePreset(currentGalleryAssets?.particlePreset, presetWorld.particlePreset)
+  const activeParticlePreset = resolveParticlePreset(selectedVisualEffect, presetWorld.particlePreset)
   const activeShaderPreset = moodAmbientLayer?.shaderPreset ?? presetWorld.shaderPreset
   const activeAmbienceAudio = moodAmbientLayer?.ambienceAudio ?? presetWorld.ambienceAudio
   const activeMusicStreamUrl = music.activeMusicStreamUrl
@@ -269,6 +268,39 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   }, [authUser, refreshAccountData])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('checkout') !== 'success') return
+
+    params.delete('checkout')
+    const query = params.toString()
+    const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname
+    window.history.replaceState({}, '', nextUrl)
+
+    const messages: Partial<Record<Language, string>> = {
+      en: 'Payment successful! Updating your membership…',
+      'zh-cn': '付款成功！正在更新会员状态…',
+      'zh-tw': '付款成功！正在更新會員狀態…',
+      ja: 'お支払いが完了しました。会員ステータスを更新しています…',
+      ko: '결제가 완료되었습니다. 멤버십 상태를 업데이트하는 중…',
+      es: 'Pago completado. Actualizando tu membresía…',
+      fr: 'Paiement réussi. Mise à jour de votre abonnement…',
+      de: 'Zahlung erfolgreich. Mitgliedschaft wird aktualisiert…',
+    }
+    window.alert(messages[language] ?? messages.en)
+
+    void refreshAccountData()
+    let attempts = 0
+    const pollId = window.setInterval(() => {
+      attempts += 1
+      void refreshAccountData()
+      if (attempts >= 6) window.clearInterval(pollId)
+    }, 3000)
+
+    return () => window.clearInterval(pollId)
+  }, [language, refreshAccountData])
+
+  useEffect(() => {
     if (!supabase) return
 
     let mounted = true
@@ -390,6 +422,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
       depthMap: world.depthMap,
       particlePreset: world.particlePreset,
     })
+    setSelectedVisualEffect(normalizeVisualEffectScene(world.particlePreset))
     setWorldOverrideActive(true)
     setIsAudioUnlocked(true)
     setIsMusicPlaying(true)
@@ -559,6 +592,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
         depthMap: world.depthMap,
         particlePreset: world.particlePreset,
       })
+      setSelectedVisualEffect(normalizeVisualEffectScene(world.particlePreset))
       setWorldOverrideActive(true)
       setIsAudioUnlocked(true)
       const moodForStation =
@@ -635,9 +669,10 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   }, [getAccessToken, handleEnterPublicWorld, showCockpit])
 
   const handleGenerate = useCallback(
-    async (prompt: string, scene: string) => {
+    async (prompt: string, scene?: string) => {
       const trimmedPrompt = prompt.trim()
       if (!trimmedPrompt) return
+      const effectScene = scene ? normalizeVisualEffectScene(scene) : selectedVisualEffect
       if (!authUser) {
         await handleRequireAuth()
         return
@@ -665,7 +700,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
           },
           body: JSON.stringify({
             prompt: trimmedPrompt,
-            particlePreset: scene,
+            particlePreset: effectScene,
           }),
         })
 
@@ -691,6 +726,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
           depthMap: res.world.depthMap,
           particlePreset: res.world.particlePreset,
         })
+        setSelectedVisualEffect(normalizeVisualEffectScene(res.world.particlePreset))
         setWorldOverrideActive(true)
         setIsAudioUnlocked(true)
         setIsMusicPlaying(true)
@@ -703,7 +739,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
         setIsGenerating(false)
       }
     },
-    [authUser, handleRequireAuth, refreshAccountData, supabase],
+    [authUser, handleRequireAuth, refreshAccountData, selectedVisualEffect, supabase],
   )
 
   useEffect(() => {
@@ -849,6 +885,8 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     setCoFocusEnabled,
     presenceCount,
     handleGenerate,
+    selectedVisualEffect,
+    setSelectedVisualEffect,
     ...music,
     handleReopenMusicOnboarding,
     aiDj,

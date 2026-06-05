@@ -7,6 +7,8 @@ function readEnv(name: string) {
   return value && value.length > 0 ? value : undefined
 }
 
+import { getMissingBillingEnvVars, isBillingConfigured } from '@/lib/billing-config'
+
 export async function GET(req: Request) {
   const url = new URL(req.url)
   const runTests = url.searchParams.get('test') === '1'
@@ -23,6 +25,9 @@ export async function GET(req: Request) {
       supabaseService: Boolean(supabaseServiceKey),
       supabaseUrl: Boolean(supabaseUrl),
       supabaseAnon: Boolean(readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')),
+      billing: isBillingConfigured(),
+      billingMissing: getMissingBillingEnvVars(),
+      lemonWebhook: Boolean(readEnv('LEMON_SQUEEZY_WEBHOOK_SECRET')),
       togetherKeyLength: togetherKey?.length ?? 0,
       supabaseServiceKeyLength: supabaseServiceKey?.length ?? 0,
       supabaseServicePrefix: supabaseServiceKey?.slice(0, 10) ?? '',

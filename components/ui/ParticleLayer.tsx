@@ -93,6 +93,33 @@ const presetConfigs: Record<string, ParticlePresetConfig> = {
     riseSpeed: 0.078,
     horizontalDrift: 0.024,
   },
+  'nature-leaves': {
+    count: 300,
+    colorA: '#7dff9a',
+    colorB: '#3cb878',
+    opacity: 0.48,
+    size: 0.024,
+    riseSpeed: 0.028,
+    horizontalDrift: 0.028,
+  },
+  'city-light-streaks': {
+    count: 360,
+    colorA: '#ffd978',
+    colorB: '#ff9f43',
+    opacity: 0.55,
+    size: 0.02,
+    riseSpeed: 0.052,
+    horizontalDrift: 0.034,
+  },
+  'desert-sand-mist': {
+    count: 420,
+    colorA: '#f4d4a0',
+    colorB: '#c9956a',
+    opacity: 0.44,
+    size: 0.03,
+    riseSpeed: 0.022,
+    horizontalDrift: 0.026,
+  },
 }
 
 const defaultPreset: ParticlePresetConfig = {
@@ -186,7 +213,7 @@ export default function ParticleLayer({ preset, paused = false, intensity = 1 }:
   })
 
   return (
-    <points ref={pointsRef} frustumCulled={false}>
+    <points key={preset} ref={pointsRef} frustumCulled={false}>
       <bufferGeometry>
         <bufferAttribute
           ref={positionRef}

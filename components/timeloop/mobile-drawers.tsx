@@ -18,6 +18,7 @@ import MobileControlContent from '@/components/mobile/mobile-control-content'
 import MobileGalleryContent from '@/components/mobile/mobile-gallery-content'
 import type { useCompanion } from '@/hooks/use-companion'
 import type { useGoogleCalendar } from '@/hooks/use-google-calendar'
+import type { VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
 
 type TimeloopMobileDrawersProps = {
   videoRef: React.RefObject<VideoBackgroundRef | null>
@@ -59,6 +60,8 @@ type TimeloopMobileDrawersProps = {
   onCheckout: (kind: 'subscription' | 'credits') => void
   onDownload: () => void
   preferCreditPack: boolean
+  selectedVisualEffect: VisualEffectSceneKey
+  onVisualEffectChange: (scene: VisualEffectSceneKey) => void
   accessToken: string | null
   onEnterOfficialScene: (item: GallerySceneItem) => void
   onEnterWorld: (world: GalleryWorld) => void
@@ -107,6 +110,8 @@ export default function TimeloopMobileDrawers({
   onCheckout,
   onDownload,
   preferCreditPack,
+  selectedVisualEffect,
+  onVisualEffectChange,
   accessToken,
   onEnterOfficialScene,
   onEnterWorld,
@@ -169,6 +174,8 @@ export default function TimeloopMobileDrawers({
                   onCheckout={onCheckout}
                   onDownload={onDownload}
                   preferCreditPack={preferCreditPack}
+                  selectedVisualEffect={selectedVisualEffect}
+                  onVisualEffectChange={onVisualEffectChange}
                 />
               </>
             ) : null}

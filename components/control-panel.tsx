@@ -35,6 +35,7 @@ import {
   requestAppFullscreen,
   subscribeFullscreenChange,
 } from '@/lib/fullscreen'
+import { VISUAL_EFFECT_SCENE_KEYS, type VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
 
 interface ControlPanelProps {
   videoRef: React.RefObject<VideoBackgroundRef | null>
@@ -74,9 +75,9 @@ interface ControlPanelProps {
   onCheckout: (kind: 'subscription' | 'credits') => void
   onDownload: () => void
   preferCreditPack: boolean
+  selectedVisualEffect: VisualEffectSceneKey
+  onVisualEffectChange: (scene: VisualEffectSceneKey) => void
 }
-
-type SceneKey = 'cyberpunk' | 'nature' | 'space' | 'ocean' | 'city' | 'desert'
 
 export default function ControlPanel({
   videoRef,
@@ -116,6 +117,8 @@ export default function ControlPanel({
   onCheckout,
   onDownload,
   preferCreditPack,
+  selectedVisualEffect,
+  onVisualEffectChange,
 }: ControlPanelProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showFavoriteToast, setShowFavoriteToast] = useState(false)
@@ -123,13 +126,12 @@ export default function ControlPanel({
   const [newSceneName, setNewSceneName] = useState('')
   const [isFavoritesHeartFilled, setIsFavoritesHeartFilled] = useState(false)
   const [prompt, setPrompt] = useState('')
-  const [selectedScene, setSelectedScene] = useState<SceneKey>('cyberpunk')
   const panelRef = useRef<HTMLDivElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { t, language } = useLanguage()
   const ct = getCommunityStrings(language)
 
-  const scenes: SceneKey[] = ['cyberpunk', 'nature', 'space', 'ocean', 'city', 'desert']
+  const scenes = VISUAL_EFFECT_SCENE_KEYS
 
   const startCollapseTimer = useCallback(() => {
     if (timeoutRef.current) {
@@ -157,7 +159,7 @@ export default function ControlPanel({
       onRequireAuth()
       return
     }
-    onGenerate(prompt, selectedScene)
+    onGenerate(prompt, selectedVisualEffect)
   }
 
   const handleToggleFavoriteClick = () => {
@@ -278,8 +280,8 @@ export default function ControlPanel({
             <div className="space-y-1.5">
               <label className="text-xs text-muted-foreground">{t.sceneLabel}</label>
               <select
-                value={selectedScene}
-                onChange={(e) => setSelectedScene(e.target.value as SceneKey)}
+                value={selectedVisualEffect}
+                onChange={(e) => onVisualEffectChange(e.target.value as VisualEffectSceneKey)}
                 className="glass w-full rounded-lg border border-foreground/10 bg-input/50 px-3 py-2 text-sm text-foreground focus:border-accent/50 focus:outline-none"
               >
                 {scenes.map((scene) => (

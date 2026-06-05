@@ -1,3 +1,5 @@
+import { billingNotConfiguredMessage, isBillingConfigured } from '@/lib/billing-config'
+
 export type CheckoutKind = 'subscription' | 'credits'
 
 export type LemonSqueezyPayload = {
@@ -19,7 +21,11 @@ function requiredEnv(name: string) {
 }
 
 export function getSiteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+  return (
+    process.env.NEXT_PUBLIC_APP_SITE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+    'http://localhost:3000'
+  )
 }
 
 export function getCreditPackCredits() {
@@ -41,6 +47,10 @@ export async function createLemonSqueezyCheckout({
   userId: string
   email?: string | null
 }) {
+  if (!isBillingConfigured()) {
+    throw new Error(billingNotConfiguredMessage())
+  }
+
   const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
     method: 'POST',
     headers: {

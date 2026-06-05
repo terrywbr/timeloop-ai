@@ -4,3 +4,14 @@ NEXTJS_ENV=development
 
 # Optional: set in .env.local for mainland stream testing
 # NEXT_PUBLIC_STREAM_PROXY_URL=https://stream.timeloopai.net
+
+# Server secrets (required for API routes in Workers preview)
+# SUPABASE_SERVICE_ROLE_KEY=
+# TOGETHER_API_KEY=
+# REPLICATE_API_TOKEN=
+# LEMON_SQUEEZY_API_KEY=
+# LEMON_SQUEEZY_STORE_ID=
+# LEMON_SQUEEZY_VIP_VARIANT_ID=
+# LEMON_SQUEEZY_CREDIT_PACK_VARIANT_ID=
+# LEMON_SQUEEZY_CREDIT_PACK_CREDITS=100
+# LEMON_SQUEEZY_WEBHOOK_SECRET=
