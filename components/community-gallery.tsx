@@ -18,6 +18,8 @@ import { getCommunityStrings } from '@/lib/community-i18n'
 import { useCommunityGallery } from '@/hooks/use-community-gallery'
 import { submitWorldReport } from '@/lib/api-client'
 import { GalleryWorldCard } from '@/components/community/gallery-world-card'
+import { GalleryMysteryGrid } from '@/components/community/gallery-mystery-grid'
+import { GALLERY_GRID_SLOT_COUNT } from '@/lib/community/gallery-grid'
 import type { ComponentType } from 'react'
 
 interface CommunityGalleryProps {
@@ -207,22 +209,36 @@ export default function CommunityGallery({
                   onEnterScene={onEnterOfficialScene}
                 />
               ))
-            : gallery.worlds.map((world) => (
-                <GalleryWorldCard
-                  key={world.id}
-                  world={world}
+            : (
+              <>
+                <GalleryMysteryGrid
+                  worlds={gallery.worlds.slice(0, GALLERY_GRID_SLOT_COUNT)}
                   ct={ct}
                   enterLabel={t.gallery.enterScene}
-                  onEnter={() => onEnterWorld?.(world)}
+                  aspectClass="aspect-video"
+                  onEnter={(world) => onEnterWorld?.(world)}
                   onLike={handleLike}
                   onSave={handleSave}
                   onShare={handleShare}
                   onReport={handleReport}
                 />
-              ))}
-          {gallery.galleryTab === 'community' && gallery.worlds.length === 0 && !gallery.loading ? (
-            <p className="col-span-full text-center text-xs text-muted-foreground">—</p>
-          ) : null}
+                {gallery.worlds.slice(GALLERY_GRID_SLOT_COUNT).map((world) => (
+                  <GalleryWorldCard
+                    key={world.id}
+                    world={world}
+                    ct={ct}
+                    enterLabel={t.gallery.enterScene}
+                    onEnter={() => onEnterWorld?.(world)}
+                    onLike={handleLike}
+                    onSave={handleSave}
+                    onShare={handleShare}
+                    onReport={handleReport}
+                    gridCell
+                    aspectClass="aspect-video"
+                  />
+                ))}
+              </>
+            )}
         </div>
 
         {gallery.galleryTab === 'community' && gallery.hasMore ? (

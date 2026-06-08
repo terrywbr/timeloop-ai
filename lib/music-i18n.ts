@@ -237,4 +237,28 @@ export const MUSIC_I18N: Record<Language, MusicExtensionCopy> = {
     scanning: 'Frequenzen scannen…',
     moods: moodDe,
   },
+  th: {
+    onboarding: {
+      title: 'เลือกอารมณ์เพลงของคุณ',
+      subtitle: 'เลือกได้หลายแบบ — กด Next เพื่อสุ่มสถานีจากที่เลือก',
+      next: 'Next',
+      rotateHint: 'หมุนอุปกรณ์เป็นแนวนอนเพื่อมุมมองที่ดีที่สุด',
+    },
+    changeMoods: 'เปลี่ยนอารมณ์เพลง',
+    nextStation: 'สถานีถัดไป',
+    scanning: 'กำลังสแกนคลื่น…',
+    moods: moodEn,
+  },
+  vi: {
+    onboarding: {
+      title: 'Chọn mood nhạc của bạn',
+      subtitle: 'Chọn nhiều mood — Next sẽ phát ngẫu nhiên từ lựa chọn của bạn',
+      next: 'Next',
+      rotateHint: 'Xoay thiết bị sang ngang để xem tốt nhất',
+    },
+    changeMoods: 'Đổi mood nhạc',
+    nextStation: 'Đài tiếp theo',
+    scanning: 'Đang quét tần số…',
+    moods: moodEn,
+  },
 }

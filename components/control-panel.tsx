@@ -36,6 +36,7 @@ import {
   subscribeFullscreenChange,
 } from '@/lib/fullscreen'
 import { VISUAL_EFFECT_SCENE_KEYS, type VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
+import CnManualUpgradePanel from '@/components/billing/cn-manual-upgrade-panel'
 
 interface ControlPanelProps {
   videoRef: React.RefObject<VideoBackgroundRef | null>
@@ -75,6 +76,8 @@ interface ControlPanelProps {
   onCheckout: (kind: 'subscription' | 'credits') => void
   onDownload: () => void
   preferCreditPack: boolean
+  isCnHost?: boolean
+  cnWechatSupportId?: string
   selectedVisualEffect: VisualEffectSceneKey
   onVisualEffectChange: (scene: VisualEffectSceneKey) => void
 }
@@ -117,6 +120,8 @@ export default function ControlPanel({
   onCheckout,
   onDownload,
   preferCreditPack,
+  isCnHost = false,
+  cnWechatSupportId = '',
   selectedVisualEffect,
   onVisualEffectChange,
 }: ControlPanelProps) {
@@ -655,7 +660,18 @@ export default function ControlPanel({
             )}
             <p className="text-accent">{t.membership.vip}</p>
             <div className="flex flex-col gap-2 pt-1">
-              {!userProfile?.isVip && !preferCreditPack ? (
+              {preferCreditPack || isCnHost ? (
+                <CnManualUpgradePanel
+                  userId={userProfile?.id}
+                  wechatSupportId={cnWechatSupportId}
+                  title={t.streamerOverlay.cnManualTitle}
+                  description={t.streamerOverlay.cnManualDescription}
+                  wechatLabel={t.streamerOverlay.cnWechatLabel}
+                  uidHint={t.streamerOverlay.cnUidHint}
+                  copyLabel={t.streamerOverlay.cnCopyUid}
+                />
+              ) : null}
+              {!userProfile?.isVip && !preferCreditPack && !isCnHost ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -670,7 +686,7 @@ export default function ControlPanel({
                   {t.membership.upgradeVip}
                 </button>
               ) : null}
-              {!userProfile?.isVip ? (
+              {!userProfile?.isVip && !preferCreditPack && !isCnHost ? (
                 <button
                   type="button"
                   onClick={() => {

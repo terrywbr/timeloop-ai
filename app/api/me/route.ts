@@ -3,6 +3,7 @@ import {
   createSupabaseAdminClient,
   ensureUserProfile,
   getAuthenticatedUser,
+  hasStreamerAccess,
   hasVipAccess,
 } from '@/lib/supabase-server'
 
@@ -28,6 +29,7 @@ export async function GET(req: Request) {
         vipStatus: profile.vip_status,
         vipUntil: profile.vip_until,
         isVip: hasVipAccess(profile),
+        isStreamer: hasStreamerAccess(profile),
         remainingCredits: profile.remaining_credits,
         monthlyGenerationLimit: profile.monthly_generation_limit,
         creditsResetAt: profile.credits_reset_at,

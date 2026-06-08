@@ -23,7 +23,7 @@ import {
   shouldGreetToday,
 } from '@/lib/dj-settings'
 import { isDjTtsSupported, primeDjVoices, speakDjText, stopDjSpeech } from '@/lib/dj-tts'
-import { speechLangForLocale } from '@/lib/dj-speech-locale'
+import { speechLangForLocale, djSpeechLocaleForUiLocale } from '@/lib/dj-speech-locale'
 
 export type AiDjState = {
   visible: boolean
@@ -53,23 +53,24 @@ function resolveLocalFallback(
   localTime: string,
   context?: DjSpeakContext,
 ): string {
+  const djLocale = djSpeechLocaleForUiLocale(locale)
   if (sessionType === 'interval') {
-    return getIntervalDjFallback(locale, moodId, localTime, Math.floor(Date.now() / 60000))
+    return getIntervalDjFallback(djLocale, moodId, localTime, Math.floor(Date.now() / 60000))
   }
   if (sessionType === 'pomodoro') {
     const phase = (context?.phase ?? 'focus') as 'focus' | 'short_break' | 'long_break' | 'idle'
-    return getPomodoroDjFallback(locale, phase)
+    return getPomodoroDjFallback(djLocale, phase)
   }
   if (sessionType === 'alarm') {
-    return getAlarmDjFallback(locale, context?.alarmLabel ?? 'Alarm')
+    return getAlarmDjFallback(djLocale, context?.alarmLabel ?? 'Alarm')
   }
   if (sessionType === 'calendar') {
-    return getCalendarDjFallback(locale, context?.eventTitle ?? 'Event', context?.minutesUntil ?? 5)
+    return getCalendarDjFallback(djLocale, context?.eventTitle ?? 'Event', context?.minutesUntil ?? 5)
   }
   if (sessionType === 'cofocus') {
-    return getCoFocusDjFallback(locale, context?.coFocusCount ?? 1)
+    return getCoFocusDjFallback(djLocale, context?.coFocusCount ?? 1)
   }
-  return getDjFallback(locale, moodId, { time: localTime, stationName: context?.eventTitle })
+  return getDjFallback(djLocale, moodId, { time: localTime, stationName: context?.eventTitle })
 }
 
 export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions) {

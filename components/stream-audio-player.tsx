@@ -10,13 +10,19 @@ type StreamAudioPlayerProps = {
   volume: number
   loop?: boolean
   muted?: boolean
+  /** 24h stream mode: 5s stall detection, unlimited soft reconnect */
+  streamMode?: boolean
   onPlaybackError?: (streamUrl: string) => void
 }
 
 const CROSSFADE_DURATION_MS = 2200
 const STALL_CHECK_MS = 20000
+const STREAM_STALL_CHECK_MS = 5000
 const MAX_SOFT_RECONNECTS = 3
+const STREAM_CACHE_BUST_AFTER = 4
+const STREAM_FAILURE_AFTER = 12
 const SOFT_RECONNECT_DELAY_MS = 800
+const STREAM_MAX_RECONNECT_DELAY_MS = 30000
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
 const toAudioVolume = (volume: number) => clamp01(volume / 100)
@@ -28,6 +34,7 @@ export default function StreamAudioPlayer({
   volume,
   loop = false,
   muted = false,
+  streamMode = false,
   onPlaybackError,
 }: StreamAudioPlayerProps) {
   const primaryAudioRef = useRef<HTMLAudioElement>(null)
@@ -42,7 +49,26 @@ export default function StreamAudioPlayer({
   const softReconnectTimerRef = useRef<number | null>(null)
   const softReconnectCountRef = useRef(0)
   const lastProgressAtRef = useRef(0)
+  const streamModeRef = useRef(streamMode)
   const onPlaybackErrorRef = useRef(onPlaybackError)
+
+  useEffect(() => {
+    streamModeRef.current = streamMode
+  }, [streamMode])
+
+  const getStallCheckMs = () => (streamModeRef.current ? STREAM_STALL_CHECK_MS : STALL_CHECK_MS)
+
+  const getReconnectDelayMs = () => {
+    if (!streamModeRef.current) return SOFT_RECONNECT_DELAY_MS
+    const attempt = softReconnectCountRef.current
+    return Math.min(STREAM_MAX_RECONNECT_DELAY_MS, SOFT_RECONNECT_DELAY_MS * 2 ** Math.min(attempt, 5))
+  }
+
+  const withCacheBust = (url: string) => {
+    if (!streamModeRef.current || softReconnectCountRef.current < STREAM_CACHE_BUST_AFTER) return url
+    const separator = url.includes('?') ? '&' : '?'
+    return `${url}${separator}t=${Date.now()}`
+  }
 
   useEffect(() => {
     onPlaybackErrorRef.current = onPlaybackError
@@ -81,7 +107,8 @@ export default function StreamAudioPlayer({
     stallTimerRef.current = window.setTimeout(() => {
       if (currentStreamUrlRef.current !== url) return
 
-      const silentTooLong = Date.now() - lastProgressAtRef.current > STALL_CHECK_MS - 2000
+      const stallMs = getStallCheckMs()
+      const silentTooLong = Date.now() - lastProgressAtRef.current > stallMs - 2000
       const stuck =
         audio.error !== null ||
         (playingRef.current && !mutedRef.current && (audio.paused || silentTooLong))
@@ -91,13 +118,18 @@ export default function StreamAudioPlayer({
       } else {
         scheduleStallCheck(url, audio)
       }
-    }, STALL_CHECK_MS)
+    }, getStallCheckMs())
   }
 
   const attemptSoftReconnect = (url: string, audio: HTMLAudioElement) => {
     if (!playingRef.current || currentStreamUrlRef.current !== url) return
 
-    if (softReconnectCountRef.current >= MAX_SOFT_RECONNECTS) {
+    const isStream = streamModeRef.current
+    if (!isStream && softReconnectCountRef.current >= MAX_SOFT_RECONNECTS) {
+      reportFailure(url)
+      return
+    }
+    if (isStream && softReconnectCountRef.current >= STREAM_FAILURE_AFTER) {
       reportFailure(url)
       return
     }
@@ -106,6 +138,8 @@ export default function StreamAudioPlayer({
     clearStallTimer()
     clearSoftReconnectTimer()
 
+    const reconnectUrl = withCacheBust(url)
+
     softReconnectTimerRef.current = window.setTimeout(() => {
       if (currentStreamUrlRef.current !== url || !playingRef.current) return
 
@@ -113,7 +147,7 @@ export default function StreamAudioPlayer({
         ? targetVolumeRef.current
         : 0
       audio.muted = mutedRef.current
-      audio.src = url
+      audio.src = reconnectUrl
       audio.load()
 
       void audio
@@ -126,7 +160,7 @@ export default function StreamAudioPlayer({
         .catch(() => {
           attemptSoftReconnect(url, audio)
         })
-    }, SOFT_RECONNECT_DELAY_MS)
+    }, getReconnectDelayMs())
   }
 
   const stopFade = () => {

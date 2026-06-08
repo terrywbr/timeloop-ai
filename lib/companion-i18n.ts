@@ -1,5 +1,6 @@
 import type { Language } from '@/lib/translations'
 import type { PomodoroPhase } from '@/lib/companion/types'
+import { djSpeechLocaleForUiLocale } from '@/lib/dj-speech-locale'
 
 export type CompanionUiCopy = {
   title: string
@@ -242,6 +243,58 @@ export const COMPANION_I18N: Record<Language, CompanionUiCopy> = {
     loginRequired: 'Anmelden, um Kalender zu verbinden',
     minutesUntil: 'Noch {minutes} Min. bis {title}',
   },
+  th: {
+    title: 'เพื่อนร่วมทาง',
+    pomodoro: 'Pomodoro',
+    focus: 'โฟกัส',
+    shortBreak: 'พักสั้น',
+    longBreak: 'พักยาว',
+    idle: 'พร้อม',
+    start: 'เริ่ม',
+    pause: 'หยุดชั่วคราว',
+    reset: 'รีเซ็ต',
+    skip: 'ข้าม',
+    alarms: 'นาฬิกาปลุก',
+    addAlarm: 'เพิ่มนาฬิกาปลุก',
+    alarmLabel: 'นาฬิกาปลุก',
+    repeatOnce: 'ครั้งเดียว',
+    repeatDaily: 'ทุกวัน',
+    repeatWeekdays: 'วันธรรมดา',
+    noAlarms: 'ยังไม่ตั้งนาฬิกาปลุก',
+    calendar: 'ตารางวันนี้',
+    connectCalendar: 'เชื่อม Google Calendar',
+    calendarConnected: 'เชื่อมปฏิทินแล้ว',
+    calendarReconnect: 'เชื่อมปฏิทินใหม่',
+    noEventsToday: 'ไม่มีกิจกรรมเพิ่มเติมวันนี้',
+    loginRequired: 'เข้าสู่ระบบเพื่อเชื่อมปฏิทิน',
+    minutesUntil: 'อีก {minutes} นาทีถึง {title}',
+  },
+  vi: {
+    title: 'Đồng hành',
+    pomodoro: 'Pomodoro',
+    focus: 'Tập trung',
+    shortBreak: 'Nghỉ ngắn',
+    longBreak: 'Nghỉ dài',
+    idle: 'Sẵn sàng',
+    start: 'Bắt đầu',
+    pause: 'Tạm dừng',
+    reset: 'Đặt lại',
+    skip: 'Bỏ qua',
+    alarms: 'Báo thức',
+    addAlarm: 'Thêm báo thức',
+    alarmLabel: 'Báo thức',
+    repeatOnce: 'Một lần',
+    repeatDaily: 'Hàng ngày',
+    repeatWeekdays: 'Ngày thường',
+    noAlarms: 'Chưa có báo thức',
+    calendar: 'Lịch hôm nay',
+    connectCalendar: 'Kết nối Google Calendar',
+    calendarConnected: 'Đã kết nối lịch',
+    calendarReconnect: 'Kết nối lại lịch',
+    noEventsToday: 'Không còn sự kiện hôm nay',
+    loginRequired: 'Đăng nhập để kết nối lịch',
+    minutesUntil: 'Còn {minutes} phút đến {title}',
+  },
 }
 
 export function getPomodoroPhaseLabel(locale: Language, phase: PomodoroPhase): string {
@@ -299,6 +352,16 @@ const POMODORO_DJ_FALLBACKS: Record<Language, { focus: string; break: string; re
     break: 'Gut gemacht, Kapitän. Mach eine Pause und trink etwas.',
     reset: 'Pomodoro zurückgesetzt. Bereit, wenn du es bist.',
   },
+  th: {
+    focus: 'Captain, focus block started. I am here with you.',
+    break: 'Well done, Captain. Take a break — hydrate and return when ready.',
+    reset: 'Pomodoro reset. Ready when you are.',
+  },
+  vi: {
+    focus: 'Captain, focus block started. I am here with you.',
+    break: 'Well done, Captain. Take a break — hydrate and return when ready.',
+    reset: 'Pomodoro reset. Ready when you are.',
+  },
 }
 
 const ALARM_DJ_FALLBACKS: Record<Language, (label: string) => string> = {
@@ -310,6 +373,8 @@ const ALARM_DJ_FALLBACKS: Record<Language, (label: string) => string> = {
   es: (label) => `Capitán, ${label} — es la hora.`,
   fr: (label) => `Capitaine, ${label} — c'est l'heure.`,
   de: (label) => `Kapitän, ${label} — es ist Zeit.`,
+  th: (label) => `Captain, ${label} — it is time.`,
+  vi: (label) => `Captain, ${label} — it is time.`,
 }
 
 const CALENDAR_DJ_FALLBACKS: Record<Language, (title: string, minutes: number) => string> = {
@@ -321,22 +386,27 @@ const CALENDAR_DJ_FALLBACKS: Record<Language, (title: string, minutes: number) =
   es: (title, minutes) => `Capitán, "${title}" empieza en ${minutes} minutos.`,
   fr: (title, minutes) => `Capitaine, « ${title} » commence dans ${minutes} minutes.`,
   de: (title, minutes) => `Kapitän, „${title}" beginnt in ${minutes} Minuten.`,
+  th: (title, minutes) => `Captain, "${title}" starts in ${minutes} minutes.`,
+  vi: (title, minutes) => `Captain, "${title}" starts in ${minutes} minutes.`,
 }
 
 export function getPomodoroDjFallback(locale: Language, phase: PomodoroPhase): string {
-  const copy = POMODORO_DJ_FALLBACKS[locale] ?? POMODORO_DJ_FALLBACKS.en
+  const djLocale = djSpeechLocaleForUiLocale(locale)
+  const copy = POMODORO_DJ_FALLBACKS[djLocale] ?? POMODORO_DJ_FALLBACKS.en
   if (phase === 'focus') return copy.focus
   if (phase === 'short_break' || phase === 'long_break') return copy.break
   return copy.reset
 }
 
 export function getAlarmDjFallback(locale: Language, label: string): string {
-  const fn = ALARM_DJ_FALLBACKS[locale] ?? ALARM_DJ_FALLBACKS.en
+  const djLocale = djSpeechLocaleForUiLocale(locale)
+  const fn = ALARM_DJ_FALLBACKS[djLocale] ?? ALARM_DJ_FALLBACKS.en
   return fn(label)
 }
 
 export function getCalendarDjFallback(locale: Language, eventTitle: string, minutesUntil: number): string {
-  const fn = CALENDAR_DJ_FALLBACKS[locale] ?? CALENDAR_DJ_FALLBACKS.en
+  const djLocale = djSpeechLocaleForUiLocale(locale)
+  const fn = CALENDAR_DJ_FALLBACKS[djLocale] ?? CALENDAR_DJ_FALLBACKS.en
   return fn(eventTitle, minutesUntil)
 }
 
@@ -346,7 +416,8 @@ export function getIntervalDjFallback(
   time: string,
   index: number,
 ): string {
-  const localeMap = INTERVAL_FALLBACKS[locale] ?? INTERVAL_FALLBACKS.en
+  const djLocale = djSpeechLocaleForUiLocale(locale)
+  const localeMap = INTERVAL_FALLBACKS[djLocale] ?? INTERVAL_FALLBACKS.en
   const templates =
     localeMap[moodId] ?? INTERVAL_FALLBACKS.en[moodId as keyof typeof INTERVAL_FALLBACKS.en] ?? INTERVAL_FALLBACKS.en['deep-night']
   const pick = templates[index % templates.length] ?? templates[0]
@@ -439,6 +510,58 @@ const INTERVAL_FALLBACKS: Record<
     'galactic-classical': ['Produktivitätskanal offen. {time} — Schritt für Schritt.', 'Minimalhütte um {time}. Elegant fokussiert.'],
     'retro-earth': ['Lagerfeuer knistert noch, Kapitän. {time} — weiter auf Reise.', 'Alpennacht {time}. Du bist nicht allein.'],
   },
+  th: {
+    'neon-tokyo': [
+      'Still riding the neon wave, Captain. It is {time} — stay sharp.',
+      'Cyber night continues. {time} check-in: you are doing fine.',
+    ],
+    'deep-night': [
+      'Orbit stable, Captain. {time} — keep your focus trajectory.',
+      'Quiet cosmos at {time}. Breathe and continue.',
+    ],
+    'deep-space': [
+      'Depth holding at 3000ft. {time} — noise floor minimal.',
+      'Submarine mode steady. {time} status: all systems calm.',
+    ],
+    'galactic-tavern': [
+      'Your corner is still here, Captain. {time} — sip and steady on.',
+      'Jazz hour continues. {time} — no rush.',
+    ],
+    'galactic-classical': [
+      'Productivity channel open. {time} — one step at a time.',
+      'Minimal cabin at {time}. Stay elegant, stay focused.',
+    ],
+    'retro-earth': [
+      'Campfire still crackling, Captain. {time} — keep the voyage going.',
+      'Alpine night at {time}. You are not alone out here.',
+    ],
+  },
+  vi: {
+    'neon-tokyo': [
+      'Still riding the neon wave, Captain. It is {time} — stay sharp.',
+      'Cyber night continues. {time} check-in: you are doing fine.',
+    ],
+    'deep-night': [
+      'Orbit stable, Captain. {time} — keep your focus trajectory.',
+      'Quiet cosmos at {time}. Breathe and continue.',
+    ],
+    'deep-space': [
+      'Depth holding at 3000ft. {time} — noise floor minimal.',
+      'Submarine mode steady. {time} status: all systems calm.',
+    ],
+    'galactic-tavern': [
+      'Your corner is still here, Captain. {time} — sip and steady on.',
+      'Jazz hour continues. {time} — no rush.',
+    ],
+    'galactic-classical': [
+      'Productivity channel open. {time} — one step at a time.',
+      'Minimal cabin at {time}. Stay elegant, stay focused.',
+    ],
+    'retro-earth': [
+      'Campfire still crackling, Captain. {time} — keep the voyage going.',
+      'Alpine night at {time}. You are not alone out here.',
+    ],
+  },
 }
 
 const COFOCUS_FALLBACKS: Record<Language, string[]> = {
@@ -459,10 +582,19 @@ const COFOCUS_FALLBACKS: Record<Language, string[]> = {
   es: ['Capitán, {count} almas se concentran contigo en esta línea temporal.', 'Galería: {count} capitanes co-enfocados aquí.'],
   fr: ['Capitaine, {count} âmes se concentrent avec toi dans cette timeline.', 'Galerie : {count} capitaines co-focus ici.'],
   de: ['Kapitän, {count} Seelen fokussieren mit dir in dieser Zeitlinie.', 'Galerie: {count} Kapitäne co-fokussieren hier.'],
+  th: [
+    'Captain, {count} souls are focusing in this timeline with you.',
+    'Gallery pulse: {count} captains co-focusing here right now.',
+  ],
+  vi: [
+    'Captain, {count} souls are focusing in this timeline with you.',
+    'Gallery pulse: {count} captains co-focusing here right now.',
+  ],
 }
 
 export function getCoFocusDjFallback(locale: Language, count: number): string {
-  const templates = COFOCUS_FALLBACKS[locale] ?? COFOCUS_FALLBACKS.en
+  const djLocale = djSpeechLocaleForUiLocale(locale)
+  const templates = COFOCUS_FALLBACKS[djLocale] ?? COFOCUS_FALLBACKS.en
   const pick = templates[Math.floor(Date.now() / 86_400_000) % templates.length] ?? templates[0]
   return pick.replace(/\{count\}/g, String(count))
 }

@@ -1,5 +1,6 @@
 import type { Language } from '@/lib/translations'
 import type { MusicMoodId } from '@/lib/music-moods'
+import { djSpeechLocaleForUiLocale } from '@/lib/dj-speech-locale'
 
 export type DjUiCopy = {
   label: string
@@ -263,6 +264,44 @@ const djDe: DjUiCopy = {
   },
 }
 
+const djTh: DjUiCopy = {
+  label: 'AI DJ',
+  connecting: 'DJ กำลังเชื่อมต่อ…',
+  voiceOn: 'เปิดเสียง DJ',
+  voiceOff: 'ปิดเสียง DJ',
+  subtitlesOnly: 'คำบรรยายเท่านั้น',
+  autoDjComingSoon: 'Auto DJ — เร็วๆ นี้',
+  intervalCompanion: 'เพื่อนร่วมทาง 30 นาที',
+  personas: {
+    'neon-tokyo': { name: 'Underground Rebel DJ', sceneTitle: 'Blade Runner: Neon Rain Rooftop' },
+    'deep-night': { name: 'Houston Commander', sceneTitle: 'NASA ISS Observation Deck' },
+    'deep-space': { name: 'Submarine AI', sceneTitle: 'Deep Ocean Submarine 3000ft' },
+    'galactic-tavern': { name: 'Jazz Bartender', sceneTitle: '1920 Smoky Jazz Lounge' },
+    'galactic-classical': { name: 'Digital Secretary', sceneTitle: 'Nordic Glass Cabin' },
+    'retro-earth': { name: 'Outdoor Explorer', sceneTitle: 'Alpine Campfire Tent' },
+  },
+  fallbacks: djEn.fallbacks,
+}
+
+const djVi: DjUiCopy = {
+  label: 'AI DJ',
+  connecting: 'DJ đang kết nối…',
+  voiceOn: 'Bật giọng DJ',
+  voiceOff: 'Tắt giọng DJ',
+  subtitlesOnly: 'Chỉ phụ đề',
+  autoDjComingSoon: 'Auto DJ — sắp ra mắt',
+  intervalCompanion: 'Đồng hành 30 phút',
+  personas: {
+    'neon-tokyo': { name: 'Underground Rebel DJ', sceneTitle: 'Blade Runner: Neon Rain Rooftop' },
+    'deep-night': { name: 'Houston Commander', sceneTitle: 'NASA ISS Observation Deck' },
+    'deep-space': { name: 'Submarine AI', sceneTitle: 'Deep Ocean Submarine 3000ft' },
+    'galactic-tavern': { name: 'Jazz Bartender', sceneTitle: '1920 Smoky Jazz Lounge' },
+    'galactic-classical': { name: 'Digital Secretary', sceneTitle: 'Nordic Glass Cabin' },
+    'retro-earth': { name: 'Outdoor Explorer', sceneTitle: 'Alpine Campfire Tent' },
+  },
+  fallbacks: djEn.fallbacks,
+}
+
 export const DJ_I18N: Record<Language, DjUiCopy> = {
   en: djEn,
   'zh-TW': djZhTw,
@@ -272,6 +311,8 @@ export const DJ_I18N: Record<Language, DjUiCopy> = {
   es: djEs,
   fr: djFr,
   de: djDe,
+  th: djTh,
+  vi: djVi,
 }
 
 export const DJ_SUPPORTED_LANGUAGES = Object.keys(DJ_I18N) as Language[]
@@ -291,16 +332,19 @@ export function getDjFallback(
   moodId: MusicMoodId,
   vars: { time: string; moodTitle?: string; stationName?: string },
 ): string {
-  const copy = DJ_I18N[locale] ?? DJ_I18N.en
+  const djLocale = djSpeechLocaleForUiLocale(locale)
+  const copy = DJ_I18N[djLocale] ?? DJ_I18N.en
   return fillDjTemplate(copy.fallbacks[moodId], vars)
 }
 
 export function formatDjLocalTime(locale: Language, date = new Date()): string {
   try {
-    return date.toLocaleTimeString(locale === 'zh-CN' ? 'zh-CN' : locale === 'zh-TW' ? 'zh-TW' : locale, {
+    const timeLocale =
+      locale === 'zh-CN' ? 'zh-CN' : locale === 'zh-TW' ? 'zh-TW' : locale === 'th' ? 'th-TH' : locale === 'vi' ? 'vi-VN' : locale
+    return date.toLocaleTimeString(timeLocale, {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: locale === 'en',
+      hour12: locale === 'en' || locale === 'th' || locale === 'vi',
     })
   } catch {
     return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })

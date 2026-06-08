@@ -132,6 +132,34 @@ const KO: CommunityStrings = { ...JA, tabFeatured: '추천', tabNewest: '최신'
 const ES: CommunityStrings = { ...EN, tabFeatured: 'Destacados', tabNewest: 'Recientes', tabFollowing: 'Siguiendo', tabOfficial: 'Oficial' }
 const FR: CommunityStrings = { ...EN, tabFeatured: 'À la une', tabNewest: 'Récents', tabFollowing: 'Abonnements', tabOfficial: 'Officiel' }
 const DE: CommunityStrings = { ...EN, tabFeatured: 'Empfohlen', tabNewest: 'Neu', tabFollowing: 'Folge ich', tabOfficial: 'Offiziell' }
+const TH: CommunityStrings = {
+  ...EN,
+  tabFeatured: 'แนะนำ',
+  tabNewest: 'ล่าสุด',
+  tabFollowing: 'กำลังติดตาม',
+  tabOfficial: 'ทางการ',
+  publish: 'เผยแพร่ในแกลเลอรี',
+  unpublish: 'ตั้งเป็นส่วนตัว',
+  coFocus: 'โฟกัสร่วม',
+  coFocusCount: 'กำลังโฟกัสร่วม {count} คน',
+  coFocusJoin: 'เข้าร่วมโฟกัสร่วม',
+  coFocusLeave: 'ออกจากโฟกัสร่วม',
+  loginToInteract: 'เข้าสู่ระบบเพื่อไลค์ บันทึก หรือติดตาม',
+}
+const VI: CommunityStrings = {
+  ...EN,
+  tabFeatured: 'Nổi bật',
+  tabNewest: 'Mới nhất',
+  tabFollowing: 'Đang theo dõi',
+  tabOfficial: 'Chính thức',
+  publish: 'Xuất bản lên thư viện',
+  unpublish: 'Đặt riêng tư',
+  coFocus: 'Đồng tập trung',
+  coFocusCount: '{count} người đang đồng tập trung',
+  coFocusJoin: 'Tham gia đồng tập trung',
+  coFocusLeave: 'Rời đồng tập trung',
+  loginToInteract: 'Đăng nhập để thích, lưu hoặc theo dõi',
+}
 
 export const COMMUNITY_I18N: Record<Language, CommunityStrings> = {
   en: EN,
@@ -142,6 +170,8 @@ export const COMMUNITY_I18N: Record<Language, CommunityStrings> = {
   es: ES,
   fr: FR,
   de: DE,
+  th: TH,
+  vi: VI,
 }
 
 export function getCommunityStrings(locale: Language): CommunityStrings {

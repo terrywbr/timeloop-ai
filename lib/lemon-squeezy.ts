@@ -42,10 +42,12 @@ export async function createLemonSqueezyCheckout({
   kind,
   userId,
   email,
+  affiliateSlug,
 }: {
   kind: CheckoutKind
   userId: string
   email?: string | null
+  affiliateSlug?: string | null
 }) {
   if (!isBillingConfigured()) {
     throw new Error(billingNotConfiguredMessage())
@@ -67,6 +69,7 @@ export async function createLemonSqueezyCheckout({
             custom: {
               user_id: userId,
               checkout_kind: kind,
+              ...(affiliateSlug ? { affiliate_slug: affiliateSlug } : {}),
             },
           },
           product_options: {

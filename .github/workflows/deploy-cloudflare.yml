@@ -43,6 +43,7 @@ jobs:
           NEXT_PUBLIC_APP_SITE_URL=${{ secrets.NEXT_PUBLIC_APP_SITE_URL }}
           NEXT_PUBLIC_CN_SITE_URL=${{ secrets.NEXT_PUBLIC_CN_SITE_URL }}
           NEXT_PUBLIC_STREAM_PROXY_URL=${{ secrets.NEXT_PUBLIC_STREAM_PROXY_URL }}
+          NEXT_PUBLIC_CN_WECHAT_SUPPORT_ID=${{ secrets.NEXT_PUBLIC_CN_WECHAT_SUPPORT_ID }}
           EOF
 
       - name: Build OpenNext bundle
@@ -54,6 +55,7 @@ jobs:
           NEXT_PUBLIC_APP_SITE_URL: ${{ secrets.NEXT_PUBLIC_APP_SITE_URL }}
           NEXT_PUBLIC_CN_SITE_URL: ${{ secrets.NEXT_PUBLIC_CN_SITE_URL }}
           NEXT_PUBLIC_STREAM_PROXY_URL: ${{ secrets.NEXT_PUBLIC_STREAM_PROXY_URL }}
+          NEXT_PUBLIC_CN_WECHAT_SUPPORT_ID: ${{ secrets.NEXT_PUBLIC_CN_WECHAT_SUPPORT_ID }}
 
       - name: Deploy to Cloudflare Workers
         run: |
@@ -64,6 +66,7 @@ jobs:
             --var "NEXT_PUBLIC_APP_SITE_URL:${{ secrets.NEXT_PUBLIC_APP_SITE_URL }}" \
             --var "NEXT_PUBLIC_CN_SITE_URL:${{ secrets.NEXT_PUBLIC_CN_SITE_URL }}" \
             --var "NEXT_PUBLIC_STREAM_PROXY_URL:${{ secrets.NEXT_PUBLIC_STREAM_PROXY_URL }}" \
+            --var "NEXT_PUBLIC_CN_WECHAT_SUPPORT_ID:${{ secrets.NEXT_PUBLIC_CN_WECHAT_SUPPORT_ID || '' }}" \
             --var "LEMON_SQUEEZY_STORE_ID:${{ secrets.LEMON_SQUEEZY_STORE_ID }}" \
             --var "LEMON_SQUEEZY_VIP_VARIANT_ID:${{ secrets.LEMON_SQUEEZY_VIP_VARIANT_ID }}" \
             --var "LEMON_SQUEEZY_CREDIT_PACK_VARIANT_ID:${{ secrets.LEMON_SQUEEZY_CREDIT_PACK_VARIANT_ID }}" \
@@ -86,6 +89,7 @@ jobs:
           sync_secret REPLICATE_API_TOKEN "$REPLICATE_API_TOKEN"
           sync_secret LEMON_SQUEEZY_API_KEY "$LEMON_SQUEEZY_API_KEY"
           sync_secret LEMON_SQUEEZY_WEBHOOK_SECRET "$LEMON_SQUEEZY_WEBHOOK_SECRET"
+          sync_secret ADMIN_API_SECRET "$ADMIN_API_SECRET"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -94,6 +98,7 @@ jobs:
           REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
           LEMON_SQUEEZY_API_KEY: ${{ secrets.LEMON_SQUEEZY_API_KEY }}
           LEMON_SQUEEZY_WEBHOOK_SECRET: ${{ secrets.LEMON_SQUEEZY_WEBHOOK_SECRET }}
+          ADMIN_API_SECRET: ${{ secrets.ADMIN_API_SECRET }}
 
       - name: Deploy stream proxy Worker
         run: npx wrangler deploy -c wrangler.stream.jsonc

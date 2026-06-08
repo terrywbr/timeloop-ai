@@ -1,6 +1,7 @@
 import type { MusicChannelKey } from './music-channels'
+import { thTranslation, viTranslation } from './translations-sea'
 
-export type Language = 'en' | 'zh-CN' | 'zh-TW' | 'ja' | 'ko' | 'es' | 'fr' | 'de'
+export type Language = 'en' | 'zh-CN' | 'zh-TW' | 'ja' | 'ko' | 'es' | 'fr' | 'de' | 'th' | 'vi'
 
 export const languages: { code: Language; name: string; nativeName: string }[] = [
   { code: 'en', name: 'English', nativeName: 'English' },
@@ -11,6 +12,8 @@ export const languages: { code: Language; name: string; nativeName: string }[] =
   { code: 'es', name: 'Spanish', nativeName: 'Español' },
   { code: 'fr', name: 'French', nativeName: 'Français' },
   { code: 'de', name: 'German', nativeName: 'Deutsch' },
+  { code: 'th', name: 'Thai', nativeName: 'ไทย' },
+  { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt' },
 ]
 
 export const translations: Record<Language, {
@@ -91,6 +94,14 @@ export const translations: Record<Language, {
     legendary: string
     rare: string
     common: string
+  }
+  streamerOverlay: {
+    previewUpgrade: string
+    cnManualTitle: string
+    cnManualDescription: string
+    cnWechatLabel: string
+    cnUidHint: string
+    cnCopyUid: string
   }
 }> = {
   en: {
@@ -195,6 +206,15 @@ export const translations: Record<Language, {
       rare: 'Rare',
       common: 'Common',
     },
+    streamerOverlay: {
+      previewUpgrade: 'Upgrade to Streamer Pass for 24h OBS streaming',
+      cnManualTitle: 'Mainland creators — manual activation',
+      cnManualDescription:
+        'WeChat payment is available for Streamer Pass. Add our support WeChat and include your UID below.',
+      cnWechatLabel: 'WeChat',
+      cnUidHint: 'Copy your UID and send it with payment note "Streamer Pass"',
+      cnCopyUid: 'Copy UID',
+    },
   },
   'zh-CN': {
     title: 'Time Loop AI',
@@ -296,6 +316,14 @@ export const translations: Record<Language, {
       rare: '稀有',
       common: '普通',
     },
+    streamerOverlay: {
+      previewUpgrade: '升级 Streamer Pass 解锁 24 小时 OBS 直播',
+      cnManualTitle: '大陆创作者 — 手动开通',
+      cnManualDescription: 'Streamer Pass 支持微信开通。请添加客服微信并备注下方 UID。',
+      cnWechatLabel: '微信',
+      cnUidHint: '复制 UID 并在付款备注中填写「Streamer Pass」',
+      cnCopyUid: '复制 UID',
+    },
   },
   'zh-TW': {
     title: 'Time Loop AI',
@@ -396,6 +424,14 @@ export const translations: Record<Language, {
       legendary: '傳奇',
       rare: '稀有',
       common: '普通',
+    },
+    streamerOverlay: {
+      previewUpgrade: '升級 Streamer Pass 解鎖 24 小時 OBS 直播',
+      cnManualTitle: '大陸創作者 — 手動開通',
+      cnManualDescription: 'Streamer Pass 支援微信開通。請添加客服微信並備註下方 UID。',
+      cnWechatLabel: '微信',
+      cnUidHint: '複製 UID 並在付款備註中填寫「Streamer Pass」',
+      cnCopyUid: '複製 UID',
     },
   },
   ja: {
@@ -500,6 +536,14 @@ export const translations: Record<Language, {
       rare: 'レア',
       common: 'コモン',
     },
+    streamerOverlay: {
+      previewUpgrade: 'Streamer Pass にアップグレードして 24 時間 OBS 配信',
+      cnManualTitle: '中国本土クリエイター — 手動開通',
+      cnManualDescription: 'WeChat で Streamer Pass を開通できます。サポート WeChat に UID を送ってください。',
+      cnWechatLabel: 'WeChat',
+      cnUidHint: 'UID をコピーし、支払いメモに「Streamer Pass」と記載',
+      cnCopyUid: 'UID をコピー',
+    },
   },
   ko: {
     title: 'Time Loop AI',
@@ -602,6 +646,14 @@ export const translations: Record<Language, {
       legendary: '레전더리',
       rare: '레어',
       common: '커먼',
+    },
+    streamerOverlay: {
+      previewUpgrade: 'Streamer Pass로 24시간 OBS 스트리밍 잠금 해제',
+      cnManualTitle: '중국 본토 크리에이터 — 수동 개통',
+      cnManualDescription: 'WeChat으로 Streamer Pass 개통이 가능합니다. 지원 WeChat에 UID를 보내주세요.',
+      cnWechatLabel: 'WeChat',
+      cnUidHint: 'UID를 복사해 결제 메모에 "Streamer Pass"를 적어주세요',
+      cnCopyUid: 'UID 복사',
     },
   },
   es: {
@@ -706,6 +758,14 @@ export const translations: Record<Language, {
       rare: 'Raro',
       common: 'Común',
     },
+    streamerOverlay: {
+      previewUpgrade: 'Actualiza a Streamer Pass para streaming OBS 24h',
+      cnManualTitle: 'Creadores de China continental — activación manual',
+      cnManualDescription: 'Streamer Pass disponible por WeChat. Añade nuestro soporte y envía tu UID.',
+      cnWechatLabel: 'WeChat',
+      cnUidHint: 'Copia tu UID y envíalo con la nota "Streamer Pass"',
+      cnCopyUid: 'Copiar UID',
+    },
   },
   fr: {
     title: 'Time Loop AI',
@@ -808,6 +868,14 @@ export const translations: Record<Language, {
       legendary: 'Légendaire',
       rare: 'Rare',
       common: 'Commun',
+    },
+    streamerOverlay: {
+      previewUpgrade: 'Passez à Streamer Pass pour le streaming OBS 24h',
+      cnManualTitle: 'Créateurs Chine continentale — activation manuelle',
+      cnManualDescription: 'Streamer Pass via WeChat. Ajoutez notre support et envoyez votre UID.',
+      cnWechatLabel: 'WeChat',
+      cnUidHint: 'Copiez votre UID avec la note « Streamer Pass »',
+      cnCopyUid: 'Copier UID',
     },
   },
   de: {
@@ -912,5 +980,15 @@ export const translations: Record<Language, {
       rare: 'Selten',
       common: 'Gewöhnlich',
     },
+    streamerOverlay: {
+      previewUpgrade: 'Upgrade auf Streamer Pass für 24h OBS-Streaming',
+      cnManualTitle: 'Festland-China Creator — manuelle Freischaltung',
+      cnManualDescription: 'Streamer Pass per WeChat. Support kontaktieren und UID senden.',
+      cnWechatLabel: 'WeChat',
+      cnUidHint: 'UID kopieren und mit Vermerk „Streamer Pass" senden',
+      cnCopyUid: 'UID kopieren',
+    },
   },
+  th: thTranslation,
+  vi: viTranslation,
 }

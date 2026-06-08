@@ -9,6 +9,8 @@ import { getCommunityStrings } from '@/lib/community-i18n'
 import { useCommunityGallery } from '@/hooks/use-community-gallery'
 import { submitWorldReport } from '@/lib/api-client'
 import { GalleryWorldCard } from '@/components/community/gallery-world-card'
+import { GalleryMysteryGrid } from '@/components/community/gallery-mystery-grid'
+import { GALLERY_GRID_SLOT_COUNT } from '@/lib/community/gallery-grid'
 
 export interface MobileGalleryContentProps {
   onClose: () => void
@@ -134,12 +136,14 @@ export default function MobileGalleryContent({
                 <img src={item.thumbnail} alt={item.title} className="h-full w-full object-cover" loading="lazy" />
               </button>
             ))
-          : gallery.worlds.map((world) => (
-              <GalleryWorldCard
-                key={world.id}
-                world={world}
+          : (
+            <>
+              <GalleryMysteryGrid
+                worlds={gallery.worlds.slice(0, GALLERY_GRID_SLOT_COUNT)}
                 ct={ct}
                 enterLabel={t.gallery.enterScene}
+                aspectClass="aspect-square"
+                compact
                 onEnter={handleEnter}
                 onLike={async (w) => {
                   if (!accessToken) {
@@ -157,9 +161,37 @@ export default function MobileGalleryContent({
                 }}
                 onShare={handleShare}
                 onReport={handleReport}
-                compact
               />
-            ))}
+              {gallery.worlds.slice(GALLERY_GRID_SLOT_COUNT).map((world) => (
+                <GalleryWorldCard
+                  key={world.id}
+                  world={world}
+                  ct={ct}
+                  enterLabel={t.gallery.enterScene}
+                  onEnter={handleEnter}
+                  onLike={async (w) => {
+                    if (!accessToken) {
+                      window.alert(ct.loginToInteract)
+                      return
+                    }
+                    await gallery.handleLike(w)
+                  }}
+                  onSave={async (w) => {
+                    if (!accessToken) {
+                      window.alert(ct.loginToInteract)
+                      return
+                    }
+                    await gallery.handleSave(w)
+                  }}
+                  onShare={handleShare}
+                  onReport={handleReport}
+                  compact
+                  gridCell
+                  aspectClass="aspect-square"
+                />
+              ))}
+            </>
+          )}
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-export type UserPlan = 'free' | 'vip'
+export type UserPlan = 'free' | 'vip' | 'streamer'
 export type VipStatus = 'inactive' | 'active' | 'past_due' | 'cancelled' | 'paused' | 'expired'
 export type WorldQuality = 'standard' | 'high' | '4k'
 export type CreditTransactionType = 'purchase' | 'generation' | 'refund' | 'monthly_reset' | 'admin_adjustment'

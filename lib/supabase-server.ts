@@ -148,6 +148,14 @@ export function hasVipAccess(profile: UserProfile) {
   return new Date(profile.vip_until).getTime() > Date.now()
 }
 
+export function hasStreamerAccess(profile: UserProfile) {
+  if (profile.plan === 'streamer') {
+    if (!profile.vip_until) return true
+    return new Date(profile.vip_until).getTime() > Date.now()
+  }
+  return hasVipAccess(profile)
+}
+
 export async function createSignedStorageUrl(
   supabase: SupabaseClient,
   bucket: string,

@@ -60,6 +60,8 @@ type TimeloopMobileDrawersProps = {
   onCheckout: (kind: 'subscription' | 'credits') => void
   onDownload: () => void
   preferCreditPack: boolean
+  isCnHost?: boolean
+  cnWechatSupportId?: string
   selectedVisualEffect: VisualEffectSceneKey
   onVisualEffectChange: (scene: VisualEffectSceneKey) => void
   accessToken: string | null
@@ -110,6 +112,8 @@ export default function TimeloopMobileDrawers({
   onCheckout,
   onDownload,
   preferCreditPack,
+  isCnHost = false,
+  cnWechatSupportId = '',
   selectedVisualEffect,
   onVisualEffectChange,
   accessToken,
@@ -174,6 +178,8 @@ export default function TimeloopMobileDrawers({
                   onCheckout={onCheckout}
                   onDownload={onDownload}
                   preferCreditPack={preferCreditPack}
+                  isCnHost={isCnHost}
+                  cnWechatSupportId={cnWechatSupportId}
                   selectedVisualEffect={selectedVisualEffect}
                   onVisualEffectChange={onVisualEffectChange}
                 />

@@ -51,13 +51,15 @@ export function matchBrowserLanguageTag(tag: string): Language | null {
     es: 'es',
     fr: 'fr',
     de: 'de',
+    th: 'th',
+    vi: 'vi',
   }
 
   return primaryMap[primary] ?? null
 }
 
 /**
- * Resolve browser locale(s) to one of the 8 supported languages.
+ * Resolve browser locale(s) to one of the 10 supported languages.
  * Checks `navigator.languages` in preference order, then `navigator.language`.
  * Falls back to `en` (en-US) when no match is found.
  */

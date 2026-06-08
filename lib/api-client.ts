@@ -6,10 +6,11 @@ export type UserAccountProfile = {
   id: string
   email: string | null
   displayName: string | null
-  plan: 'free' | 'vip'
+  plan: 'free' | 'vip' | 'streamer'
   vipStatus: string
   vipUntil: string | null
   isVip: boolean
+  isStreamer: boolean
   remainingCredits: number
   monthlyGenerationLimit: number
   creditsResetAt: string
@@ -233,11 +234,12 @@ export async function fetchFocusPresence(worldId: string): Promise<number> {
 export async function startCheckout(
   accessToken: string,
   kind: 'subscription' | 'credits',
+  affiliateSlug?: string | null,
 ): Promise<string | null> {
   const response = await fetch('/api/checkout/lemonsqueezy', {
     method: 'POST',
     headers: authHeaders(accessToken),
-    body: JSON.stringify({ kind }),
+    body: JSON.stringify({ kind, affiliateSlug: affiliateSlug ?? undefined }),
   })
   const payload = (await response.json()) as { success: true; checkoutUrl: string } | ApiErrorResponse
   if (!response.ok || !payload.success) {
@@ -245,6 +247,37 @@ export async function startCheckout(
     throw new Error(message)
   }
   return payload.checkoutUrl
+}
+
+export async function attachAffiliate(accessToken: string, slug: string) {
+  const response = await fetch('/api/affiliate/attach', {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify({ slug }),
+  })
+  const payload = (await response.json()) as { success: boolean; attached?: boolean } | ApiErrorResponse
+  if (!response.ok || !payload.success) return false
+  return true
+}
+
+export async function fetchStreamerSettings(accessToken: string) {
+  const response = await fetch('/api/streamer/settings', {
+    headers: authHeaders(accessToken),
+  })
+  const payload = (await response.json()) as { success: true; settings: unknown } | ApiErrorResponse
+  if (!response.ok || !payload.success) return null
+  return payload.settings
+}
+
+export async function fetchStreamerBackgrounds(accessToken: string) {
+  const response = await fetch('/api/streamer/backgrounds', {
+    headers: authHeaders(accessToken),
+  })
+  const payload = (await response.json()) as
+    | { success: true; backgrounds: Array<{ id: string; public_url: string; sort_order: number }> }
+    | ApiErrorResponse
+  if (!response.ok || !payload.success) return []
+  return payload.backgrounds
 }
 
 export async function deleteWorld(accessToken: string, worldId: string) {

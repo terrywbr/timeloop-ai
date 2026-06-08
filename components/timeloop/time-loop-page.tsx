@@ -6,6 +6,7 @@ import { useTimeloopPage } from '@/hooks/use-timeloop-page'
 import ControlPanel from '@/components/control-panel'
 import AudioUnlockButton from '@/components/audio-unlock-button'
 import CommunityGallery from '@/components/community-gallery'
+import StreamLayout from '@/components/stream/stream-layout'
 import StreamAudioPlayer from '@/components/stream-audio-player'
 import AmbientBackground from '@/components/timeloop/ambient-background'
 import GeneratingOverlay from '@/components/timeloop/generating-overlay'
@@ -42,13 +43,34 @@ function TimeLoopPageInner() {
         <MusicMoodOnboarding onComplete={page.handleCompleteMusicOnboarding} />
       ) : null}
 
-      {page.musicOnboarded && page.activeMusicStreamUrl ? (
+      {!page.showStreamLayout && page.musicOnboarded && page.activeMusicStreamUrl ? (
         <StreamAudioPlayer
           streamUrl={page.activeMusicStreamUrl}
           playing={page.isMusicPlaying}
           volume={page.effectiveMusicVolume}
           muted={!page.isAudioUnlocked}
           onPlaybackError={(url) => void page.handleStreamFailure(url)}
+        />
+      ) : null}
+
+      {page.showStreamLayout ? (
+        <StreamLayout
+          ambientLayers={page.ambientLayers}
+          overlaySettings={page.effectiveOverlaySettings}
+          musicStreamUrl={page.activeMusicStreamUrl}
+          ambienceStreamUrl={page.activeAmbienceUrl}
+          isMusicPlaying={page.isMusicPlaying}
+          musicVolume={page.effectiveMusicVolume}
+          ambienceVolume={page.ambienceVolume}
+          isAudioUnlocked={page.isAudioUnlocked}
+          onPlaybackError={(url) => void page.handleStreamFailure(url)}
+          previewGate={
+            page.streamPreviewExpired && !page.isStreamer ? (
+              <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-black/70 px-6 text-center">
+                <p className="max-w-md text-lg font-semibold text-white">{t.streamerOverlay.previewUpgrade}</p>
+              </div>
+            ) : null
+          }
         />
       ) : null}
 
@@ -116,6 +138,8 @@ function TimeLoopPageInner() {
             onCheckout={page.handleCheckout}
             onDownload={page.handleDownload}
             preferCreditPack={page.preferCreditPack}
+            isCnHost={page.isCnHost}
+            cnWechatSupportId={process.env.NEXT_PUBLIC_CN_WECHAT_SUPPORT_ID ?? ''}
             selectedVisualEffect={page.selectedVisualEffect}
             onVisualEffectChange={page.setSelectedVisualEffect}
           />
@@ -171,6 +195,8 @@ function TimeLoopPageInner() {
             onCheckout={page.handleCheckout}
             onDownload={page.handleDownload}
             preferCreditPack={page.preferCreditPack}
+            isCnHost={page.isCnHost}
+            cnWechatSupportId={process.env.NEXT_PUBLIC_CN_WECHAT_SUPPORT_ID ?? ''}
             selectedVisualEffect={page.selectedVisualEffect}
             onVisualEffectChange={page.setSelectedVisualEffect}
             onPublishWorld={page.handlePublishWorld}

@@ -15,6 +15,9 @@ type GalleryWorldCardProps = {
   onShare?: (world: GalleryWorld) => void
   onReport?: (world: GalleryWorld) => void
   compact?: boolean
+  /** Uniform grid tile — image only, like official gallery cells */
+  gridCell?: boolean
+  aspectClass?: 'aspect-video' | 'aspect-square'
 }
 
 export function GalleryWorldCard({
@@ -27,31 +30,41 @@ export function GalleryWorldCard({
   onShare,
   onReport,
   compact,
+  gridCell = false,
+  aspectClass = 'aspect-video',
 }: GalleryWorldCardProps) {
+  const imageTile = (
+    <button
+      type="button"
+      onClick={() => onEnter(world)}
+      className={`group relative w-full overflow-hidden rounded-md ring-1 ring-foreground/10 text-left ${aspectClass}`}
+    >
+      <img
+        src={world.backgroundImage}
+        alt={world.title}
+        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        loading="lazy"
+      />
+      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/25">
+        <span className="rounded-lg border border-white/25 bg-background/55 px-2 py-1 text-[10px] font-medium opacity-0 transition group-hover:opacity-100">
+          {enterLabel}
+        </span>
+      </div>
+      {world.isFeatured ? (
+        <span className="absolute left-1 top-1 rounded bg-accent/90 px-1 py-px text-[8px] font-medium text-accent-foreground">
+          ★
+        </span>
+      ) : null}
+    </button>
+  )
+
+  if (gridCell) {
+    return imageTile
+  }
+
   return (
     <div className="flex flex-col gap-1">
-      <button
-        type="button"
-        onClick={() => onEnter(world)}
-        className="group relative aspect-video w-full overflow-hidden rounded-md ring-1 ring-foreground/10 text-left"
-      >
-        <img
-          src={world.backgroundImage}
-          alt={world.title}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/25">
-          <span className="rounded-lg border border-white/25 bg-background/55 px-2 py-1 text-[10px] font-medium opacity-0 transition group-hover:opacity-100">
-            {enterLabel}
-          </span>
-        </div>
-        {world.isFeatured ? (
-          <span className="absolute left-1 top-1 rounded bg-accent/90 px-1 py-px text-[8px] font-medium text-accent-foreground">
-            ★
-          </span>
-        ) : null}
-      </button>
+      {imageTile}
 
       <div className="min-w-0 px-0.5">
         <p className="truncate text-xs font-medium text-foreground">{world.title}</p>

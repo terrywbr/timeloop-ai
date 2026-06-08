@@ -24,6 +24,9 @@ import { signInWithGoogle } from '@/lib/auth-google'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import {
   deleteWorld,
+  attachAffiliate,
+  fetchStreamerBackgrounds,
+  fetchStreamerSettings,
   fetchUserProfile,
   fetchWorldById,
   fetchWorlds,
@@ -33,6 +36,14 @@ import {
   updateWorldTitle,
   type UserAccountProfile,
 } from '@/lib/api-client'
+import { captureAffiliateSlug, getStoredAffiliateSlug } from '@/lib/affiliate'
+import { readStreamModeFromWindow } from '@/lib/stream-mode'
+import { getDefaultStreamerOverlayTemplate } from '@/lib/streamer-overlay-templates'
+import {
+  DEFAULT_STREAMER_SETTINGS,
+  normalizeStreamerSettings,
+  type StreamerSettings,
+} from '@/lib/streamer-settings'
 import { useCoFocus } from '@/hooks/use-cofocus'
 import { markCoFocusSpokenToday, shouldSpeakCoFocusToday } from '@/lib/dj-settings'
 import type { VideoBackgroundRef } from '@/components/ui/video-background'
@@ -82,6 +93,11 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   const [coFocusEnabled, setCoFocusEnabled] = useState(false)
   const [enteredPublicWorldId, setEnteredPublicWorldId] = useState<string | null>(null)
   const [selectedVisualEffect, setSelectedVisualEffect] = useState<VisualEffectSceneKey>('cyberpunk')
+  const [isStreamMode] = useState(() => readStreamModeFromWindow())
+  const [streamerSettings, setStreamerSettings] = useState<StreamerSettings>(DEFAULT_STREAMER_SETTINGS)
+  const [streamerBackgroundUrls, setStreamerBackgroundUrls] = useState<string[]>([])
+  const [streamPreviewExpired, setStreamPreviewExpired] = useState(false)
+  const [backgroundRotationIndex, setBackgroundRotationIndex] = useState(0)
   const isMobile = useIsMobile()
   const { isLandscape, isMobilePortrait } = useOrientation()
   const isClientMounted = useClientMounted()
@@ -109,7 +125,12 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   }, [music.primaryMood, worldOverrideActive])
 
   const presetWorld = resolvePresetWorld(currentWorldId, currentGalleryAssets?.particlePreset)
+  const rotatedStreamerBackground =
+    streamerBackgroundUrls.length > 0
+      ? streamerBackgroundUrls[backgroundRotationIndex % streamerBackgroundUrls.length]
+      : null
   const activeBackgroundImage =
+    rotatedStreamerBackground ??
     moodAmbientLayer?.backgroundImage ??
     currentGalleryAssets?.backgroundImage ??
     presetWorld.backgroundImage
@@ -182,11 +203,25 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     }
   }, [music.activeMusicStreamUrl, musicVolume])
 
-  const showPortraitRotateGate = isClientMounted && isMobilePortrait
+  const showPortraitRotateGate = !isStreamMode && isClientMounted && isMobilePortrait
   const showMobileLandscapeUi = isClientMounted && (!isMobile || isLandscape)
-  const showMusicOnboarding = showMobileLandscapeUi && !music.musicOnboarded
-  const showCockpit = showMobileLandscapeUi && music.musicOnboarded
+  const showMusicOnboarding = !isStreamMode && showMobileLandscapeUi && !music.musicOnboarded
+  const showCockpit = !isStreamMode && showMobileLandscapeUi && music.musicOnboarded
+  const showStreamLayout = isStreamMode && music.musicOnboarded
+  const isStreamer = Boolean(userProfile?.isStreamer)
   const preferCreditPack = regionPreference === 'cn' || isCnHost
+  const effectiveOverlaySettings = useMemo(() => {
+    const settings = normalizeStreamerSettings(streamerSettings)
+    const template = getDefaultStreamerOverlayTemplate(language)
+    if (!settings.overlay.line1.trim() && !settings.overlay.line2.trim()) {
+      return {
+        ...settings.overlay,
+        line1: template.line1,
+        line2: template.line2,
+      }
+    }
+    return settings.overlay
+  }, [language, streamerSettings])
 
   const handleCompanionEvent = useCallback(
     (event: CompanionEvent) => {
@@ -268,6 +303,64 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   }, [authUser, refreshAccountData])
 
   useEffect(() => {
+    captureAffiliateSlug()
+  }, [])
+
+  useEffect(() => {
+    if (!isStreamMode || music.musicOnboarded) return
+    const { initial, primaryMood } = music.completeMusicOnboarding(['deep-night'])
+    loadMoodWorld(primaryMood)
+    setIsAudioUnlocked(true)
+    setIsMusicPlaying(true)
+    primeStreamAudio(buildStreamPlaybackUrl(initial), musicVolume)
+  }, [
+    isStreamMode,
+    loadMoodWorld,
+    music.completeMusicOnboarding,
+    music.musicOnboarded,
+    musicVolume,
+  ])
+
+  useEffect(() => {
+    if (!isStreamMode || isStreamer) return
+    const timer = window.setTimeout(() => setStreamPreviewExpired(true), 60_000)
+    return () => window.clearTimeout(timer)
+  }, [isStreamMode, isStreamer])
+
+  useEffect(() => {
+    if (!accessToken || !isStreamer) return
+    void (async () => {
+      const [settings, backgrounds] = await Promise.all([
+        fetchStreamerSettings(accessToken),
+        fetchStreamerBackgrounds(accessToken),
+      ])
+      if (settings) {
+        setStreamerSettings(normalizeStreamerSettings(settings as StreamerSettings))
+      }
+      if (backgrounds.length > 0) {
+        setStreamerBackgroundUrls(backgrounds.map((item) => item.public_url))
+      }
+    })()
+  }, [accessToken, isStreamer])
+
+  useEffect(() => {
+    if (streamerBackgroundUrls.length < 2) return
+    const minutes = streamerSettings.backgroundRotationMinutes
+    const intervalMs = minutes * 60 * 1000
+    const timer = window.setInterval(() => {
+      setBackgroundRotationIndex((index) => (index + 1) % streamerBackgroundUrls.length)
+    }, intervalMs)
+    return () => window.clearInterval(timer)
+  }, [streamerBackgroundUrls, streamerSettings.backgroundRotationMinutes])
+
+  useEffect(() => {
+    if (!authUser || !accessToken) return
+    const slug = getStoredAffiliateSlug()
+    if (!slug) return
+    void attachAffiliate(accessToken, slug)
+  }, [authUser, accessToken])
+
+  useEffect(() => {
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
     if (params.get('checkout') !== 'success') return
@@ -279,13 +372,15 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
 
     const messages: Partial<Record<Language, string>> = {
       en: 'Payment successful! Updating your membership…',
-      'zh-cn': '付款成功！正在更新会员状态…',
-      'zh-tw': '付款成功！正在更新會員狀態…',
+      'zh-CN': '付款成功！正在更新会员状态…',
+      'zh-TW': '付款成功！正在更新會員狀態…',
       ja: 'お支払いが完了しました。会員ステータスを更新しています…',
       ko: '결제가 완료되었습니다. 멤버십 상태를 업데이트하는 중…',
       es: 'Pago completado. Actualizando tu membresía…',
       fr: 'Paiement réussi. Mise à jour de votre abonnement…',
       de: 'Zahlung erfolgreich. Mitgliedschaft wird aktualisiert…',
+      th: 'ชำระเงินสำเร็จ! กำลังอัปเดตสมาชิก…',
+      vi: 'Thanh toán thành công! Đang cập nhật tư cách thành viên…',
     }
     window.alert(messages[language] ?? messages.en)
 
@@ -475,6 +570,8 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
 
   const handleCheckout = useCallback(
     async (kind: 'subscription' | 'credits') => {
+      if (preferCreditPack && kind === 'subscription') return
+
       const accessToken = await getAccessToken()
       if (!accessToken) {
         await handleRequireAuth()
@@ -482,14 +579,14 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
       }
 
       try {
-        const checkoutUrl = await startCheckout(accessToken, kind)
+        const checkoutUrl = await startCheckout(accessToken, kind, getStoredAffiliateSlug())
         if (checkoutUrl) window.location.href = checkoutUrl
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Checkout failed'
         window.alert(message)
       }
     },
-    [getAccessToken, handleRequireAuth],
+    [getAccessToken, handleRequireAuth, preferCreditPack],
   )
 
   const handleDownload = useCallback(async () => {
@@ -860,7 +957,13 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     showPortraitRotateGate,
     showMusicOnboarding,
     showCockpit,
+    showStreamLayout,
+    isStreamMode,
+    isStreamer,
+    streamPreviewExpired,
+    effectiveOverlaySettings,
     preferCreditPack,
+    isCnHost,
     isClientMounted,
     isMobile,
     isMobilePortrait,
