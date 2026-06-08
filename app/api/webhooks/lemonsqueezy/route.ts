@@ -143,33 +143,6 @@ async function handleCreditPackPurchase(payload: LemonSqueezyPayload, eventId: s
   if (txError) throw txError
 }
 
-async function recordAffiliateConversion(payload: LemonSqueezyPayload, eventId: string) {
-  const customData = lemonCustomData(payload)
-  const affiliateSlug =
-    typeof customData.affiliate_slug === 'string' ? customData.affiliate_slug.trim().toLowerCase() : null
-  if (!affiliateSlug) return
-
-  const userId = typeof customData.user_id === 'string' ? customData.user_id : null
-  const orderId = payload.data?.type === 'orders' ? payload.data.id ?? null : null
-  const subscriptionId = payload.data?.type === 'subscriptions' ? payload.data.id ?? null : null
-  const amountRaw = lemonStringAttribute(payload, 'total')
-  const amountCents = amountRaw ? Math.round(Number.parseFloat(amountRaw) * 100) : null
-
-  const supabase = createSupabaseAdminClient()
-  const { error } = await supabase.from('affiliate_conversions').insert({
-    event_id: eventId,
-    affiliate_slug: affiliateSlug,
-    user_id: userId,
-    amount_cents: Number.isFinite(amountCents) ? amountCents : null,
-    status: 'pending',
-    lemon_order_id: orderId,
-    lemon_subscription_id: subscriptionId,
-    metadata: payload,
-  })
-
-  if (error && !error.message.includes('duplicate')) throw error
-}
-
 async function handleSubscriptionEvent(payload: LemonSqueezyPayload) {
   const eventName = payload.meta?.event_name ?? ''
   if (!eventName.startsWith('subscription_')) return
@@ -218,7 +191,6 @@ export async function POST(req: Request) {
     }
 
     await handleCreditPackPurchase(payload, recorded.eventId)
-    await recordAffiliateConversion(payload, recorded.eventId)
     await handleSubscriptionEvent(payload)
 
     return NextResponse.json({ success: true })

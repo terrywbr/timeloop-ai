@@ -64,13 +64,6 @@ function TimeLoopPageInner() {
           ambienceVolume={page.ambienceVolume}
           isAudioUnlocked={page.isAudioUnlocked}
           onPlaybackError={(url) => void page.handleStreamFailure(url)}
-          previewGate={
-            page.streamPreviewExpired && !page.isStreamer ? (
-              <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-black/70 px-6 text-center">
-                <p className="max-w-md text-lg font-semibold text-white">{t.streamerOverlay.previewUpgrade}</p>
-              </div>
-            ) : null
-          }
         />
       ) : null}
 

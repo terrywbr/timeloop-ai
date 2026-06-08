@@ -1,6 +1,5 @@
 'use client'
 
-import type { ReactNode } from 'react'
 import AmbientBackground from '@/components/timeloop/ambient-background'
 import StreamOverlay from '@/components/stream/stream-overlay'
 import StreamAudioPlayer from '@/components/stream-audio-player'
@@ -17,7 +16,6 @@ type StreamLayoutProps = {
   ambienceVolume: number
   isAudioUnlocked: boolean
   onPlaybackError: (url: string) => void
-  previewGate?: ReactNode
 }
 
 export default function StreamLayout({
@@ -30,13 +28,11 @@ export default function StreamLayout({
   ambienceVolume,
   isAudioUnlocked,
   onPlaybackError,
-  previewGate,
 }: StreamLayoutProps) {
   return (
     <main className="timeloop-app-shell relative h-screen w-screen overflow-hidden bg-zinc-950">
       <AmbientBackground layers={ambientLayers} />
       <StreamOverlay settings={overlaySettings} />
-      {previewGate}
 
       {musicStreamUrl ? (
         <StreamAudioPlayer

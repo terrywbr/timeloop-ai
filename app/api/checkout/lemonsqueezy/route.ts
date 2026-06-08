@@ -20,13 +20,12 @@ export async function POST(req: Request) {
     }
 
     const auth = await getAuthenticatedUser(req)
-    const body = (await req.json()) as { kind?: unknown; affiliateSlug?: string }
+    const body = (await req.json()) as { kind?: unknown }
     const kind = isCheckoutKind(body.kind) ? body.kind : 'subscription'
     const checkoutUrl = await createLemonSqueezyCheckout({
       kind,
       userId: auth.user.id,
       email: auth.user.email,
-      affiliateSlug: typeof body.affiliateSlug === 'string' ? body.affiliateSlug : null,
     })
 
     return NextResponse.json({

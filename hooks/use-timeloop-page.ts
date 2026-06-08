@@ -24,7 +24,6 @@ import { signInWithGoogle } from '@/lib/auth-google'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import {
   deleteWorld,
-  attachAffiliate,
   fetchStreamerBackgrounds,
   fetchStreamerSettings,
   fetchUserProfile,
@@ -36,7 +35,6 @@ import {
   updateWorldTitle,
   type UserAccountProfile,
 } from '@/lib/api-client'
-import { captureAffiliateSlug, getStoredAffiliateSlug } from '@/lib/affiliate'
 import { readStreamModeFromWindow } from '@/lib/stream-mode'
 import { getDefaultStreamerOverlayTemplate } from '@/lib/streamer-overlay-templates'
 import {
@@ -96,7 +94,6 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   const [isStreamMode] = useState(() => readStreamModeFromWindow())
   const [streamerSettings, setStreamerSettings] = useState<StreamerSettings>(DEFAULT_STREAMER_SETTINGS)
   const [streamerBackgroundUrls, setStreamerBackgroundUrls] = useState<string[]>([])
-  const [streamPreviewExpired, setStreamPreviewExpired] = useState(false)
   const [backgroundRotationIndex, setBackgroundRotationIndex] = useState(0)
   const isMobile = useIsMobile()
   const { isLandscape, isMobilePortrait } = useOrientation()
@@ -303,10 +300,6 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   }, [authUser, refreshAccountData])
 
   useEffect(() => {
-    captureAffiliateSlug()
-  }, [])
-
-  useEffect(() => {
     if (!isStreamMode || music.musicOnboarded) return
     const { initial, primaryMood } = music.completeMusicOnboarding(['deep-night'])
     loadMoodWorld(primaryMood)
@@ -320,12 +313,6 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     music.musicOnboarded,
     musicVolume,
   ])
-
-  useEffect(() => {
-    if (!isStreamMode || isStreamer) return
-    const timer = window.setTimeout(() => setStreamPreviewExpired(true), 60_000)
-    return () => window.clearTimeout(timer)
-  }, [isStreamMode, isStreamer])
 
   useEffect(() => {
     if (!accessToken || !isStreamer) return
@@ -352,13 +339,6 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     }, intervalMs)
     return () => window.clearInterval(timer)
   }, [streamerBackgroundUrls, streamerSettings.backgroundRotationMinutes])
-
-  useEffect(() => {
-    if (!authUser || !accessToken) return
-    const slug = getStoredAffiliateSlug()
-    if (!slug) return
-    void attachAffiliate(accessToken, slug)
-  }, [authUser, accessToken])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -579,7 +559,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
       }
 
       try {
-        const checkoutUrl = await startCheckout(accessToken, kind, getStoredAffiliateSlug())
+        const checkoutUrl = await startCheckout(accessToken, kind)
         if (checkoutUrl) window.location.href = checkoutUrl
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Checkout failed'
@@ -960,7 +940,6 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     showStreamLayout,
     isStreamMode,
     isStreamer,
-    streamPreviewExpired,
     effectiveOverlaySettings,
     preferCreditPack,
     isCnHost,
