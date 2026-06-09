@@ -1,3 +1,4 @@
+import type { CheckoutProductKind } from '@/lib/billing-config'
 import type { CreatorProfile, GalleryWorld, PublicWorldsSort } from '@/lib/community/types'
 import type { MusicMoodId } from '@/lib/music-moods'
 import type { PublicGeneratedWorld } from './supabase-types'
@@ -231,14 +232,17 @@ export async function fetchFocusPresence(worldId: string): Promise<number> {
   return payload.count
 }
 
+export type CheckoutKind = CheckoutProductKind | 'subscription'
+
 export async function startCheckout(
   accessToken: string,
-  kind: 'subscription' | 'credits',
+  kind: CheckoutKind,
 ): Promise<string | null> {
+  const normalized = kind === 'subscription' ? 'vip' : kind
   const response = await fetch('/api/checkout/lemonsqueezy', {
     method: 'POST',
     headers: authHeaders(accessToken),
-    body: JSON.stringify({ kind }),
+    body: JSON.stringify({ kind: normalized }),
   })
   const payload = (await response.json()) as { success: true; checkoutUrl: string } | ApiErrorResponse
   if (!response.ok || !payload.success) {
@@ -246,6 +250,23 @@ export async function startCheckout(
     throw new Error(message)
   }
   return payload.checkoutUrl
+}
+
+export async function downloadBackgroundImage(
+  accessToken: string,
+  imageUrl: string,
+  filename: string,
+): Promise<Blob> {
+  const response = await fetch('/api/download/background', {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify({ imageUrl, filename }),
+  })
+  if (!response.ok) {
+    const payload = (await response.json().catch(() => null)) as ApiErrorResponse | null
+    throw new Error(payload?.error ?? 'Download failed')
+  }
+  return response.blob()
 }
 
 export async function fetchStreamerSettings(accessToken: string) {

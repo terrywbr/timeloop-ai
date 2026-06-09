@@ -25,6 +25,7 @@ import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import {
   deleteWorld,
   deleteStreamerBackground,
+  downloadBackgroundImage,
   fetchStreamerBackgrounds,
   fetchStreamerSettings,
   fetchUserProfile,
@@ -36,6 +37,7 @@ import {
   startCheckout,
   uploadStreamerBackground,
   updateWorldTitle,
+  type CheckoutKind,
   type UserAccountProfile,
 } from '@/lib/api-client'
 import { readStreamModeFromWindow } from '@/lib/stream-mode'
@@ -557,8 +559,8 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   )
 
   const handleCheckout = useCallback(
-    async (kind: 'subscription' | 'credits') => {
-      if (preferCreditPack && kind === 'subscription') return
+    async (kind: CheckoutKind) => {
+      if (preferCreditPack && (kind === 'vip' || kind === 'subscription' || kind === 'streamer')) return
 
       const accessToken = await getAccessToken()
       if (!accessToken) {
@@ -634,17 +636,26 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   )
 
   const handleDownload = useCallback(async () => {
-    if (!userProfile?.isVip) {
-      window.alert('下載功能僅限 VIP 會員使用，請先升級。')
+    if (!userProfile?.isVip && !userProfile?.isStreamer) {
+      window.alert('下載功能僅限 VIP / Streamer Pass 會員使用，請先升級。')
       return
     }
 
     const imageUrl = activeBackgroundImage
     if (!imageUrl) return
 
+    const accessToken = await getAccessToken()
+    if (!accessToken) {
+      await handleRequireAuth()
+      return
+    }
+
     try {
-      const response = await fetch(imageUrl)
-      const blob = await response.blob()
+      const blob = await downloadBackgroundImage(
+        accessToken,
+        imageUrl,
+        `timeloop-${activeWorldId ?? currentWorldId}.jpg`,
+      )
       const objectUrl = URL.createObjectURL(blob)
       const anchor = document.createElement('a')
       anchor.href = objectUrl
@@ -655,7 +666,15 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
       console.error('[download]', error)
       window.alert('下載失敗，請稍後再試。')
     }
-  }, [activeBackgroundImage, activeWorldId, currentWorldId, userProfile?.isVip])
+  }, [
+    activeBackgroundImage,
+    activeWorldId,
+    currentWorldId,
+    getAccessToken,
+    handleRequireAuth,
+    userProfile?.isStreamer,
+    userProfile?.isVip,
+  ])
 
   useEffect(() => {
     setAmbientLayers((layers) => {

@@ -1,6 +1,11 @@
-import { billingNotConfiguredMessage, isBillingConfigured } from '@/lib/billing-config'
+import {
+  billingNotConfiguredMessage,
+  isBillingConfigured,
+  resolveCreditPackByKind,
+  type CheckoutProductKind,
+} from '@/lib/billing-config'
 
-export type CheckoutKind = 'subscription' | 'credits'
+export type CheckoutKind = CheckoutProductKind
 
 export type LemonSqueezyPayload = {
   meta?: {
@@ -28,14 +33,36 @@ export function getSiteUrl() {
   )
 }
 
-export function getCreditPackCredits() {
-  const credits = Number.parseInt(process.env.LEMON_SQUEEZY_CREDIT_PACK_CREDITS ?? '100', 10)
-  return Number.isFinite(credits) ? credits : 100
+export function getVariantId(kind: CheckoutKind) {
+  if (kind === 'vip') return requiredEnv('LEMON_SQUEEZY_VIP_VARIANT_ID')
+  if (kind === 'streamer') {
+    const streamerVariant = process.env.LEMON_SQUEEZY_STREAMER_VARIANT_ID?.trim()
+    if (!streamerVariant) throw new Error('Streamer Pass checkout is not configured')
+    return streamerVariant
+  }
+  const pack = resolveCreditPackByKind(kind)
+  if (!pack) throw new Error(`Credit pack checkout is not configured for ${kind}`)
+  return pack.variantId
 }
 
-export function getVariantId(kind: CheckoutKind) {
-  if (kind === 'subscription') return requiredEnv('LEMON_SQUEEZY_VIP_VARIANT_ID')
-  return requiredEnv('LEMON_SQUEEZY_CREDIT_PACK_VARIANT_ID')
+export function getCreditPackCreditsForKind(kind: CheckoutKind) {
+  const pack = resolveCreditPackByKind(kind)
+  return pack?.credits ?? 0
+}
+
+/** @deprecated use getCreditPackCreditsForKind */
+export function getCreditPackCredits() {
+  const pack =
+    resolveCreditPackByKind('credits') ??
+    resolveCreditPackByKind('credits_10') ??
+    resolveCreditPackByKind('credits_20')
+  return pack?.credits ?? 100
+}
+
+export function resolveSubscriptionPlanFromVariant(variantId: string | null): 'vip' | 'streamer' {
+  const streamerVariant = process.env.LEMON_SQUEEZY_STREAMER_VARIANT_ID?.trim()
+  if (streamerVariant && variantId === streamerVariant) return 'streamer'
+  return 'vip'
 }
 
 export async function createLemonSqueezyCheckout({

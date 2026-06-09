@@ -46,9 +46,16 @@ export const translations: Record<Language, {
     vip: string
     perMonth: string
     upgradeVip: string
+    upgradeStreamer: string
     buyCredits: string
+    buyCredits10: string
+    buyCredits20: string
     creditsRemaining: string
     vipActive: string
+    streamerActive: string
+    pastDueWarning: string
+    vipUntil: string
+    generationCost: string
   }
   auth: {
     signInPrompt: string
@@ -102,6 +109,7 @@ export const translations: Record<Language, {
     cnWechatLabel: string
     cnUidHint: string
     cnCopyUid: string
+    cnPricingTiers: string
     backgroundsTitle: string
     backgroundsHint: string
     uploadBackground: string
@@ -146,6 +154,13 @@ export const translations: Record<Language, {
       buyCredits: 'Buy credit pack',
       creditsRemaining: 'Credits remaining: {count}',
       vipActive: 'VIP active — unlimited generations',
+      streamerActive: 'Streamer Pass active — creator tools unlocked',
+      upgradeStreamer: 'Upgrade to Streamer Pass',
+      buyCredits10: 'Buy 10 credits',
+      buyCredits20: 'Buy 20 credits',
+      pastDueWarning: 'Payment past due — please update billing to keep access.',
+      vipUntil: 'Valid until {date}',
+      generationCost: 'Each AI scene uses 10 credits (VIP / Streamer unlimited).',
     },
     auth: {
       signInPrompt: 'Sign in to save scenes and unlock VIP features.',
@@ -223,6 +238,7 @@ export const translations: Record<Language, {
       cnWechatLabel: 'WeChat',
       cnUidHint: 'Copy your UID and send it with payment note "Streamer Pass"',
       cnCopyUid: 'Copy UID',
+      cnPricingTiers: 'Streamer Pass (prepaid via WeChat):\n• Monthly\n• Quarterly\n• Yearly\nSend UID + chosen plan to support.',
       backgroundsTitle: 'OBS background loop',
       backgroundsHint: '{count}/{max} images · auto cross-fade in stream mode',
       uploadBackground: 'Upload image',
@@ -263,10 +279,17 @@ export const translations: Record<Language, {
       free: '免费：5次/月',
       vip: 'VIP $5/月：30次/月',
       perMonth: '/月',
-      upgradeVip: '升级 VIP',
+      upgradeVip: 'Upgrade to VIP',
+      upgradeStreamer: '升级 Streamer Pass',
       buyCredits: '购买点数包',
+      buyCredits10: '购买 10 点',
+      buyCredits20: '购买 20 点',
       creditsRemaining: '剩余点数：{count}',
       vipActive: 'VIP 已激活 — 无限生成',
+      streamerActive: 'Streamer Pass 已激活 — 创作者工具已解锁',
+      pastDueWarning: '付款逾期 — 请更新账单以保留权限。',
+      vipUntil: '有效期至 {date}',
+      generationCost: '每次 AI 生图消耗 10 点（VIP / Streamer 无限）。',
     },
     auth: {
       signInPrompt: '登录以保存场景并解锁 VIP 功能。',
@@ -341,6 +364,7 @@ export const translations: Record<Language, {
       cnWechatLabel: '微信',
       cnUidHint: '复制 UID 并在付款备注中填写「Streamer Pass」',
       cnCopyUid: '复制 UID',
+      cnPricingTiers: 'Streamer Pass（微信预付开通）：\n• 月付\n• 季付\n• 年付\n请发送 UID + 所选方案给客服。',
       backgroundsTitle: 'OBS 背景轮播',
       backgroundsHint: '{count}/{max} 张 · 直播模式自动 cross-fade',
       uploadBackground: '上传图片',
@@ -378,13 +402,20 @@ export const translations: Record<Language, {
       exitFullscreen: '退出全螢幕',
     },
     membership: {
-      free: '免費：5次/月',
-      vip: 'VIP $5/月：30次/月',
+      free: '免費：每月重置點數',
+      vip: 'VIP：無限 AI 生成',
       perMonth: '/月',
       upgradeVip: '升級 VIP',
+      upgradeStreamer: '升級 Streamer Pass',
       buyCredits: '購買點數包',
+      buyCredits10: '購買 10 點',
+      buyCredits20: '購買 20 點',
       creditsRemaining: '剩餘點數：{count}',
       vipActive: 'VIP 已啟用 — 無限生成',
+      streamerActive: 'Streamer Pass 已啟用 — 創作者工具已解鎖',
+      pastDueWarning: '付款逾期 — 請更新帳單以保留權限。',
+      vipUntil: '有效期限至 {date}',
+      generationCost: '每次 AI 生圖消耗 10 點（VIP / Streamer 無限）。',
     },
     auth: {
       signInPrompt: '登入以儲存場景並解鎖 VIP 功能。',
@@ -459,6 +490,7 @@ export const translations: Record<Language, {
       cnWechatLabel: '微信',
       cnUidHint: '複製 UID 並在付款備註中填寫「Streamer Pass」',
       cnCopyUid: '複製 UID',
+      cnPricingTiers: 'Streamer Pass（微信預付開通）：\n• 月付\n• 季付\n• 年付\n請傳送 UID + 方案給客服。',
       backgroundsTitle: 'OBS 背景輪播',
       backgroundsHint: '{count}/{max} 張 · 直播模式自動 cross-fade',
       uploadBackground: '上傳圖片',
@@ -500,9 +532,16 @@ export const translations: Record<Language, {
       vip: 'VIP $5/月：月30回',
       perMonth: '/月',
       upgradeVip: 'VIPにアップグレード',
+      upgradeStreamer: 'Streamer Pass にアップグレード',
       buyCredits: 'クレジットパック購入',
+      buyCredits10: '10 クレジット購入',
+      buyCredits20: '20 クレジット購入',
       creditsRemaining: '残りクレジット：{count}',
       vipActive: 'VIP有効 — 無制限生成',
+      streamerActive: 'Streamer Pass 有効 — クリエイターツール解放',
+      pastDueWarning: '支払い延滞 — 請求情報を更新してください。',
+      vipUntil: '有効期限：{date}',
+      generationCost: 'AI 生成 1 回につき 10 クレジット（VIP / Streamer は無制限）。',
     },
     auth: {
       signInPrompt: 'サインインしてシーンを保存し、VIP機能を解除してください。',
@@ -579,6 +618,7 @@ export const translations: Record<Language, {
       cnWechatLabel: 'WeChat',
       cnUidHint: 'UID をコピーし、支払いメモに「Streamer Pass」と記載',
       cnCopyUid: 'UID をコピー',
+      cnPricingTiers: 'Streamer Pass（WeChat 前払い）：\n• 月額\n• 四半期\n• 年額\nUID + プランをサポートへ送信。',
       backgroundsTitle: 'OBS 背景ループ',
       backgroundsHint: '{count}/{max} 枚 · ストリームモードで自動切替',
       uploadBackground: '画像をアップロード',
@@ -620,9 +660,16 @@ export const translations: Record<Language, {
       vip: 'VIP $5/월: 월 30회',
       perMonth: '/월',
       upgradeVip: 'VIP 업그레이드',
+      upgradeStreamer: 'Streamer Pass 업그레이드',
       buyCredits: '크레딧 팩 구매',
+      buyCredits10: '10 크레딧 구매',
+      buyCredits20: '20 크레딧 구매',
       creditsRemaining: '남은 크레딧: {count}',
       vipActive: 'VIP 활성 — 무제한 생성',
+      streamerActive: 'Streamer Pass 활성 — 크리에이터 도구 잠금 해제',
+      pastDueWarning: '결제 연체 — 결제 정보를 업데이트하세요.',
+      vipUntil: '유효 기간: {date}',
+      generationCost: 'AI 생성 1회당 10 크레딧 (VIP / Streamer 무제한).',
     },
     auth: {
       signInPrompt: '로그인하여 장면을 저장하고 VIP 기능을 잠금 해제하세요.',
@@ -699,6 +746,7 @@ export const translations: Record<Language, {
       cnWechatLabel: 'WeChat',
       cnUidHint: 'UID를 복사해 결제 메모에 "Streamer Pass"를 적어주세요',
       cnCopyUid: 'UID 복사',
+      cnPricingTiers: 'Streamer Pass (WeChat 선불):\n• 월간\n• 분기\n• 연간\nUID + 플랜을 지원팀에 전송.',
       backgroundsTitle: 'OBS 배경 루프',
       backgroundsHint: '{count}/{max}장 · 스트림 모드 자동 전환',
       uploadBackground: '이미지 업로드',
@@ -740,9 +788,16 @@ export const translations: Record<Language, {
       vip: 'VIP $5/mes: 30 generaciones',
       perMonth: '/mes',
       upgradeVip: 'Actualizar a VIP',
+      upgradeStreamer: 'Actualizar a Streamer Pass',
       buyCredits: 'Comprar paquete de créditos',
+      buyCredits10: 'Comprar 10 créditos',
+      buyCredits20: 'Comprar 20 créditos',
       creditsRemaining: 'Créditos restantes: {count}',
       vipActive: 'VIP activo — generaciones ilimitadas',
+      streamerActive: 'Streamer Pass activo — herramientas de creador',
+      pastDueWarning: 'Pago vencido — actualiza la facturación.',
+      vipUntil: 'Válido hasta {date}',
+      generationCost: 'Cada escena AI cuesta 10 créditos (VIP / Streamer ilimitado).',
     },
     auth: {
       signInPrompt: 'Inicia sesión para guardar escenas y desbloquear funciones VIP.',
@@ -819,6 +874,7 @@ export const translations: Record<Language, {
       cnWechatLabel: 'WeChat',
       cnUidHint: 'Copia tu UID y envíalo con la nota "Streamer Pass"',
       cnCopyUid: 'Copiar UID',
+      cnPricingTiers: 'Streamer Pass (WeChat prepago):\n• Mensual\n• Trimestral\n• Anual\nEnvía UID + plan a soporte.',
       backgroundsTitle: 'Fondo OBS en bucle',
       backgroundsHint: '{count}/{max} imágenes · cross-fade en modo stream',
       uploadBackground: 'Subir imagen',
@@ -860,9 +916,16 @@ export const translations: Record<Language, {
       vip: 'VIP 5$/mois: 30 générations',
       perMonth: '/mois',
       upgradeVip: 'Passer au VIP',
+      upgradeStreamer: 'Passer au Streamer Pass',
       buyCredits: 'Acheter un pack de crédits',
+      buyCredits10: 'Acheter 10 crédits',
+      buyCredits20: 'Acheter 20 crédits',
       creditsRemaining: 'Crédits restants : {count}',
       vipActive: 'VIP actif — générations illimitées',
+      streamerActive: 'Streamer Pass actif — outils créateur',
+      pastDueWarning: 'Paiement en retard — mettez à jour la facturation.',
+      vipUntil: 'Valide jusqu’au {date}',
+      generationCost: 'Chaque scène IA coûte 10 crédits (VIP / Streamer illimité).',
     },
     auth: {
       signInPrompt: 'Connectez-vous pour enregistrer vos scènes et débloquer les fonctionnalités VIP.',
@@ -939,6 +1002,7 @@ export const translations: Record<Language, {
       cnWechatLabel: 'WeChat',
       cnUidHint: 'Copiez votre UID avec la note « Streamer Pass »',
       cnCopyUid: 'Copier UID',
+      cnPricingTiers: 'Streamer Pass (WeChat prépayé) :\n• Mensuel\n• Trimestre\n• Annuel\nEnvoyez UID + formule au support.',
       backgroundsTitle: 'Boucle de fond OBS',
       backgroundsHint: '{count}/{max} images · cross-fade en mode stream',
       uploadBackground: 'Importer une image',
@@ -980,9 +1044,16 @@ export const translations: Record<Language, {
       vip: 'VIP 5$/Monat: 30 Generierungen',
       perMonth: '/Monat',
       upgradeVip: 'VIP upgraden',
+      upgradeStreamer: 'Streamer Pass upgraden',
       buyCredits: 'Credit-Paket kaufen',
+      buyCredits10: '10 Credits kaufen',
+      buyCredits20: '20 Credits kaufen',
       creditsRemaining: 'Verbleibende Credits: {count}',
       vipActive: 'VIP aktiv — unbegrenzte Generierungen',
+      streamerActive: 'Streamer Pass aktiv — Creator-Tools freigeschaltet',
+      pastDueWarning: 'Zahlung überfällig — bitte Abrechnung aktualisieren.',
+      vipUntil: 'Gültig bis {date}',
+      generationCost: 'Jede KI-Szene kostet 10 Credits (VIP / Streamer unbegrenzt).',
     },
     auth: {
       signInPrompt: 'Melden Sie sich an, um Szenen zu speichern und VIP-Funktionen freizuschalten.',
@@ -1059,6 +1130,7 @@ export const translations: Record<Language, {
       cnWechatLabel: 'WeChat',
       cnUidHint: 'UID kopieren und mit Vermerk „Streamer Pass" senden',
       cnCopyUid: 'UID kopieren',
+      cnPricingTiers: 'Streamer Pass (WeChat Vorauszahlung):\n• Monat\n• Quartal\n• Jahr\nUID + Plan an Support senden.',
       backgroundsTitle: 'OBS-Hintergrund-Schleife',
       backgroundsHint: '{count}/{max} Bilder · Cross-fade im Stream-Modus',
       uploadBackground: 'Bild hochladen',

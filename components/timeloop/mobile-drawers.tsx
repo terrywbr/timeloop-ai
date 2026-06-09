@@ -4,7 +4,7 @@ import { Menu, ImageIcon } from 'lucide-react'
 import type { SceneGalleryItem as GallerySceneItem } from '@/lib/scene-gallery-data'
 import type { GalleryWorld } from '@/lib/community/types'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
-import type { UserAccountProfile } from '@/lib/api-client'
+import type { UserAccountProfile, CheckoutKind } from '@/lib/api-client'
 import type { VideoBackgroundRef } from '@/components/ui/video-background'
 import type { RadioStation } from '@/lib/radio-station'
 import {
@@ -58,7 +58,7 @@ type TimeloopMobileDrawersProps = {
   onDeleteWorld: (worldId: string) => void
   onRenameWorld: (worldId: string, title: string) => void
   onPublishWorld: (worldId: string, isPublic: boolean) => void | Promise<void>
-  onCheckout: (kind: 'subscription' | 'credits') => void
+  onCheckout: (kind: CheckoutKind) => void
   onDownload: () => void
   preferCreditPack: boolean
   isCnHost?: boolean

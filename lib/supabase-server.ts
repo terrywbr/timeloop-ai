@@ -143,17 +143,27 @@ export async function ensureUserProfile(
 }
 
 export function hasVipAccess(profile: UserProfile) {
-  if (profile.plan !== 'vip' || profile.vip_status !== 'active') return false
-  if (!profile.vip_until) return true
-  return new Date(profile.vip_until).getTime() > Date.now()
+  return hasPlanEntitlement(profile, 'vip')
 }
 
 export function hasStreamerAccess(profile: UserProfile) {
-  if (profile.plan === 'streamer') {
-    if (!profile.vip_until) return true
-    return new Date(profile.vip_until).getTime() > Date.now()
-  }
+  if (hasPlanEntitlement(profile, 'streamer')) return true
   return hasVipAccess(profile)
+}
+
+function hasPlanEntitlement(profile: UserProfile, expectedPlan: UserProfile['plan']) {
+  if (profile.plan !== expectedPlan) return false
+
+  if (profile.lemon_squeezy_subscription_id) {
+    if (profile.vip_status !== 'active' && profile.vip_status !== 'past_due') {
+      return false
+    }
+  } else if (profile.vip_status === 'cancelled' || profile.vip_status === 'expired') {
+    return false
+  }
+
+  if (!profile.vip_until) return true
+  return new Date(profile.vip_until).getTime() > Date.now()
 }
 
 export async function createSignedStorageUrl(

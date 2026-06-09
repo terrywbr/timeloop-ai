@@ -12,7 +12,20 @@ type TranslationBundle = {
     string
   >
   membership: Record<
-    'free' | 'vip' | 'perMonth' | 'upgradeVip' | 'buyCredits' | 'creditsRemaining' | 'vipActive',
+    | 'free'
+    | 'vip'
+    | 'perMonth'
+    | 'upgradeVip'
+    | 'upgradeStreamer'
+    | 'buyCredits'
+    | 'buyCredits10'
+    | 'buyCredits20'
+    | 'creditsRemaining'
+    | 'vipActive'
+    | 'streamerActive'
+    | 'pastDueWarning'
+    | 'vipUntil'
+    | 'generationCost',
     string
   >
   auth: { signInPrompt: string }
@@ -47,6 +60,7 @@ type TranslationBundle = {
     | 'cnWechatLabel'
     | 'cnUidHint'
     | 'cnCopyUid'
+    | 'cnPricingTiers'
     | 'backgroundsTitle'
     | 'backgroundsHint'
     | 'uploadBackground'
@@ -109,13 +123,20 @@ export const thTranslation: TranslationBundle = {
     exitFullscreen: 'ออกจากเต็มจอ',
   },
   membership: {
-    free: 'ฟรี: สร้าง 5 ครั้ง/เดือน',
-    vip: 'VIP $5/เดือน: สร้าง 30 ครั้ง',
+    free: 'ฟรี: คredits รายเดือน',
+    vip: 'VIP: สร้างไม่จำกัด',
     perMonth: '/เดือน',
     upgradeVip: 'อัปเกรด VIP',
+    upgradeStreamer: 'อัปเกรด Streamer Pass',
     buyCredits: 'ซื้อเครดิต',
+    buyCredits10: 'ซื้อ 10 เครดิต',
+    buyCredits20: 'ซื้อ 20 เครดิต',
     creditsRemaining: 'เครดิตคงเหลือ: {count}',
     vipActive: 'VIP ใช้งานอยู่ — สร้างไม่จำกัด',
+    streamerActive: 'Streamer Pass ใช้งาน — ปลดล็อกเครื่องมือครีเอเตอร์',
+    pastDueWarning: 'ค้างชำระ — โปรดอัปเดตการชำระเงิน',
+    vipUntil: 'ใช้ได้ถึง {date}',
+    generationCost: 'สร้างฉาก AI ครั้งละ 10 เครดิต (VIP / Streamer ไม่จำกัด)',
   },
   auth: {
     signInPrompt: 'เข้าสู่ระบบเพื่อบันทึกฉากและปลดล็อก VIP',
@@ -169,6 +190,7 @@ export const thTranslation: TranslationBundle = {
     cnWechatLabel: 'WeChat',
     cnUidHint: 'คัดลอก UID และส่งพร้อมหมายเหตุ "Streamer Pass"',
     cnCopyUid: 'คัดลอก UID',
+    cnPricingTiers: 'Streamer Pass (WeChat จ่ายล่วงหน้า):\n• รายเดือน\n• รายไตรมาส\n• รายปี\nส่ง UID + แพ็กเกจให้ซัพพอร์ต',
     backgroundsTitle: 'วนลูปพื้นหลัง OBS',
     backgroundsHint: '{count}/{max} รูป · cross-fade ในโหมดสตรีม',
     uploadBackground: 'อัปโหลดรูป',
@@ -207,13 +229,20 @@ export const viTranslation: TranslationBundle = {
     exitFullscreen: 'Thoát toàn màn hình',
   },
   membership: {
-    free: 'Miễn phí: 5 lần tạo/tháng',
-    vip: 'VIP $5/tháng: 30 lần tạo',
+    free: 'Miễn phí: credits hàng tháng',
+    vip: 'VIP: tạo không giới hạn',
     perMonth: '/tháng',
     upgradeVip: 'Nâng cấp VIP',
+    upgradeStreamer: 'Nâng cấp Streamer Pass',
     buyCredits: 'Mua gói credit',
+    buyCredits10: 'Mua 10 credit',
+    buyCredits20: 'Mua 20 credit',
     creditsRemaining: 'Credit còn lại: {count}',
     vipActive: 'VIP đang hoạt động — tạo không giới hạn',
+    streamerActive: 'Streamer Pass — công cụ creator đã mở',
+    pastDueWarning: 'Quá hạn thanh toán — vui lòng cập nhật billing.',
+    vipUntil: 'Hiệu lực đến {date}',
+    generationCost: 'Mỗi cảnh AI tốn 10 credit (VIP / Streamer không giới hạn).',
   },
   auth: {
     signInPrompt: 'Đăng nhập để lưu cảnh và mở khóa VIP',
@@ -267,6 +296,7 @@ export const viTranslation: TranslationBundle = {
     cnWechatLabel: 'WeChat',
     cnUidHint: 'Sao chép UID và gửi kèm ghi chú "Streamer Pass"',
     cnCopyUid: 'Sao chép UID',
+    cnPricingTiers: 'Streamer Pass (WeChat trả trước):\n• Tháng\n• Quý\n• Năm\nGửi UID + gói cho hỗ trợ.',
     backgroundsTitle: 'Vòng lặp nền OBS',
     backgroundsHint: '{count}/{max} ảnh · cross-fade ở chế độ stream',
     uploadBackground: 'Tải ảnh lên',

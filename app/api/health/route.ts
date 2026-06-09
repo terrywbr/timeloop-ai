@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getMissingBillingEnvVars, isBillingConfigured } from '@/lib/billing-config'
+import { getMissingBillingEnvVars, isBillingConfigured, isStreamerCheckoutConfigured } from '@/lib/billing-config'
 
 export const runtime = 'nodejs'
 
@@ -26,6 +26,7 @@ export async function GET(req: Request) {
       supabaseAnon: Boolean(readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')),
       billing: isBillingConfigured(),
       billingMissing: getMissingBillingEnvVars(),
+      streamerCheckout: isStreamerCheckoutConfigured(),
       lemonWebhook: Boolean(readEnv('LEMON_SQUEEZY_WEBHOOK_SECRET')),
       togetherKeyLength: togetherKey?.length ?? 0,
       supabaseServiceKeyLength: supabaseServiceKey?.length ?? 0,

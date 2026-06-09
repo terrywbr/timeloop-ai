@@ -8,6 +8,7 @@ type CnManualUpgradePanelProps = {
   wechatLabel: string
   uidHint: string
   copyLabel: string
+  pricingTiers?: string
 }
 
 export default function CnManualUpgradePanel({
@@ -18,6 +19,7 @@ export default function CnManualUpgradePanel({
   wechatLabel,
   uidHint,
   copyLabel,
+  pricingTiers,
 }: CnManualUpgradePanelProps) {
   const handleCopyUid = async () => {
     if (!userId) return
@@ -33,6 +35,11 @@ export default function CnManualUpgradePanel({
       <div>
         <p className="text-sm font-medium text-foreground">{title}</p>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{description}</p>
+        {pricingTiers ? (
+          <p className="mt-2 whitespace-pre-line text-[11px] leading-relaxed text-muted-foreground">
+            {pricingTiers}
+          </p>
+        ) : null}
       </div>
       {wechatSupportId ? (
         <p className="text-xs text-foreground">

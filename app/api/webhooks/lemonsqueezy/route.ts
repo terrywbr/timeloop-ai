@@ -1,13 +1,14 @@
 import crypto from 'node:crypto'
 import { NextResponse } from 'next/server'
 import {
-  getCreditPackCredits,
-  getVariantId,
+  getCreditPackCreditsForKind,
   lemonCustomData,
   lemonEventId,
   lemonStringAttribute,
+  resolveSubscriptionPlanFromVariant,
   type LemonSqueezyPayload,
 } from '@/lib/lemon-squeezy'
+import { resolveCreditPackByVariantId } from '@/lib/billing-config'
 import { createSupabaseAdminClient } from '@/lib/supabase-server'
 
 export const runtime = 'nodejs'
@@ -89,8 +90,12 @@ async function handleCreditPackPurchase(payload: LemonSqueezyPayload, eventId: s
 
   const customData = lemonCustomData(payload)
   const variantId = lemonStringAttribute(payload, 'variant_id')
-  const isCreditCheckout = customData.checkout_kind === 'credits'
-    || variantId === process.env.LEMON_SQUEEZY_CREDIT_PACK_VARIANT_ID
+  const creditPack = resolveCreditPackByVariantId(variantId)
+  const isCreditCheckout =
+    Boolean(creditPack) ||
+    customData.checkout_kind === 'credits' ||
+    customData.checkout_kind === 'credits_10' ||
+    customData.checkout_kind === 'credits_20'
   if (!isCreditCheckout) return
 
   const userId = typeof customData.user_id === 'string' ? customData.user_id : null
@@ -99,7 +104,12 @@ async function handleCreditPackPurchase(payload: LemonSqueezyPayload, eventId: s
   const orderId = payload.data?.id
   if (!orderId) throw new Error('Credit pack order is missing order id')
 
-  const credits = getCreditPackCredits()
+  const credits =
+    creditPack?.credits ??
+    (typeof customData.checkout_kind === 'string'
+      ? getCreditPackCreditsForKind(customData.checkout_kind as 'credits' | 'credits_10' | 'credits_20')
+      : 0)
+  if (credits <= 0) throw new Error('Unable to resolve credit pack size')
   const supabase = createSupabaseAdminClient()
 
   const { data: existingPurchase } = await supabase
@@ -152,19 +162,20 @@ async function handleSubscriptionEvent(payload: LemonSqueezyPayload) {
   if (!userId) throw new Error('Subscription event is missing user_id')
 
   const status = normalizeVipStatus(lemonStringAttribute(payload, 'status'))
-  const variantId = lemonStringAttribute(payload, 'variant_id') ?? getVariantId('subscription')
+  const variantId = lemonStringAttribute(payload, 'variant_id')
+  const resolvedPlan = resolveSubscriptionPlanFromVariant(variantId)
   const customerId = lemonStringAttribute(payload, 'customer_id')
   const subscriptionItemId = lemonStringAttribute(payload, 'first_subscription_item_id')
   const renewsAt = lemonStringAttribute(payload, 'renews_at')
   const endsAt = lemonStringAttribute(payload, 'ends_at')
   const vipUntil = renewsAt ?? endsAt
-  const isActiveVip = status === 'active' || status === 'past_due'
+  const isActiveSubscription = status === 'active' || status === 'past_due'
   const supabase = createSupabaseAdminClient()
 
   const { error } = await supabase
     .from('users')
     .update({
-      plan: isActiveVip ? 'vip' : 'free',
+      plan: isActiveSubscription ? resolvedPlan : 'free',
       vip_status: status,
       vip_until: vipUntil,
       lemon_squeezy_customer_id: customerId,

@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
-import { billingNotConfiguredMessage, isBillingConfigured } from '@/lib/billing-config'
-import { createLemonSqueezyCheckout, type CheckoutKind } from '@/lib/lemon-squeezy'
+import {
+  billingNotConfiguredMessage,
+  isBillingConfigured,
+  isStreamerCheckoutConfigured,
+  type CheckoutProductKind,
+} from '@/lib/billing-config'
+import { createLemonSqueezyCheckout } from '@/lib/lemon-squeezy'
 import { getAuthenticatedUser } from '@/lib/supabase-server'
 
 export const runtime = 'nodejs'
@@ -9,8 +14,16 @@ function jsonError(message: string, status: number) {
   return NextResponse.json({ success: false, error: message }, { status })
 }
 
-function isCheckoutKind(value: unknown): value is CheckoutKind {
-  return value === 'subscription' || value === 'credits'
+const CHECKOUT_KINDS: CheckoutProductKind[] = ['vip', 'streamer', 'credits', 'credits_10', 'credits_20']
+
+function isCheckoutKind(value: unknown): value is CheckoutProductKind {
+  return typeof value === 'string' && CHECKOUT_KINDS.includes(value as CheckoutProductKind)
+}
+
+function normalizeCheckoutKind(raw: unknown): CheckoutProductKind {
+  if (raw === 'subscription') return 'vip'
+  if (isCheckoutKind(raw)) return raw
+  return 'vip'
 }
 
 export async function POST(req: Request) {
@@ -21,7 +34,12 @@ export async function POST(req: Request) {
 
     const auth = await getAuthenticatedUser(req)
     const body = (await req.json()) as { kind?: unknown }
-    const kind = isCheckoutKind(body.kind) ? body.kind : 'subscription'
+    const kind = normalizeCheckoutKind(body.kind)
+
+    if (kind === 'streamer' && !isStreamerCheckoutConfigured()) {
+      return jsonError('Streamer Pass 自助購買尚未開放，請聯繫客服。', 503)
+    }
+
     const checkoutUrl = await createLemonSqueezyCheckout({
       kind,
       userId: auth.user.id,

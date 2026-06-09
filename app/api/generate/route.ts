@@ -4,9 +4,10 @@ import {
   createSupabaseAdminClient,
   ensureUserProfile,
   getAuthenticatedUser,
-  hasVipAccess,
+  hasStreamerAccess,
   uploadRemoteAssetToStorage,
 } from '@/lib/supabase-server'
+import { getGenerationCreditCost } from '@/lib/credits'
 import type { GeneratedWorldRow } from '@/lib/supabase-types'
 
 export const runtime = 'nodejs'
@@ -405,10 +406,11 @@ export async function POST(req: Request) {
       return jsonError(message, 401)
     }
     const profile = await ensureUserProfile(supabase, auth.user)
-    const isVip = hasVipAccess(profile)
+    const unlimitedGeneration = hasStreamerAccess(profile)
+    const generationCost = getGenerationCreditCost('standard')
 
-    if (!isVip && profile.remaining_credits <= 0) {
-      return jsonError('本月免費生成點數已用完，請升級 VIP 或購買點數包。', 402)
+    if (!unlimitedGeneration && profile.remaining_credits < generationCost) {
+      return jsonError('點數不足，請升級 VIP / Streamer Pass 或購買點數包。', 402)
     }
 
     let body: GenerateRequestBody
@@ -501,8 +503,8 @@ export async function POST(req: Request) {
     if (worldError) throw worldError
 
     let balanceAfter = profile.remaining_credits
-    if (!isVip) {
-      balanceAfter = Math.max(0, profile.remaining_credits - 1)
+    if (!unlimitedGeneration) {
+      balanceAfter = Math.max(0, profile.remaining_credits - generationCost)
       const { error: creditUpdateError } = await supabase
         .from('users')
         .update({ remaining_credits: balanceAfter })
@@ -514,7 +516,7 @@ export async function POST(req: Request) {
         .from('credit_transactions')
         .insert({
           user_id: auth.user.id,
-          amount: -1,
+          amount: -generationCost,
           balance_after: balanceAfter,
           type: 'generation',
           source: 'generation',

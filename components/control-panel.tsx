@@ -24,7 +24,7 @@ import LanguageSelector from './language-selector'
 import type { VideoBackgroundRef } from './ui/video-background'
 import type { RadioStation } from '@/lib/radio-station'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
-import type { UserAccountProfile } from '@/lib/api-client'
+import type { UserAccountProfile, CheckoutKind } from '@/lib/api-client'
 import GoogleSignInButton from '@/components/google-sign-in-button'
 import CompanionPanel from '@/components/companion/companion-panel'
 import type { useCompanion } from '@/hooks/use-companion'
@@ -36,7 +36,7 @@ import {
   subscribeFullscreenChange,
 } from '@/lib/fullscreen'
 import { VISUAL_EFFECT_SCENE_KEYS, type VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
-import CnManualUpgradePanel from '@/components/billing/cn-manual-upgrade-panel'
+import MembershipPanel from '@/components/billing/membership-panel'
 import StreamerBackgroundsPanel from '@/components/stream/streamer-backgrounds-panel'
 import type { StreamerBackgroundItem } from '@/components/stream/streamer-backgrounds-panel'
 
@@ -75,7 +75,7 @@ interface ControlPanelProps {
   onDeleteWorld: (worldId: string) => void
   onRenameWorld: (worldId: string, title: string) => void
   onPublishWorld: (worldId: string, isPublic: boolean) => void | Promise<void>
-  onCheckout: (kind: 'subscription' | 'credits') => void
+  onCheckout: (kind: CheckoutKind) => void
   onDownload: () => void
   preferCreditPack: boolean
   isCnHost?: boolean
@@ -331,7 +331,7 @@ export default function ControlPanel({
               <ControlButton
                 onClick={onDownload}
                 icon={Download}
-                tooltip={userProfile?.isVip ? t.controls.download : `${t.controls.download} (VIP)`}
+                tooltip={userProfile?.isVip || userProfile?.isStreamer ? t.controls.download : `${t.controls.download} (VIP)`}
               />
               <ControlButton
                 onClick={onReopenMusicOnboarding}
@@ -672,66 +672,15 @@ export default function ControlPanel({
             />
           ) : null}
 
-          {/* Membership Info */}
-          <div className="space-y-2 border-t border-foreground/10 pt-4 text-xs text-muted-foreground">
-            {userProfile?.isVip ? (
-              <p className="text-accent">{t.membership.vipActive}</p>
-            ) : (
-              <>
-                <p>
-                  {t.membership.creditsRemaining.replace(
-                    '{count}',
-                    String(userProfile?.remainingCredits ?? 5),
-                  )}
-                </p>
-                <p>{t.membership.free}</p>
-              </>
-            )}
-            <p className="text-accent">{t.membership.vip}</p>
-            <div className="flex flex-col gap-2 pt-1">
-              {preferCreditPack || isCnHost ? (
-                <CnManualUpgradePanel
-                  userId={userProfile?.id}
-                  wechatSupportId={cnWechatSupportId}
-                  title={t.streamerOverlay.cnManualTitle}
-                  description={t.streamerOverlay.cnManualDescription}
-                  wechatLabel={t.streamerOverlay.cnWechatLabel}
-                  uidHint={t.streamerOverlay.cnUidHint}
-                  copyLabel={t.streamerOverlay.cnCopyUid}
-                />
-              ) : null}
-              {!userProfile?.isVip && !preferCreditPack && !isCnHost ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!isAuthenticated) {
-                      void onRequireAuth()
-                      return
-                    }
-                    onCheckout('subscription')
-                  }}
-                  className="rounded-lg bg-accent px-3 py-2 text-xs font-medium text-accent-foreground transition hover:bg-accent/90"
-                >
-                  {t.membership.upgradeVip}
-                </button>
-              ) : null}
-              {!userProfile?.isVip && !preferCreditPack && !isCnHost ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!isAuthenticated) {
-                      void onRequireAuth()
-                      return
-                    }
-                    onCheckout('credits')
-                  }}
-                  className="rounded-lg border border-accent/40 px-3 py-2 text-xs font-medium text-accent transition hover:bg-accent/10"
-                >
-                  {t.membership.buyCredits}
-                </button>
-              ) : null}
-            </div>
-          </div>
+          <MembershipPanel
+            userProfile={userProfile}
+            isAuthenticated={isAuthenticated}
+            preferCreditPack={preferCreditPack}
+            isCnHost={isCnHost}
+            cnWechatSupportId={cnWechatSupportId}
+            onRequireAuth={onRequireAuth}
+            onCheckout={onCheckout}
+          />
         </div>
       </div>
     </>
