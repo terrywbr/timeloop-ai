@@ -24,6 +24,7 @@ import { signInWithGoogle } from '@/lib/auth-google'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import {
   deleteWorld,
+  deleteStreamerBackground,
   fetchStreamerBackgrounds,
   fetchStreamerSettings,
   fetchUserProfile,
@@ -31,7 +32,9 @@ import {
   fetchWorlds,
   publishWorld,
   recordWorldView,
+  saveStreamerSettings,
   startCheckout,
+  uploadStreamerBackground,
   updateWorldTitle,
   type UserAccountProfile,
 } from '@/lib/api-client'
@@ -93,7 +96,10 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   const [selectedVisualEffect, setSelectedVisualEffect] = useState<VisualEffectSceneKey>('cyberpunk')
   const [isStreamMode] = useState(() => readStreamModeFromWindow())
   const [streamerSettings, setStreamerSettings] = useState<StreamerSettings>(DEFAULT_STREAMER_SETTINGS)
-  const [streamerBackgroundUrls, setStreamerBackgroundUrls] = useState<string[]>([])
+  const [streamerBackgrounds, setStreamerBackgrounds] = useState<
+    Array<{ id: string; public_url: string; sort_order: number }>
+  >([])
+  const [isStreamerBackgroundUploading, setIsStreamerBackgroundUploading] = useState(false)
   const [backgroundRotationIndex, setBackgroundRotationIndex] = useState(0)
   const isMobile = useIsMobile()
   const { isLandscape, isMobilePortrait } = useOrientation()
@@ -123,8 +129,8 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
 
   const presetWorld = resolvePresetWorld(currentWorldId, currentGalleryAssets?.particlePreset)
   const rotatedStreamerBackground =
-    streamerBackgroundUrls.length > 0
-      ? streamerBackgroundUrls[backgroundRotationIndex % streamerBackgroundUrls.length]
+    streamerBackgrounds.length > 0
+      ? streamerBackgrounds[backgroundRotationIndex % streamerBackgrounds.length]?.public_url
       : null
   const activeBackgroundImage =
     rotatedStreamerBackground ??
@@ -325,20 +331,22 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
         setStreamerSettings(normalizeStreamerSettings(settings as StreamerSettings))
       }
       if (backgrounds.length > 0) {
-        setStreamerBackgroundUrls(backgrounds.map((item) => item.public_url))
+        setStreamerBackgrounds(backgrounds)
+      } else {
+        setStreamerBackgrounds([])
       }
     })()
   }, [accessToken, isStreamer])
 
   useEffect(() => {
-    if (streamerBackgroundUrls.length < 2) return
+    if (streamerBackgrounds.length < 2) return
     const minutes = streamerSettings.backgroundRotationMinutes
     const intervalMs = minutes * 60 * 1000
     const timer = window.setInterval(() => {
-      setBackgroundRotationIndex((index) => (index + 1) % streamerBackgroundUrls.length)
+      setBackgroundRotationIndex((index) => (index + 1) % streamerBackgrounds.length)
     }, intervalMs)
     return () => window.clearInterval(timer)
-  }, [streamerBackgroundUrls, streamerSettings.backgroundRotationMinutes])
+  }, [streamerBackgrounds, streamerSettings.backgroundRotationMinutes])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -567,6 +575,62 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
       }
     },
     [getAccessToken, handleRequireAuth, preferCreditPack],
+  )
+
+  const handleUploadStreamerBackground = useCallback(
+    async (file: File) => {
+      const token = await getAccessToken()
+      if (!token) {
+        await handleRequireAuth()
+        return
+      }
+      setIsStreamerBackgroundUploading(true)
+      try {
+        const background = await uploadStreamerBackground(token, file)
+        setStreamerBackgrounds((items) =>
+          [...items, background].sort((a, b) => a.sort_order - b.sort_order),
+        )
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Upload failed'
+        window.alert(message)
+      } finally {
+        setIsStreamerBackgroundUploading(false)
+      }
+    },
+    [getAccessToken, handleRequireAuth],
+  )
+
+  const handleDeleteStreamerBackground = useCallback(
+    async (id: string) => {
+      const token = await getAccessToken()
+      if (!token) return
+      try {
+        await deleteStreamerBackground(token, id)
+        setStreamerBackgrounds((items) => items.filter((item) => item.id !== id))
+        setBackgroundRotationIndex(0)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Delete failed'
+        window.alert(message)
+      }
+    },
+    [getAccessToken],
+  )
+
+  const handleStreamerRotationChange = useCallback(
+    async (minutes: 5 | 10) => {
+      const token = await getAccessToken()
+      if (!token) return
+      const nextSettings = { ...streamerSettings, backgroundRotationMinutes: minutes }
+      setStreamerSettings(nextSettings)
+      try {
+        await saveStreamerSettings(token, nextSettings)
+      } catch (error) {
+        setStreamerSettings(streamerSettings)
+        const message = error instanceof Error ? error.message : 'Save failed'
+        window.alert(message)
+      }
+    },
+    [getAccessToken, streamerSettings],
   )
 
   const handleDownload = useCallback(async () => {
@@ -940,6 +1004,12 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     showStreamLayout,
     isStreamMode,
     isStreamer,
+    streamerBackgrounds,
+    isStreamerBackgroundUploading,
+    handleUploadStreamerBackground,
+    handleDeleteStreamerBackground,
+    handleStreamerRotationChange,
+    streamerSettings,
     effectiveOverlaySettings,
     preferCreditPack,
     isCnHost,

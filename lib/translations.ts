@@ -102,6 +102,15 @@ export const translations: Record<Language, {
     cnWechatLabel: string
     cnUidHint: string
     cnCopyUid: string
+    backgroundsTitle: string
+    backgroundsHint: string
+    uploadBackground: string
+    uploading: string
+    removeBackground: string
+    rotationLabel: string
+    rotation5: string
+    rotation10: string
+    streamModeLink: string
   }
 }> = {
   en: {
@@ -214,6 +223,15 @@ export const translations: Record<Language, {
       cnWechatLabel: 'WeChat',
       cnUidHint: 'Copy your UID and send it with payment note "Streamer Pass"',
       cnCopyUid: 'Copy UID',
+      backgroundsTitle: 'OBS background loop',
+      backgroundsHint: '{count}/{max} images · auto cross-fade in stream mode',
+      uploadBackground: 'Upload image',
+      uploading: 'Uploading…',
+      removeBackground: 'Remove',
+      rotationLabel: 'Rotate every',
+      rotation5: '5 min',
+      rotation10: '10 min',
+      streamModeLink: 'Open stream mode (?stream=1)',
     },
   },
   'zh-CN': {
@@ -323,6 +341,15 @@ export const translations: Record<Language, {
       cnWechatLabel: '微信',
       cnUidHint: '复制 UID 并在付款备注中填写「Streamer Pass」',
       cnCopyUid: '复制 UID',
+      backgroundsTitle: 'OBS 背景轮播',
+      backgroundsHint: '{count}/{max} 张 · 直播模式自动 cross-fade',
+      uploadBackground: '上传图片',
+      uploading: '上传中…',
+      removeBackground: '删除',
+      rotationLabel: '轮播间隔',
+      rotation5: '5 分钟',
+      rotation10: '10 分钟',
+      streamModeLink: '打开直播模式 (?stream=1)',
     },
   },
   'zh-TW': {
@@ -432,6 +459,15 @@ export const translations: Record<Language, {
       cnWechatLabel: '微信',
       cnUidHint: '複製 UID 並在付款備註中填寫「Streamer Pass」',
       cnCopyUid: '複製 UID',
+      backgroundsTitle: 'OBS 背景輪播',
+      backgroundsHint: '{count}/{max} 張 · 直播模式自動 cross-fade',
+      uploadBackground: '上傳圖片',
+      uploading: '上傳中…',
+      removeBackground: '刪除',
+      rotationLabel: '輪播間隔',
+      rotation5: '5 分鐘',
+      rotation10: '10 分鐘',
+      streamModeLink: '開啟直播模式 (?stream=1)',
     },
   },
   ja: {
@@ -543,6 +579,15 @@ export const translations: Record<Language, {
       cnWechatLabel: 'WeChat',
       cnUidHint: 'UID をコピーし、支払いメモに「Streamer Pass」と記載',
       cnCopyUid: 'UID をコピー',
+      backgroundsTitle: 'OBS 背景ループ',
+      backgroundsHint: '{count}/{max} 枚 · ストリームモードで自動切替',
+      uploadBackground: '画像をアップロード',
+      uploading: 'アップロード中…',
+      removeBackground: '削除',
+      rotationLabel: '切替間隔',
+      rotation5: '5 分',
+      rotation10: '10 分',
+      streamModeLink: 'ストリームモードを開く (?stream=1)',
     },
   },
   ko: {
@@ -654,6 +699,15 @@ export const translations: Record<Language, {
       cnWechatLabel: 'WeChat',
       cnUidHint: 'UID를 복사해 결제 메모에 "Streamer Pass"를 적어주세요',
       cnCopyUid: 'UID 복사',
+      backgroundsTitle: 'OBS 배경 루프',
+      backgroundsHint: '{count}/{max}장 · 스트림 모드 자동 전환',
+      uploadBackground: '이미지 업로드',
+      uploading: '업로드 중…',
+      removeBackground: '삭제',
+      rotationLabel: '전환 간격',
+      rotation5: '5분',
+      rotation10: '10분',
+      streamModeLink: '스트림 모드 열기 (?stream=1)',
     },
   },
   es: {
@@ -765,6 +819,15 @@ export const translations: Record<Language, {
       cnWechatLabel: 'WeChat',
       cnUidHint: 'Copia tu UID y envíalo con la nota "Streamer Pass"',
       cnCopyUid: 'Copiar UID',
+      backgroundsTitle: 'Fondo OBS en bucle',
+      backgroundsHint: '{count}/{max} imágenes · cross-fade en modo stream',
+      uploadBackground: 'Subir imagen',
+      uploading: 'Subiendo…',
+      removeBackground: 'Eliminar',
+      rotationLabel: 'Rotar cada',
+      rotation5: '5 min',
+      rotation10: '10 min',
+      streamModeLink: 'Abrir modo stream (?stream=1)',
     },
   },
   fr: {
@@ -876,6 +939,15 @@ export const translations: Record<Language, {
       cnWechatLabel: 'WeChat',
       cnUidHint: 'Copiez votre UID avec la note « Streamer Pass »',
       cnCopyUid: 'Copier UID',
+      backgroundsTitle: 'Boucle de fond OBS',
+      backgroundsHint: '{count}/{max} images · cross-fade en mode stream',
+      uploadBackground: 'Importer une image',
+      uploading: 'Import…',
+      removeBackground: 'Supprimer',
+      rotationLabel: 'Rotation',
+      rotation5: '5 min',
+      rotation10: '10 min',
+      streamModeLink: 'Ouvrir le mode stream (?stream=1)',
     },
   },
   de: {
@@ -987,6 +1059,15 @@ export const translations: Record<Language, {
       cnWechatLabel: 'WeChat',
       cnUidHint: 'UID kopieren und mit Vermerk „Streamer Pass" senden',
       cnCopyUid: 'UID kopieren',
+      backgroundsTitle: 'OBS-Hintergrund-Schleife',
+      backgroundsHint: '{count}/{max} Bilder · Cross-fade im Stream-Modus',
+      uploadBackground: 'Bild hochladen',
+      uploading: 'Wird hochgeladen…',
+      removeBackground: 'Entfernen',
+      rotationLabel: 'Wechsel alle',
+      rotation5: '5 Min',
+      rotation10: '10 Min',
+      streamModeLink: 'Stream-Modus öffnen (?stream=1)',
     },
   },
   th: thTranslation,

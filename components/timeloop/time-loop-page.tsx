@@ -135,6 +135,12 @@ function TimeLoopPageInner() {
             cnWechatSupportId={process.env.NEXT_PUBLIC_CN_WECHAT_SUPPORT_ID ?? ''}
             selectedVisualEffect={page.selectedVisualEffect}
             onVisualEffectChange={page.setSelectedVisualEffect}
+            streamerBackgrounds={page.streamerBackgrounds}
+            isStreamerBackgroundUploading={page.isStreamerBackgroundUploading}
+            streamerRotationMinutes={page.streamerSettings.backgroundRotationMinutes}
+            onUploadStreamerBackground={page.handleUploadStreamerBackground}
+            onDeleteStreamerBackground={page.handleDeleteStreamerBackground}
+            onStreamerRotationChange={page.handleStreamerRotationChange}
           />
 
           <CommunityGallery
@@ -199,6 +205,12 @@ function TimeLoopPageInner() {
             coFocusEnabled={page.coFocusEnabled}
             onCoFocusEnabledChange={page.setCoFocusEnabled}
             presenceCount={page.presenceCount}
+            streamerBackgrounds={page.streamerBackgrounds}
+            isStreamerBackgroundUploading={page.isStreamerBackgroundUploading}
+            streamerRotationMinutes={page.streamerSettings.backgroundRotationMinutes}
+            onUploadStreamerBackground={page.handleUploadStreamerBackground}
+            onDeleteStreamerBackground={page.handleDeleteStreamerBackground}
+            onStreamerRotationChange={page.handleStreamerRotationChange}
           />
 
           {page.isGenerating ? <GeneratingOverlay /> : null}

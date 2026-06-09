@@ -41,7 +41,21 @@ type TranslationBundle = {
   >
   nft: Record<'legendary' | 'rare' | 'common', string>
   streamerOverlay: Record<
-    'previewUpgrade' | 'cnManualTitle' | 'cnManualDescription' | 'cnWechatLabel' | 'cnUidHint' | 'cnCopyUid',
+    | 'previewUpgrade'
+    | 'cnManualTitle'
+    | 'cnManualDescription'
+    | 'cnWechatLabel'
+    | 'cnUidHint'
+    | 'cnCopyUid'
+    | 'backgroundsTitle'
+    | 'backgroundsHint'
+    | 'uploadBackground'
+    | 'uploading'
+    | 'removeBackground'
+    | 'rotationLabel'
+    | 'rotation5'
+    | 'rotation10'
+    | 'streamModeLink',
     string
   >
 }
@@ -155,6 +169,15 @@ export const thTranslation: TranslationBundle = {
     cnWechatLabel: 'WeChat',
     cnUidHint: 'คัดลอก UID และส่งพร้อมหมายเหตุ "Streamer Pass"',
     cnCopyUid: 'คัดลอก UID',
+    backgroundsTitle: 'วนลูปพื้นหลัง OBS',
+    backgroundsHint: '{count}/{max} รูป · cross-fade ในโหมดสตรีม',
+    uploadBackground: 'อัปโหลดรูป',
+    uploading: 'กำลังอัปโหลด…',
+    removeBackground: 'ลบ',
+    rotationLabel: 'สลับทุก',
+    rotation5: '5 นาที',
+    rotation10: '10 นาที',
+    streamModeLink: 'เปิดโหมดสตรีม (?stream=1)',
   },
 }
 
@@ -244,5 +267,14 @@ export const viTranslation: TranslationBundle = {
     cnWechatLabel: 'WeChat',
     cnUidHint: 'Sao chép UID và gửi kèm ghi chú "Streamer Pass"',
     cnCopyUid: 'Sao chép UID',
+    backgroundsTitle: 'Vòng lặp nền OBS',
+    backgroundsHint: '{count}/{max} ảnh · cross-fade ở chế độ stream',
+    uploadBackground: 'Tải ảnh lên',
+    uploading: 'Đang tải lên…',
+    removeBackground: 'Xóa',
+    rotationLabel: 'Xoay mỗi',
+    rotation5: '5 phút',
+    rotation10: '10 phút',
+    streamModeLink: 'Mở chế độ stream (?stream=1)',
   },
 }

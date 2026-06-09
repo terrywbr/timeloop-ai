@@ -3,6 +3,7 @@ import {
   createSupabaseAdminClient,
   ensureUserProfile,
   getAuthenticatedUser,
+  hasStreamerAccess,
 } from '@/lib/supabase-server'
 import { DEFAULT_STREAMER_SETTINGS, normalizeStreamerSettings } from '@/lib/streamer-settings'
 
@@ -45,7 +46,11 @@ export async function PUT(req: Request) {
   try {
     const auth = await getAuthenticatedUser(req)
     const supabase = createSupabaseAdminClient()
-    await ensureUserProfile(supabase, auth.user)
+    const profile = await ensureUserProfile(supabase, auth.user)
+
+    if (!hasStreamerAccess(profile)) {
+      return jsonError('Streamer Pass required', 403)
+    }
 
     const body = (await req.json()) as Partial<typeof DEFAULT_STREAMER_SETTINGS>
     const settings = normalizeStreamerSettings(body)

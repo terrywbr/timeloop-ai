@@ -19,6 +19,7 @@ import MobileGalleryContent from '@/components/mobile/mobile-gallery-content'
 import type { useCompanion } from '@/hooks/use-companion'
 import type { useGoogleCalendar } from '@/hooks/use-google-calendar'
 import type { VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
+import type { StreamerBackgroundItem } from '@/components/stream/streamer-backgrounds-panel'
 
 type TimeloopMobileDrawersProps = {
   videoRef: React.RefObject<VideoBackgroundRef | null>
@@ -70,6 +71,12 @@ type TimeloopMobileDrawersProps = {
   coFocusEnabled: boolean
   onCoFocusEnabledChange: (enabled: boolean) => void
   presenceCount: number
+  streamerBackgrounds?: StreamerBackgroundItem[]
+  isStreamerBackgroundUploading?: boolean
+  streamerRotationMinutes?: 5 | 10
+  onUploadStreamerBackground?: (file: File) => void | Promise<void>
+  onDeleteStreamerBackground?: (id: string) => void | Promise<void>
+  onStreamerRotationChange?: (minutes: 5 | 10) => void | Promise<void>
 }
 
 export default function TimeloopMobileDrawers({
@@ -122,6 +129,12 @@ export default function TimeloopMobileDrawers({
   coFocusEnabled,
   onCoFocusEnabledChange,
   presenceCount,
+  streamerBackgrounds = [],
+  isStreamerBackgroundUploading = false,
+  streamerRotationMinutes = 5,
+  onUploadStreamerBackground,
+  onDeleteStreamerBackground,
+  onStreamerRotationChange,
 }: TimeloopMobileDrawersProps) {
   return (
     <>
@@ -182,6 +195,12 @@ export default function TimeloopMobileDrawers({
                   cnWechatSupportId={cnWechatSupportId}
                   selectedVisualEffect={selectedVisualEffect}
                   onVisualEffectChange={onVisualEffectChange}
+                  streamerBackgrounds={streamerBackgrounds}
+                  isStreamerBackgroundUploading={isStreamerBackgroundUploading}
+                  streamerRotationMinutes={streamerRotationMinutes}
+                  onUploadStreamerBackground={onUploadStreamerBackground}
+                  onDeleteStreamerBackground={onDeleteStreamerBackground}
+                  onStreamerRotationChange={onStreamerRotationChange}
                 />
               </>
             ) : null}

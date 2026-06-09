@@ -268,6 +268,50 @@ export async function fetchStreamerBackgrounds(accessToken: string) {
   return payload.backgrounds
 }
 
+export async function uploadStreamerBackground(accessToken: string, file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+  const response = await fetch('/api/streamer/backgrounds', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: formData,
+  })
+  const payload = (await response.json()) as
+    | { success: true; background: { id: string; public_url: string; sort_order: number } }
+    | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    const message = payload.success ? 'Upload failed' : payload.error
+    throw new Error(message)
+  }
+  return payload.background
+}
+
+export async function deleteStreamerBackground(accessToken: string, id: string) {
+  const response = await fetch(`/api/streamer/backgrounds?id=${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: authHeaders(accessToken),
+  })
+  const payload = (await response.json()) as { success: true } | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    const message = payload.success ? 'Delete failed' : payload.error
+    throw new Error(message)
+  }
+}
+
+export async function saveStreamerSettings(accessToken: string, settings: Record<string, unknown>) {
+  const response = await fetch('/api/streamer/settings', {
+    method: 'PUT',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(settings),
+  })
+  const payload = (await response.json()) as { success: true; settings: unknown } | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    const message = payload.success ? 'Save failed' : payload.error
+    throw new Error(message)
+  }
+  return payload.settings
+}
+
 export async function deleteWorld(accessToken: string, worldId: string) {
   const response = await fetch(`/api/worlds/${worldId}`, {
     method: 'DELETE',

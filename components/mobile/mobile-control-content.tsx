@@ -38,6 +38,8 @@ import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import type { VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
 import { VISUAL_EFFECT_SCENE_KEYS } from '@/lib/timeloop/world-resolver'
 import CnManualUpgradePanel from '@/components/billing/cn-manual-upgrade-panel'
+import StreamerBackgroundsPanel from '@/components/stream/streamer-backgrounds-panel'
+import type { StreamerBackgroundItem } from '@/components/stream/streamer-backgrounds-panel'
 
 export interface MobileControlContentProps {
   videoRef: React.RefObject<VideoBackgroundRef | null>
@@ -80,6 +82,12 @@ export interface MobileControlContentProps {
   cnWechatSupportId?: string
   selectedVisualEffect: VisualEffectSceneKey
   onVisualEffectChange: (scene: VisualEffectSceneKey) => void
+  streamerBackgrounds?: StreamerBackgroundItem[]
+  isStreamerBackgroundUploading?: boolean
+  streamerRotationMinutes?: 5 | 10
+  onUploadStreamerBackground?: (file: File) => void | Promise<void>
+  onDeleteStreamerBackground?: (id: string) => void | Promise<void>
+  onStreamerRotationChange?: (minutes: 5 | 10) => void | Promise<void>
 }
 
 export default function MobileControlContent({
@@ -123,6 +131,12 @@ export default function MobileControlContent({
   cnWechatSupportId = '',
   selectedVisualEffect,
   onVisualEffectChange,
+  streamerBackgrounds = [],
+  isStreamerBackgroundUploading = false,
+  streamerRotationMinutes = 5,
+  onUploadStreamerBackground,
+  onDeleteStreamerBackground,
+  onStreamerRotationChange,
 }: MobileControlContentProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showFavoriteToast, setShowFavoriteToast] = useState(false)
@@ -566,6 +580,21 @@ export default function MobileControlContent({
           <p className="text-xs text-muted-foreground">{t.auth.signInPrompt}</p>
           <GoogleSignInButton onClick={() => void onRequireAuth()} />
         </div>
+      ) : null}
+
+      {userProfile?.isStreamer &&
+      onUploadStreamerBackground &&
+      onDeleteStreamerBackground &&
+      onStreamerRotationChange ? (
+        <StreamerBackgroundsPanel
+          backgrounds={streamerBackgrounds}
+          maxBackgrounds={10}
+          rotationMinutes={streamerRotationMinutes}
+          isUploading={isStreamerBackgroundUploading}
+          onUpload={onUploadStreamerBackground}
+          onDelete={onDeleteStreamerBackground}
+          onRotationChange={onStreamerRotationChange}
+        />
       ) : null}
 
       {/* Membership Info */}

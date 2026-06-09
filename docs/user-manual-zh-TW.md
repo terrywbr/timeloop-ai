@@ -534,7 +534,7 @@ https://cn.timeloopai.net/?stream=1
 | 上限 | 5–10 張自訂背景 |
 | 輪播間隔 | 5 或 10 分鐘（可設定） |
 | 效果 | cross-fade 切換，粒子 preset 不變 |
-| 上傳方式 | API `POST /api/streamer/backgrounds`（**上傳 UI：Phase 2 即將推出**） |
+| 上傳方式 | 控制面板 **「OBS 背景輪播」** 區塊（Streamer Pass）或 API `POST /api/streamer/backgrounds` |
 
 ### 10.6 觀看 vs 創作者權限
 
@@ -782,7 +782,7 @@ curl https://app.timeloopai.net/api/health
 | 功能 | 現況 |
 |------|------|
 | Overlay 視覺編輯器 | 僅 API + 語系預設範本 |
-| 背景圖庫上傳 UI | 僅 API（multipart POST） |
+| 背景圖庫上傳 UI | 控制面板 Streamer 區塊（Phase 1） |
 | Streamer Pass Lemon 自助購買 | 需第三 variant |
 | DJ 定時陪伴 30 分鐘 | UI 文案與程式 interval 不一致 |
 
