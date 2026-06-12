@@ -109,32 +109,6 @@ export default function MembershipPanel({
             {t.membership.upgradeStreamer}
           </button>
         ) : null}
-
-        {!showCnManual && !userProfile?.isVip && !userProfile?.isStreamer ? (
-          <>
-            <button
-              type="button"
-              onClick={() => handlePaidAction('credits_10')}
-              className="rounded-lg border border-accent/40 px-3 py-2 text-xs font-medium text-accent transition hover:bg-accent/10"
-            >
-              {t.membership.buyCredits10}
-            </button>
-            <button
-              type="button"
-              onClick={() => handlePaidAction('credits_20')}
-              className="rounded-lg border border-accent/40 px-3 py-2 text-xs font-medium text-accent transition hover:bg-accent/10"
-            >
-              {t.membership.buyCredits20}
-            </button>
-            <button
-              type="button"
-              onClick={() => handlePaidAction('credits')}
-              className="rounded-lg border border-foreground/20 px-3 py-2 text-xs font-medium text-foreground/80 transition hover:bg-secondary/40"
-            >
-              {t.membership.buyCredits}
-            </button>
-          </>
-        ) : null}
       </div>
     </div>
   )

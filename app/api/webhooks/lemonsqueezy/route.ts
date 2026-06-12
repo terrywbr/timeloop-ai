@@ -92,10 +92,7 @@ async function handleCreditPackPurchase(payload: LemonSqueezyPayload, eventId: s
   const variantId = lemonStringAttribute(payload, 'variant_id')
   const creditPack = resolveCreditPackByVariantId(variantId)
   const isCreditCheckout =
-    Boolean(creditPack) ||
-    customData.checkout_kind === 'credits' ||
-    customData.checkout_kind === 'credits_10' ||
-    customData.checkout_kind === 'credits_20'
+    Boolean(creditPack) || customData.checkout_kind === 'credits'
   if (!isCreditCheckout) return
 
   const userId = typeof customData.user_id === 'string' ? customData.user_id : null
@@ -107,7 +104,7 @@ async function handleCreditPackPurchase(payload: LemonSqueezyPayload, eventId: s
   const credits =
     creditPack?.credits ??
     (typeof customData.checkout_kind === 'string'
-      ? getCreditPackCreditsForKind(customData.checkout_kind as 'credits' | 'credits_10' | 'credits_20')
+      ? getCreditPackCreditsForKind(customData.checkout_kind as 'credits')
       : 0)
   if (credits <= 0) throw new Error('Unable to resolve credit pack size')
   const supabase = createSupabaseAdminClient()

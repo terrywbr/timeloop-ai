@@ -14,7 +14,7 @@ function jsonError(message: string, status: number) {
   return NextResponse.json({ success: false, error: message }, { status })
 }
 
-const CHECKOUT_KINDS: CheckoutProductKind[] = ['vip', 'streamer', 'credits', 'credits_10', 'credits_20']
+const CHECKOUT_KINDS: CheckoutProductKind[] = ['vip', 'streamer', 'credits']
 
 function isCheckoutKind(value: unknown): value is CheckoutProductKind {
   return typeof value === 'string' && CHECKOUT_KINDS.includes(value as CheckoutProductKind)

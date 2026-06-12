@@ -1,6 +1,7 @@
-import type { Language } from '@/lib/translations'
+﻿import type { Language } from '@/lib/translations'
 import type { PomodoroPhase } from '@/lib/companion/types'
-import { djSpeechLocaleForUiLocale } from '@/lib/dj-speech-locale'
+import { pickRandomPresetLine } from '@/lib/dj-preset-lines'
+import { isMusicMoodId, type MusicMoodId } from '@/lib/music-moods'
 
 export type CompanionUiCopy = {
   title: string
@@ -57,30 +58,30 @@ const en: CompanionUiCopy = {
 }
 
 const zhTw: CompanionUiCopy = {
-  title: '陪伴',
-  pomodoro: '番茄鐘',
-  focus: '專注',
-  shortBreak: '短休息',
-  longBreak: '長休息',
-  idle: '待機',
-  start: '開始',
-  pause: '暫停',
-  reset: '重置',
-  skip: '跳過',
-  alarms: '鬧鐘',
-  addAlarm: '新增鬧鐘',
-  alarmLabel: '鬧鐘',
-  repeatOnce: '一次',
-  repeatDaily: '每天',
-  repeatWeekdays: '平日',
-  noAlarms: '尚未設定鬧鐘',
-  calendar: '今日行程',
-  connectCalendar: '連接 Google 行事曆',
-  calendarConnected: '行事曆已連接',
-  calendarReconnect: '重新連接行事曆',
-  noEventsToday: '今日沒有更多行程',
-  loginRequired: '請先登入以連接行事曆',
-  minutesUntil: '距離 {title} 還有 {minutes} 分鐘',
+  title: '?芯撈',
+  pomodoro: '?芾???,
+  focus: '撠釣',
+  shortBreak: '?凋???,
+  longBreak: '?瑚???,
+  idle: '敺?',
+  start: '??',
+  pause: '?怠?',
+  reset: '?蔭',
+  skip: '頝喲?',
+  alarms: '擛折?',
+  addAlarm: '?啣?擛折?',
+  alarmLabel: '擛折?',
+  repeatOnce: '銝甈?,
+  repeatDaily: '瘥予',
+  repeatWeekdays: '撟單',
+  noAlarms: '撠閮剖?擛折?',
+  calendar: '隞銵?',
+  connectCalendar: '?? Google 銵???,
+  calendarConnected: '銵??歇??',
+  calendarReconnect: '???銵???,
+  noEventsToday: '隞瘝??游?銵?',
+  loginRequired: '隢??餃隞仿?銵???,
+  minutesUntil: '頝 {title} ?? {minutes} ??',
 }
 
 export const COMPANION_I18N: Record<Language, CompanionUiCopy> = {
@@ -88,85 +89,85 @@ export const COMPANION_I18N: Record<Language, CompanionUiCopy> = {
   'zh-TW': zhTw,
   'zh-CN': {
     ...zhTw,
-    title: '陪伴',
-    pomodoro: '番茄钟',
-    focus: '专注',
-    shortBreak: '短休息',
-    longBreak: '长休息',
-    idle: '待机',
-    start: '开始',
-    pause: '暂停',
-    reset: '重置',
-    skip: '跳过',
-    alarms: '闹钟',
-    addAlarm: '新增闹钟',
-    alarmLabel: '闹钟',
-    repeatOnce: '一次',
-    repeatDaily: '每天',
-    repeatWeekdays: '平日',
-    noAlarms: '尚未设定闹钟',
-    calendar: '今日行程',
-    connectCalendar: '连接 Google 日历',
-    calendarConnected: '日历已连接',
-    calendarReconnect: '重新连接日历',
-    noEventsToday: '今日没有更多行程',
-    loginRequired: '请先登录以连接日历',
-    minutesUntil: '距离 {title} 还有 {minutes} 分钟',
+    title: '?芯撈',
+    pomodoro: '?芾???,
+    focus: '銝釣',
+    shortBreak: '?凋???,
+    longBreak: '?蹂???,
+    idle: '敺',
+    start: '撘憪?,
+    pause: '??',
+    reset: '?蔭',
+    skip: '頝唾?',
+    alarms: '?寥?',
+    addAlarm: '?啣??寥?',
+    alarmLabel: '?寥?',
+    repeatOnce: '銝甈?,
+    repeatDaily: '瘥予',
+    repeatWeekdays: '撟單',
+    noAlarms: '撠霈曉??寥?',
+    calendar: '隞銵?',
+    connectCalendar: '餈 Google ?亙?',
+    calendarConnected: '?亙?撌脰???,
+    calendarReconnect: '?餈?亙?',
+    noEventsToday: '隞瘝⊥??游?銵?',
+    loginRequired: '霂瑕??餃?隞亥??交??,
+    minutesUntil: '頝氖 {title} 餈? {minutes} ??',
   },
   ja: {
-    title: 'コンパニオン',
-    pomodoro: 'ポモドーロ',
-    focus: '集中',
-    shortBreak: '短い休憩',
-    longBreak: '長い休憩',
-    idle: '待機',
-    start: '開始',
-    pause: '一時停止',
-    reset: 'リセット',
-    skip: 'スキップ',
-    alarms: 'アラーム',
-    addAlarm: 'アラーム追加',
-    alarmLabel: 'アラーム',
-    repeatOnce: '1回',
-    repeatDaily: '毎日',
-    repeatWeekdays: '平日',
-    noAlarms: 'アラーム未設定',
-    calendar: '今日の予定',
-    connectCalendar: 'Googleカレンダーを接続',
-    calendarConnected: 'カレンダー接続済み',
-    calendarReconnect: 'カレンダーを再接続',
-    noEventsToday: '今日の予定はこれ以上ありません',
-    loginRequired: 'カレンダー接続にはログインが必要です',
-    minutesUntil: '{title}まであと{minutes}分',
+    title: '?喋???芥',
+    pomodoro: '????,
+    focus: '?葉',
+    shortBreak: '?准?隡',
+    longBreak: '?瑯?隡',
+    idle: '敺?',
+    start: '??',
+    pause: '銝??甇?,
+    reset: '?芥??',
+    skip: '?嫘??',
+    alarms: '?Ｕ?潦?',
+    addAlarm: '?Ｕ?潦?餈賢?',
+    alarmLabel: '?Ｕ?潦?',
+    repeatOnce: '1??,
+    repeatDaily: '瘥',
+    repeatWeekdays: '撟單',
+    noAlarms: '?Ｕ?潦??芾身摰?,
+    calendar: '隞?桐?摰?,
+    connectCalendar: 'Google?怒?喋??潦??亦?',
+    calendarConnected: '?怒?喋??潭蝬???,
+    calendarReconnect: '?怒?喋??潦??蝬?,
+    noEventsToday: '隞?桐?摰??隞乩????整???,
+    loginRequired: '?怒?喋??潭蝬?胯?啜?喋?敹??扼?',
+    minutesUntil: '{title}?整?{minutes}??,
   },
   ko: {
-    title: '동반',
-    pomodoro: '뽀모도로',
-    focus: '집중',
-    shortBreak: '짧은 휴식',
-    longBreak: '긴 휴식',
-    idle: '대기',
-    start: '시작',
-    pause: '일시정지',
-    reset: '초기화',
-    skip: '건너뛰기',
-    alarms: '알람',
-    addAlarm: '알람 추가',
-    alarmLabel: '알람',
-    repeatOnce: '한 번',
-    repeatDaily: '매일',
-    repeatWeekdays: '평일',
-    noAlarms: '설정된 알람 없음',
-    calendar: '오늘 일정',
-    connectCalendar: 'Google 캘린더 연결',
-    calendarConnected: '캘린더 연결됨',
-    calendarReconnect: '캘린더 다시 연결',
-    noEventsToday: '오늘 더 이상 일정 없음',
-    loginRequired: '캘린더 연결을 위해 로그인하세요',
-    minutesUntil: '{title}까지 {minutes}분',
+    title: '??',
+    pomodoro: '踳諈刺?諢?,
+    focus: '鴔?',
+    shortBreak: '鴔抓? ?渥?',
+    longBreak: '篣??渥?',
+    idle: '?篣?,
+    start: '??',
+    pause: '?潰???',
+    reset: '黕萼??,
+    skip: '穇渠??國萼',
+    alarms: '??',
+    addAlarm: '?? 黺?',
+    alarmLabel: '??',
+    repeatOnce: '??貒?,
+    repeatDaily: '諤木',
+    repeatWeekdays: '?',
+    noAlarms: '?木????? ??',
+    calendar: '?月? ?潰?',
+    connectCalendar: 'Google 儥旭???國盒',
+    calendarConnected: '儥旭???國盒??,
+    calendarReconnect: '儥旭???木? ?國盒',
+    noEventsToday: '?月? ???渥? ?潰? ??',
+    loginRequired: '儥旭???國盒??? 諢溢?貲??賄?',
+    minutesUntil: '{title}篧? {minutes}賱?,
   },
   es: {
-    title: 'Compañía',
+    title: 'Compa簽穩a',
     pomodoro: 'Pomodoro',
     focus: 'Enfoque',
     shortBreak: 'Descanso corto',
@@ -177,7 +178,7 @@ export const COMPANION_I18N: Record<Language, CompanionUiCopy> = {
     reset: 'Reiniciar',
     skip: 'Saltar',
     alarms: 'Alarmas',
-    addAlarm: 'Añadir alarma',
+    addAlarm: 'A簽adir alarma',
     alarmLabel: 'Alarma',
     repeatOnce: 'Una vez',
     repeatDaily: 'Diario',
@@ -187,8 +188,8 @@ export const COMPANION_I18N: Record<Language, CompanionUiCopy> = {
     connectCalendar: 'Conectar Google Calendar',
     calendarConnected: 'Calendario conectado',
     calendarReconnect: 'Reconectar calendario',
-    noEventsToday: 'No hay más eventos hoy',
-    loginRequired: 'Inicia sesión para conectar el calendario',
+    noEventsToday: 'No hay m獺s eventos hoy',
+    loginRequired: 'Inicia sesi籀n para conectar el calendario',
     minutesUntil: '{minutes} min para {title}',
   },
   fr: {
@@ -197,10 +198,10 @@ export const COMPANION_I18N: Record<Language, CompanionUiCopy> = {
     focus: 'Focus',
     shortBreak: 'Pause courte',
     longBreak: 'Pause longue',
-    idle: 'Prêt',
-    start: 'Démarrer',
+    idle: 'Pr礙t',
+    start: 'D矇marrer',
     pause: 'Pause',
-    reset: 'Réinitialiser',
+    reset: 'R矇initialiser',
     skip: 'Passer',
     alarms: 'Alarmes',
     addAlarm: 'Ajouter une alarme',
@@ -211,9 +212,9 @@ export const COMPANION_I18N: Record<Language, CompanionUiCopy> = {
     noAlarms: 'Aucune alarme',
     calendar: 'Agenda du jour',
     connectCalendar: 'Connecter Google Agenda',
-    calendarConnected: 'Agenda connecté',
+    calendarConnected: 'Agenda connect矇',
     calendarReconnect: 'Reconnecter l\'agenda',
-    noEventsToday: 'Plus d\'événements aujourd\'hui',
+    noEventsToday: 'Plus d\'矇v矇nements aujourd\'hui',
     loginRequired: 'Connectez-vous pour lier l\'agenda',
     minutesUntil: '{minutes} min avant {title}',
   },
@@ -226,13 +227,13 @@ export const COMPANION_I18N: Record<Language, CompanionUiCopy> = {
     idle: 'Bereit',
     start: 'Start',
     pause: 'Pause',
-    reset: 'Zurücksetzen',
-    skip: 'Überspringen',
+    reset: 'Zur羹cksetzen',
+    skip: '?berspringen',
     alarms: 'Wecker',
-    addAlarm: 'Wecker hinzufügen',
+    addAlarm: 'Wecker hinzuf羹gen',
     alarmLabel: 'Wecker',
     repeatOnce: 'Einmal',
-    repeatDaily: 'Täglich',
+    repeatDaily: 'T瓣glich',
     repeatWeekdays: 'Wochentags',
     noAlarms: 'Keine Wecker',
     calendar: 'Heutiger Plan',
@@ -244,56 +245,56 @@ export const COMPANION_I18N: Record<Language, CompanionUiCopy> = {
     minutesUntil: 'Noch {minutes} Min. bis {title}',
   },
   th: {
-    title: 'เพื่อนร่วมทาง',
+    title: '鉆鉊虞鉆葉鉊腦鉆葷鉊﹤?鉊耜?',
     pomodoro: 'Pomodoro',
-    focus: 'โฟกัส',
-    shortBreak: 'พักสั้น',
-    longBreak: 'พักยาว',
-    idle: 'พร้อม',
-    start: 'เริ่ม',
-    pause: 'หยุดชั่วคราว',
-    reset: 'รีเซ็ต',
-    skip: 'ข้าม',
-    alarms: 'นาฬิกาปลุก',
-    addAlarm: 'เพิ่มนาฬิกาปลุก',
-    alarmLabel: 'นาฬิกาปลุก',
-    repeatOnce: 'ครั้งเดียว',
-    repeatDaily: 'ทุกวัน',
-    repeatWeekdays: 'วันธรรมดา',
-    noAlarms: 'ยังไม่ตั้งนาฬิกาปลุก',
-    calendar: 'ตารางวันนี้',
-    connectCalendar: 'เชื่อม Google Calendar',
-    calendarConnected: 'เชื่อมปฏิทินแล้ว',
-    calendarReconnect: 'เชื่อมปฏิทินใหม่',
-    noEventsToday: 'ไม่มีกิจกรรมเพิ่มเติมวันนี้',
-    loginRequired: 'เข้าสู่ระบบเพื่อเชื่อมปฏิทิน',
-    minutesUntil: 'อีก {minutes} นาทีถึง {title}',
+    focus: '鉆?鉊萵鉊?,
+    shortBreak: '鉊萵鉊葵鉊晤?鉊?,
+    longBreak: '鉊萵鉊腺鉊耜葷',
+    idle: '鉊腦鉆葉鉊?,
+    start: '鉆鉊?葩鉆腹',
+    pause: '鉊徇腺鉊詮?鉊萵鉆葷鉊腦鉊耜葷',
+    reset: '鉊?葭鉆鉊?鉊?,
+    skip: '鉊?鉊耜腹',
+    alarms: '鉊葡鉊眇葩鉊葡鉊艇鉊詮?',
+    addAlarm: '鉆鉊葩鉆腹鉊葡鉊眇葩鉊葡鉊艇鉊詮?',
+    alarmLabel: '鉊葡鉊眇葩鉊葡鉊艇鉊詮?',
+    repeatOnce: '鉊腦鉊晤?鉊?鉊葭鉊Ｒ葷',
+    repeatDaily: '鉊虜鉊葷鉊晤?',
+    repeatWeekdays: '鉊抉萵鉊?鉊?腦鉊﹤?鉊?,
+    noAlarms: '鉊Ｒ萵鉊?鉊﹤?鉊萵鉆?鉊葡鉊眇葩鉊葡鉊艇鉊詮?',
+    calendar: '鉊葡鉊?葡鉊葷鉊晤?鉊葭鉆?,
+    connectCalendar: '鉆鉊虞鉆葉鉊?Google Calendar',
+    calendarConnected: '鉆鉊虞鉆葉鉊﹤?鉊葩鉊葩鉊?鉊丞?鉊?,
+    calendarReconnect: '鉆鉊虞鉆葉鉊﹤?鉊葩鉊葩鉊?鉊徇腹鉆?,
+    noEventsToday: '鉆腹鉆腹鉊菽?鉊毯?鉊腦鉊?腹鉆鉊葩鉆腹鉆鉊葩鉊﹤葷鉊晤?鉊葭鉆?,
+    loginRequired: '鉆鉊?鉊耜葵鉊嫩?鉊?萼鉊?鉆鉊虞鉆葉鉆鉊虞鉆葉鉊﹤?鉊葩鉊葩鉊?,
+    minutesUntil: '鉊冢葭鉊?{minutes} 鉊葡鉊葭鉊葆鉊?{title}',
   },
   vi: {
-    title: 'Đồng hành',
+    title: '?廙g h?nh',
     pomodoro: 'Pomodoro',
-    focus: 'Tập trung',
-    shortBreak: 'Nghỉ ngắn',
-    longBreak: 'Nghỉ dài',
-    idle: 'Sẵn sàng',
-    start: 'Bắt đầu',
-    pause: 'Tạm dừng',
-    reset: 'Đặt lại',
-    skip: 'Bỏ qua',
-    alarms: 'Báo thức',
-    addAlarm: 'Thêm báo thức',
-    alarmLabel: 'Báo thức',
-    repeatOnce: 'Một lần',
-    repeatDaily: 'Hàng ngày',
-    repeatWeekdays: 'Ngày thường',
-    noAlarms: 'Chưa có báo thức',
-    calendar: 'Lịch hôm nay',
-    connectCalendar: 'Kết nối Google Calendar',
-    calendarConnected: 'Đã kết nối lịch',
-    calendarReconnect: 'Kết nối lại lịch',
-    noEventsToday: 'Không còn sự kiện hôm nay',
-    loginRequired: 'Đăng nhập để kết nối lịch',
-    minutesUntil: 'Còn {minutes} phút đến {title}',
+    focus: 'T廕計 trung',
+    shortBreak: 'Ngh廙?ng廕疸',
+    longBreak: 'Ngh廙?d?i',
+    idle: 'S廕登 s?ng',
+    start: 'B廕眩 ?廕吟',
+    pause: 'T廕《 d廙南g',
+    reset: '?廕暗 l廕【',
+    skip: 'B廙?qua',
+    alarms: 'B獺o th廙妾',
+    addAlarm: 'Th礙m b獺o th廙妾',
+    alarmLabel: 'B獺o th廙妾',
+    repeatOnce: 'M廙 l廕吵',
+    repeatDaily: 'H?ng ng?y',
+    repeatWeekdays: 'Ng?y th廙g',
+    noAlarms: 'Cha c籀 b獺o th廙妾',
+    calendar: 'L廙h h繫m nay',
+    connectCalendar: 'K廕篙 n廙 Google Calendar',
+    calendarConnected: '?瓊 k廕篙 n廙 l廙h',
+    calendarReconnect: 'K廕篙 n廙 l廕【 l廙h',
+    noEventsToday: 'Kh繫ng c簷n s廙?ki廙 h繫m nay',
+    loginRequired: '??ng nh廕計 ?廙?k廕篙 n廙 l廙h',
+    minutesUntil: 'C簷n {minutes} ph繳t ?廕積 {title}',
   },
 }
 
@@ -309,292 +310,33 @@ export function getPomodoroPhaseLabel(locale: Language, phase: PomodoroPhase): s
     default:
       return c.idle
   }
+
+function resolveDjMoodId(moodId?: string): MusicMoodId {
+  return moodId && isMusicMoodId(moodId) ? moodId : 'deep-night'
 }
 
-const POMODORO_DJ_FALLBACKS: Record<Language, { focus: string; break: string; reset: string }> = {
-  en: {
-    focus: 'Captain, focus block started. I am here with you.',
-    break: 'Well done, Captain. Take a break — hydrate and return when ready.',
-    reset: 'Pomodoro reset. Ready when you are.',
-  },
-  'zh-TW': {
-    focus: '艦長，專注時間開始。我會在這裡陪著你。',
-    break: '做得好，艦長。休息一下，喝口水再回來。',
-    reset: '番茄鐘已重置，準備好再開始。',
-  },
-  'zh-CN': {
-    focus: '舰长，专注时间开始。我会在这里陪着你。',
-    break: '做得好，舰长。休息一下，喝口水再回来。',
-    reset: '番茄钟已重置，准备好再开始。',
-  },
-  ja: {
-    focus: '艦長、集中タイム開始。ここで付き添います。',
-    break: 'よくできました、艦長。少し休憩して、水分補給してから戻りましょう。',
-    reset: 'ポモドーロをリセットしました。準備ができたら始めましょう。',
-  },
-  ko: {
-    focus: '함장님, 집중 시간이 시작됐습니다. 제가 함께할게요.',
-    break: '잘하셨어요, 함장님. 잠시 쉬고 물 한 잔 마시고 돌아오세요.',
-    reset: '뽀모도로가 초기화됐습니다. 준비되면 다시 시작하세요.',
-  },
-  es: {
-    focus: 'Capitán, bloque de enfoque iniciado. Estoy aquí contigo.',
-    break: 'Bien hecho, Capitán. Descansa un momento e hidrátate.',
-    reset: 'Pomodoro reiniciado. Listo cuando tú lo estés.',
-  },
-  fr: {
-    focus: 'Capitaine, session focus lancée. Je suis là avec vous.',
-    break: 'Bravo, Capitaine. Faites une pause et hydratez-vous.',
-    reset: 'Pomodoro réinitialisé. Prêt quand vous l\'êtes.',
-  },
-  de: {
-    focus: 'Kapitän, Fokusblock gestartet. Ich bin bei dir.',
-    break: 'Gut gemacht, Kapitän. Mach eine Pause und trink etwas.',
-    reset: 'Pomodoro zurückgesetzt. Bereit, wenn du es bist.',
-  },
-  th: {
-    focus: 'Captain, focus block started. I am here with you.',
-    break: 'Well done, Captain. Take a break — hydrate and return when ready.',
-    reset: 'Pomodoro reset. Ready when you are.',
-  },
-  vi: {
-    focus: 'Captain, focus block started. I am here with you.',
-    break: 'Well done, Captain. Take a break — hydrate and return when ready.',
-    reset: 'Pomodoro reset. Ready when you are.',
-  },
+/** Static preset lines for TTS cache — no dynamic time, labels, or counts. */
+export function getPomodoroDjFallback(locale: Language, _phase: PomodoroPhase, moodId?: MusicMoodId): string {
+  return pickRandomPresetLine(moodId ?? 'deep-night', locale)
 }
 
-const ALARM_DJ_FALLBACKS: Record<Language, (label: string) => string> = {
-  en: (label) => `Captain, ${label} — it is time.`,
-  'zh-TW': (label) => `艦長，${label} 時間到了。`,
-  'zh-CN': (label) => `舰长，${label} 时间到了。`,
-  ja: (label) => `艦長、${label} の時間です。`,
-  ko: (label) => `함장님, ${label} 시간입니다.`,
-  es: (label) => `Capitán, ${label} — es la hora.`,
-  fr: (label) => `Capitaine, ${label} — c'est l'heure.`,
-  de: (label) => `Kapitän, ${label} — es ist Zeit.`,
-  th: (label) => `Captain, ${label} — it is time.`,
-  vi: (label) => `Captain, ${label} — it is time.`,
+export function getAlarmDjFallback(locale: Language, _label: string, moodId?: MusicMoodId): string {
+  return pickRandomPresetLine(moodId ?? 'deep-night', locale)
 }
 
-const CALENDAR_DJ_FALLBACKS: Record<Language, (title: string, minutes: number) => string> = {
-  en: (title, minutes) => `Captain, "${title}" starts in ${minutes} minutes.`,
-  'zh-TW': (title, minutes) => `艦長，${minutes} 分鐘後有「${title}」，準備一下。`,
-  'zh-CN': (title, minutes) => `舰长，${minutes} 分钟后有「${title}」，准备一下。`,
-  ja: (title, minutes) => `艦長、${minutes} 分後に「${title}」があります。準備しましょう。`,
-  ko: (title, minutes) => `함장님, ${minutes}분 후 "${title}" 일정이 있습니다. 준비하세요.`,
-  es: (title, minutes) => `Capitán, "${title}" empieza en ${minutes} minutos.`,
-  fr: (title, minutes) => `Capitaine, « ${title} » commence dans ${minutes} minutes.`,
-  de: (title, minutes) => `Kapitän, „${title}" beginnt in ${minutes} Minuten.`,
-  th: (title, minutes) => `Captain, "${title}" starts in ${minutes} minutes.`,
-  vi: (title, minutes) => `Captain, "${title}" starts in ${minutes} minutes.`,
-}
-
-export function getPomodoroDjFallback(locale: Language, phase: PomodoroPhase): string {
-  const djLocale = djSpeechLocaleForUiLocale(locale)
-  const copy = POMODORO_DJ_FALLBACKS[djLocale] ?? POMODORO_DJ_FALLBACKS.en
-  if (phase === 'focus') return copy.focus
-  if (phase === 'short_break' || phase === 'long_break') return copy.break
-  return copy.reset
-}
-
-export function getAlarmDjFallback(locale: Language, label: string): string {
-  const djLocale = djSpeechLocaleForUiLocale(locale)
-  const fn = ALARM_DJ_FALLBACKS[djLocale] ?? ALARM_DJ_FALLBACKS.en
-  return fn(label)
-}
-
-export function getCalendarDjFallback(locale: Language, eventTitle: string, minutesUntil: number): string {
-  const djLocale = djSpeechLocaleForUiLocale(locale)
-  const fn = CALENDAR_DJ_FALLBACKS[djLocale] ?? CALENDAR_DJ_FALLBACKS.en
-  return fn(eventTitle, minutesUntil)
-}
-
-export function getIntervalDjFallback(
+export function getCalendarDjFallback(
   locale: Language,
-  moodId: string,
-  time: string,
-  index: number,
+  _eventTitle: string,
+  _minutesUntil: number,
+  moodId?: MusicMoodId,
 ): string {
-  const djLocale = djSpeechLocaleForUiLocale(locale)
-  const localeMap = INTERVAL_FALLBACKS[djLocale] ?? INTERVAL_FALLBACKS.en
-  const templates =
-    localeMap[moodId] ?? INTERVAL_FALLBACKS.en[moodId as keyof typeof INTERVAL_FALLBACKS.en] ?? INTERVAL_FALLBACKS.en['deep-night']
-  const pick = templates[index % templates.length] ?? templates[0]
-  return pick.replace(/\{time\}/g, time)
+  return pickRandomPresetLine(moodId ?? 'deep-night', locale)
 }
 
-const INTERVAL_FALLBACKS: Record<
-  Language,
-  Record<string, string[]>
-> = {
-  en: {
-    'neon-tokyo': [
-      'Still riding the neon wave, Captain. It is {time} — stay sharp.',
-      'Cyber night continues. {time} check-in: you are doing fine.',
-    ],
-    'deep-night': [
-      'Orbit stable, Captain. {time} — keep your focus trajectory.',
-      'Quiet cosmos at {time}. Breathe and continue.',
-    ],
-    'deep-space': [
-      'Depth holding at 3000ft. {time} — noise floor minimal.',
-      'Submarine mode steady. {time} status: all systems calm.',
-    ],
-    'galactic-tavern': [
-      'Your corner is still here, Captain. {time} — sip and steady on.',
-      'Jazz hour continues. {time} — no rush.',
-    ],
-    'galactic-classical': [
-      'Productivity channel open. {time} — one step at a time.',
-      'Minimal cabin at {time}. Stay elegant, stay focused.',
-    ],
-    'retro-earth': [
-      'Campfire still crackling, Captain. {time} — keep the voyage going.',
-      'Alpine night at {time}. You are not alone out here.',
-    ],
-  },
-  'zh-TW': {
-    'neon-tokyo': ['霓虹頻道仍在播放，艦長。現在 {time}，保持節奏。', '賽博深夜繼續中，{time} 打卡：你做得很好。'],
-    'deep-night': ['軌道穩定，艦長。{time}，維持專注航向。', '宇宙依舊安靜，{time}，深呼吸繼續。'],
-    'deep-space': ['深度維持 3000 呎，{time}，雜音極低。', '潛航模式穩定，{time}，一切平靜。'],
-    'galactic-tavern': ['你的角落還在，艦長。{time}，慢慢來。', '爵士時光繼續，{time}，不用急。'],
-    'galactic-classical': ['生產力頻道開啟，{time}，一步一腳印。', '極簡空間 {time}，優雅專注。'],
-    'retro-earth': ['篝火仍在劈啪，艦長。{time}，繼續航程。', '雪山之夜 {time}，你不是一個人。'],
-  },
-  'zh-CN': {
-    'neon-tokyo': ['霓虹频道仍在播放，舰长。现在 {time}，保持节奏。'],
-    'deep-night': ['轨道稳定，舰长。{time}，维持专注航向。'],
-    'deep-space': ['深度维持 3000 尺，{time}，杂音极低。'],
-    'galactic-tavern': ['你的角落还在，舰长。{time}，慢慢来。'],
-    'galactic-classical': ['生产力频道开启，{time}，一步一脚印。'],
-    'retro-earth': ['篝火仍在劈啪，舰长。{time}，继续航程。'],
-  },
-  ja: {
-    'neon-tokyo': ['ネオン波に乗り続けろ、艦長。{time} — 集中を保て。', 'サイバーな夜は続く。{time} チェックイン：順調だ。'],
-    'deep-night': ['軌道安定、艦長。{time} — 集中航路を維持。', '宇宙は静か、{time}。深呼吸して続けよう。'],
-    'deep-space': ['深度3000ft維持。{time} — ノイズ最小。', '潜水モード安定。{time}、全システム正常。'],
-    'galactic-tavern': ['あなたの席はここにある、艦長。{time} — ゆっくりどうぞ。', 'ジャズタイム継続中。{time} — 急がなくていい。'],
-    'galactic-classical': ['生産性チャンネル開放。{time} — 一歩ずつ。', 'ミニマル空間 {time}。優雅に集中を。'],
-    'retro-earth': ['焚き火はまだ燃えている、艦長。{time} — 航海を続けよう。', 'アルプスの夜 {time}。一人じゃない。'],
-  },
-  ko: {
-    'neon-tokyo': ['네온 파도를 타고 있어, 함장님. {time} — 집중 유지.', '사이버 밤은 계속됩니다. {time} 체크인: 잘하고 있어요.'],
-    'deep-night': ['궤도 안정, 함장님. {time} — 집중 항로 유지.', '우주는 고요해, {time}. 숨 고르고 계속하세요.'],
-    'deep-space': ['수심 3000ft 유지. {time} — 잡음 최소.', '잠수 모드 안정. {time}, 모든 시스템 정상.'],
-    'galactic-tavern': ['당신의 자리는 여기 있어, 함장님. {time} — 천천히.', '재즈 타임 계속. {time} — 서두르지 마세요.'],
-    'galactic-classical': ['생산성 채널 개방. {time} — 한 걸음씩.', '미니멀 공간 {time}. 우아하게 집중.'],
-    'retro-earth': ['모닥불은 아직 타고 있어, 함장님. {time} — 항해 계속.', '알프스의 밤 {time}. 혼자가 아닙니다.'],
-  },
-  es: {
-    'neon-tokyo': ['Sigues en la ola neón, Capitán. {time} — mantén el enfoque.', 'La noche cyber continúa. {time}: vas bien.'],
-    'deep-night': ['Órbita estable, Capitán. {time} — mantén la trayectoria.', 'Cosmos tranquilo a las {time}. Respira y continúa.'],
-    'deep-space': ['Profundidad 3000ft. {time} — ruido mínimo.', 'Modo submarino estable. {time}: todo en calma.'],
-    'galactic-tavern': ['Tu rincón sigue aquí, Capitán. {time} — sin prisa.', 'Hora jazz continúa. {time} — tómatelo con calma.'],
-    'galactic-classical': ['Canal productividad abierto. {time} — paso a paso.', 'Cabaña minimal a las {time}. Elegancia y enfoque.'],
-    'retro-earth': ['La hoguera sigue crepitando, Capitán. {time} — continúa el viaje.', 'Noche alpina {time}. No estás solo.'],
-  },
-  fr: {
-    'neon-tokyo': ['Toujours sur l\'onde néon, Capitaine. {time} — reste concentré.', 'La nuit cyber continue. {time} : tu assures.'],
-    'deep-night': ['Orbite stable, Capitaine. {time} — garde ta trajectoire.', 'Cosmos calme à {time}. Respire et continue.'],
-    'deep-space': ['Profondeur 3000ft. {time} — bruit minimal.', 'Mode sous-marin stable. {time} : tout est calme.'],
-    'galactic-tavern': ['Ton coin est toujours là, Capitaine. {time} — prends ton temps.', 'Heure jazz en cours. {time} — pas de rush.'],
-    'galactic-classical': ['Canal productivité ouvert. {time} — pas à pas.', 'Cabane minimaliste à {time}. Élégance et focus.'],
-    'retro-earth': ['Le feu crépite encore, Capitaine. {time} — continue le voyage.', 'Nuit alpine {time}. Tu n\'es pas seul.'],
-  },
-  de: {
-    'neon-tokyo': ['Noch auf der Neonwelle, Kapitän. {time} — bleib fokussiert.', 'Cyber-Nacht geht weiter. {time}: du machst das gut.'],
-    'deep-night': ['Orbit stabil, Kapitän. {time} — halte die Kurslinie.', 'Ruhiger Kosmos um {time}. Atme und mach weiter.'],
-    'deep-space': ['Tiefe 3000ft. {time} — minimales Rauschen.', 'U-Boot-Modus stabil. {time}: alles ruhig.'],
-    'galactic-tavern': ['Deine Ecke ist noch da, Kapitän. {time} — ganz entspannt.', 'Jazz-Stunde läuft. {time} — kein Stress.'],
-    'galactic-classical': ['Produktivitätskanal offen. {time} — Schritt für Schritt.', 'Minimalhütte um {time}. Elegant fokussiert.'],
-    'retro-earth': ['Lagerfeuer knistert noch, Kapitän. {time} — weiter auf Reise.', 'Alpennacht {time}. Du bist nicht allein.'],
-  },
-  th: {
-    'neon-tokyo': [
-      'Still riding the neon wave, Captain. It is {time} — stay sharp.',
-      'Cyber night continues. {time} check-in: you are doing fine.',
-    ],
-    'deep-night': [
-      'Orbit stable, Captain. {time} — keep your focus trajectory.',
-      'Quiet cosmos at {time}. Breathe and continue.',
-    ],
-    'deep-space': [
-      'Depth holding at 3000ft. {time} — noise floor minimal.',
-      'Submarine mode steady. {time} status: all systems calm.',
-    ],
-    'galactic-tavern': [
-      'Your corner is still here, Captain. {time} — sip and steady on.',
-      'Jazz hour continues. {time} — no rush.',
-    ],
-    'galactic-classical': [
-      'Productivity channel open. {time} — one step at a time.',
-      'Minimal cabin at {time}. Stay elegant, stay focused.',
-    ],
-    'retro-earth': [
-      'Campfire still crackling, Captain. {time} — keep the voyage going.',
-      'Alpine night at {time}. You are not alone out here.',
-    ],
-  },
-  vi: {
-    'neon-tokyo': [
-      'Still riding the neon wave, Captain. It is {time} — stay sharp.',
-      'Cyber night continues. {time} check-in: you are doing fine.',
-    ],
-    'deep-night': [
-      'Orbit stable, Captain. {time} — keep your focus trajectory.',
-      'Quiet cosmos at {time}. Breathe and continue.',
-    ],
-    'deep-space': [
-      'Depth holding at 3000ft. {time} — noise floor minimal.',
-      'Submarine mode steady. {time} status: all systems calm.',
-    ],
-    'galactic-tavern': [
-      'Your corner is still here, Captain. {time} — sip and steady on.',
-      'Jazz hour continues. {time} — no rush.',
-    ],
-    'galactic-classical': [
-      'Productivity channel open. {time} — one step at a time.',
-      'Minimal cabin at {time}. Stay elegant, stay focused.',
-    ],
-    'retro-earth': [
-      'Campfire still crackling, Captain. {time} — keep the voyage going.',
-      'Alpine night at {time}. You are not alone out here.',
-    ],
-  },
+export function getIntervalDjFallback(locale: Language, moodId: string, _time?: string, _index?: number): string {
+  return pickRandomPresetLine(resolveDjMoodId(moodId), locale)
 }
 
-const COFOCUS_FALLBACKS: Record<Language, string[]> = {
-  en: [
-    'Captain, {count} souls are focusing in this timeline with you.',
-    'Gallery pulse: {count} captains co-focusing here right now.',
-  ],
-  'zh-TW': [
-    '艦長，此刻有 {count} 位夥伴與你在此時空共專注。',
-    '畫廊訊號：{count} 位艦長正在此處一起專注。',
-  ],
-  'zh-CN': [
-    '舰长，此刻有 {count} 位伙伴与你在此时空共专注。',
-    '画廊讯号：{count} 位舰长正在此处一起专注。',
-  ],
-  ja: ['艦長、今 {count} 人がこのタイムラインで集中しています。', 'ギャラリー：{count} 人が共集中中です。'],
-  ko: ['함장님, 지금 {count} 명이 이 타임라인에서 함께 집중 중입니다.', '갤러리: {count} 명이 공동 집중 중.'],
-  es: ['Capitán, {count} almas se concentran contigo en esta línea temporal.', 'Galería: {count} capitanes co-enfocados aquí.'],
-  fr: ['Capitaine, {count} âmes se concentrent avec toi dans cette timeline.', 'Galerie : {count} capitaines co-focus ici.'],
-  de: ['Kapitän, {count} Seelen fokussieren mit dir in dieser Zeitlinie.', 'Galerie: {count} Kapitäne co-fokussieren hier.'],
-  th: [
-    'Captain, {count} souls are focusing in this timeline with you.',
-    'Gallery pulse: {count} captains co-focusing here right now.',
-  ],
-  vi: [
-    'Captain, {count} souls are focusing in this timeline with you.',
-    'Gallery pulse: {count} captains co-focusing here right now.',
-  ],
-}
-
-export function getCoFocusDjFallback(locale: Language, count: number): string {
-  const djLocale = djSpeechLocaleForUiLocale(locale)
-  const templates = COFOCUS_FALLBACKS[djLocale] ?? COFOCUS_FALLBACKS.en
-  const pick = templates[Math.floor(Date.now() / 86_400_000) % templates.length] ?? templates[0]
-  return pick.replace(/\{count\}/g, String(count))
+export function getCoFocusDjFallback(locale: Language, _count: number, moodId?: MusicMoodId): string {
+  return pickRandomPresetLine(moodId ?? 'deep-night', locale)
 }

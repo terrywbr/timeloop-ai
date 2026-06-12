@@ -2,16 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { MusicMoodId } from '@/lib/music-moods'
-import { getDjPersona } from '@/lib/ai-dj-personas'
-import {
-  getAlarmDjFallback,
-  getCalendarDjFallback,
-  getIntervalDjFallback,
-  getPomodoroDjFallback,
-  getCoFocusDjFallback,
-} from '@/lib/companion-i18n'
-import { formatDjLocalTime, getDjFallback } from '@/lib/dj-i18n'
-import type { DjSessionType, DjSpeakContext, DjSpeakParams } from '@/lib/dj-types'
+import { pickRandomPresetLine } from '@/lib/ai-dj-personas'
+import type { DjSessionType, DjSpeakParams } from '@/lib/dj-types'
 import type { Language } from '@/lib/translations'
 import {
   clearGreetDate,
@@ -22,8 +14,7 @@ import {
   saveIntervalEnabled,
   shouldGreetToday,
 } from '@/lib/dj-settings'
-import { isDjTtsSupported, primeDjVoices, speakDjText, stopDjSpeech } from '@/lib/dj-tts'
-import { speechLangForLocale, djSpeechLocaleForUiLocale } from '@/lib/dj-speech-locale'
+import { isDjAudioSupported, playDjAudioFromUrl, stopDjSpeech } from '@/lib/dj-audio-player'
 
 export type AiDjState = {
   visible: boolean
@@ -37,7 +28,28 @@ export type AiDjState = {
 }
 
 type GreetApiResponse =
-  | { success: true; text: string; moodId: MusicMoodId; personaId: string; source: 'llm' | 'fallback' }
+  | {
+      success: true
+      text: string
+      moodId: MusicMoodId
+      personaId: string
+      source: 'preset'
+      audioUrl?: string
+      cacheHit?: boolean
+    }
+  | { success: false; error: string }
+
+type SpeakApiResponse =
+  | {
+      success: true
+      moodId: MusicMoodId
+      personaId: string
+      voice: string
+      mimeType: 'audio/mpeg'
+      audioUrl?: string
+      audioBase64?: string
+      cacheHit?: boolean
+    }
   | { success: false; error: string }
 
 type UseAiDjOptions = {
@@ -46,31 +58,20 @@ type UseAiDjOptions = {
   onDuckMusic?: (duck: boolean) => void
 }
 
-function resolveLocalFallback(
-  locale: Language,
-  moodId: MusicMoodId,
-  sessionType: DjSessionType,
-  localTime: string,
-  context?: DjSpeakContext,
-): string {
-  const djLocale = djSpeechLocaleForUiLocale(locale)
-  if (sessionType === 'interval') {
-    return getIntervalDjFallback(djLocale, moodId, localTime, Math.floor(Date.now() / 60000))
+async function fetchDjSpeechUrl(text: string, moodId: MusicMoodId): Promise<string | null> {
+  const response = await fetch('/api/dj/speak', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, moodId, format: 'url' }),
+  })
+
+  const data = (await response.json()) as SpeakApiResponse
+  if (!response.ok || !data.success) {
+    console.warn('[use-ai-dj] TTS unavailable:', data.success ? 'unknown' : data.error)
+    return null
   }
-  if (sessionType === 'pomodoro') {
-    const phase = (context?.phase ?? 'focus') as 'focus' | 'short_break' | 'long_break' | 'idle'
-    return getPomodoroDjFallback(djLocale, phase)
-  }
-  if (sessionType === 'alarm') {
-    return getAlarmDjFallback(djLocale, context?.alarmLabel ?? 'Alarm')
-  }
-  if (sessionType === 'calendar') {
-    return getCalendarDjFallback(djLocale, context?.eventTitle ?? 'Event', context?.minutesUntil ?? 5)
-  }
-  if (sessionType === 'cofocus') {
-    return getCoFocusDjFallback(djLocale, context?.coFocusCount ?? 1)
-  }
-  return getDjFallback(djLocale, moodId, { time: localTime, stationName: context?.eventTitle })
+
+  return data.audioUrl ?? null
 }
 
 export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions) {
@@ -94,10 +95,6 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
       voiceEnabled: loadDjVoiceEnabled(),
       intervalEnabled: loadIntervalEnabled(),
     }))
-    primeDjVoices()
-    if (typeof window !== 'undefined') {
-      window.speechSynthesis?.addEventListener?.('voiceschanged', primeDjVoices)
-    }
     return () => {
       stopDjSpeech()
       if (hideTimerRef.current) window.clearTimeout(hideTimerRef.current)
@@ -124,15 +121,13 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
 
   const speakLine = useCallback(
     async (params: DjSpeakParams) => {
-      const { moodId, sessionType, stationName, context, force = false } = params
+      const { moodId, sessionType, force = false } = params
 
       if (speakInFlightRef.current) return false
       if (!force && sessionType === 'return' && !shouldGreetToday()) return false
 
       speakInFlightRef.current = true
-      const persona = getDjPersona(moodId)
       const personaName = getPersonaName(moodId)
-      const localTime = formatDjLocalTime(locale)
       const voiceEnabled = loadDjVoiceEnabled()
 
       setState((prev) => ({
@@ -146,7 +141,8 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
         voiceEnabled,
       }))
 
-      let text = resolveLocalFallback(locale, moodId, sessionType, localTime, context)
+      let text = pickRandomPresetLine(moodId, locale)
+      let audioUrl: string | null = null
 
       try {
         const response = await fetch('/api/dj/greet', {
@@ -155,18 +151,16 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
           body: JSON.stringify({
             moodId,
             locale,
-            localTime,
-            stationName,
             sessionType,
-            context,
           }),
         })
         const data = (await response.json()) as GreetApiResponse
         if (response.ok && data.success) {
           text = data.text
+          audioUrl = data.audioUrl ?? null
         }
       } catch {
-        // keep fallback
+        // keep local preset fallback
       }
 
       setState((prev) => ({
@@ -180,15 +174,12 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
       }
 
       const hideDelay = sessionType === 'interval' ? 7000 : 9000
-      const speechProfile = {
-        ...persona.speechProfile,
-        lang: speechLangForLocale(locale),
-      }
 
-      if (voiceEnabled && isDjTtsSupported()) {
+      if (voiceEnabled && isDjAudioSupported()) {
         onDuckMusic?.(true)
         setState((prev) => ({ ...prev, speaking: true }))
-        await speakDjText(text, speechProfile, {
+
+        const playbackOptions = {
           onEnd: () => {
             onDuckMusic?.(false)
             setState((prev) => ({ ...prev, speaking: false }))
@@ -199,7 +190,25 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
             setState((prev) => ({ ...prev, speaking: false }))
             scheduleHide(hideDelay)
           },
-        })
+        }
+
+        try {
+          if (!audioUrl) {
+            audioUrl = await fetchDjSpeechUrl(text, moodId)
+          }
+
+          if (audioUrl) {
+            await playDjAudioFromUrl(audioUrl, playbackOptions)
+          } else {
+            onDuckMusic?.(false)
+            setState((prev) => ({ ...prev, speaking: false }))
+            scheduleHide(hideDelay)
+          }
+        } catch {
+          onDuckMusic?.(false)
+          setState((prev) => ({ ...prev, speaking: false }))
+          scheduleHide(hideDelay)
+        }
       } else {
         scheduleHide(hideDelay)
       }

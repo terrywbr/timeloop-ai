@@ -52,10 +52,7 @@ export function getCreditPackCreditsForKind(kind: CheckoutKind) {
 
 /** @deprecated use getCreditPackCreditsForKind */
 export function getCreditPackCredits() {
-  const pack =
-    resolveCreditPackByKind('credits') ??
-    resolveCreditPackByKind('credits_10') ??
-    resolveCreditPackByKind('credits_20')
+  const pack = resolveCreditPackByKind('credits')
   return pack?.credits ?? 100
 }
 

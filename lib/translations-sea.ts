@@ -17,9 +17,6 @@ type TranslationBundle = {
     | 'perMonth'
     | 'upgradeVip'
     | 'upgradeStreamer'
-    | 'buyCredits'
-    | 'buyCredits10'
-    | 'buyCredits20'
     | 'creditsRemaining'
     | 'vipActive'
     | 'streamerActive'
@@ -128,9 +125,6 @@ export const thTranslation: TranslationBundle = {
     perMonth: '/เดือน',
     upgradeVip: 'อัปเกรด VIP',
     upgradeStreamer: 'อัปเกรด Streamer Pass',
-    buyCredits: 'ซื้อเครดิต',
-    buyCredits10: 'ซื้อ 10 เครดิต',
-    buyCredits20: 'ซื้อ 20 เครดิต',
     creditsRemaining: 'เครดิตคงเหลือ: {count}',
     vipActive: 'VIP ใช้งานอยู่ — สร้างไม่จำกัด',
     streamerActive: 'Streamer Pass ใช้งาน — ปลดล็อกเครื่องมือครีเอเตอร์',
@@ -234,9 +228,6 @@ export const viTranslation: TranslationBundle = {
     perMonth: '/tháng',
     upgradeVip: 'Nâng cấp VIP',
     upgradeStreamer: 'Nâng cấp Streamer Pass',
-    buyCredits: 'Mua gói credit',
-    buyCredits10: 'Mua 10 credit',
-    buyCredits20: 'Mua 20 credit',
     creditsRemaining: 'Credit còn lại: {count}',
     vipActive: 'VIP đang hoạt động — tạo không giới hạn',
     streamerActive: 'Streamer Pass — công cụ creator đã mở',

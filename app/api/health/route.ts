@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getMissingBillingEnvVars, isBillingConfigured, isStreamerCheckoutConfigured } from '@/lib/billing-config'
+import { isOpenAiTtsConfigured } from '@/lib/openai-tts'
 
 export const runtime = 'nodejs'
 
@@ -27,6 +28,7 @@ export async function GET(req: Request) {
       billing: isBillingConfigured(),
       billingMissing: getMissingBillingEnvVars(),
       streamerCheckout: isStreamerCheckoutConfigured(),
+      openAiTts: isOpenAiTtsConfigured(),
       lemonWebhook: Boolean(readEnv('LEMON_SQUEEZY_WEBHOOK_SECRET')),
       togetherKeyLength: togetherKey?.length ?? 0,
       supabaseServiceKeyLength: supabaseServiceKey?.length ?? 0,
