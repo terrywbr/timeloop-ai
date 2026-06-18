@@ -14,7 +14,15 @@ import {
   saveIntervalEnabled,
   shouldGreetToday,
 } from '@/lib/dj-settings'
-import { isDjAudioSupported, playDjAudioFromUrl, stopDjSpeech } from '@/lib/dj-audio-player'
+import {
+  isDjAudioSupported,
+  playDjAudioFromBase64,
+  playDjAudioFromUrl,
+  playDjSpeechSynthesis,
+  stopDjSpeech,
+} from '@/lib/dj-audio-player'
+import { djSpeechLocaleForUiLocale, speechLangForLocale } from '@/lib/dj-speech-locale'
+import { truncateTextForEdgeTts } from '@/lib/dj-tts-text'
 
 export type AiDjState = {
   visible: boolean
@@ -33,9 +41,7 @@ type GreetApiResponse =
       text: string
       moodId: MusicMoodId
       personaId: string
-      source: 'preset'
-      audioUrl?: string
-      cacheHit?: boolean
+      source: 'llm' | 'preset'
     }
   | { success: false; error: string }
 
@@ -58,11 +64,15 @@ type UseAiDjOptions = {
   onDuckMusic?: (duck: boolean) => void
 }
 
-async function fetchDjSpeechUrl(text: string, moodId: MusicMoodId): Promise<string | null> {
+async function fetchDjSpeechAudio(
+  text: string,
+  moodId: MusicMoodId,
+  locale: Language,
+): Promise<{ audioUrl?: string; audioBase64?: string } | null> {
   const response = await fetch('/api/dj/speak', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text, moodId, format: 'url' }),
+    body: JSON.stringify({ text, moodId, locale, format: 'url' }),
   })
 
   const data = (await response.json()) as SpeakApiResponse
@@ -71,7 +81,10 @@ async function fetchDjSpeechUrl(text: string, moodId: MusicMoodId): Promise<stri
     return null
   }
 
-  return data.audioUrl ?? null
+  return {
+    audioUrl: data.audioUrl,
+    audioBase64: data.audioBase64,
+  }
 }
 
 export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions) {
@@ -129,6 +142,7 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
       speakInFlightRef.current = true
       const personaName = getPersonaName(moodId)
       const voiceEnabled = loadDjVoiceEnabled()
+      const speechLocale = djSpeechLocaleForUiLocale(locale)
 
       setState((prev) => ({
         ...prev,
@@ -141,8 +155,9 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
         voiceEnabled,
       }))
 
-      let text = pickRandomPresetLine(moodId, locale)
+      let text = pickRandomPresetLine(moodId, speechLocale)
       let audioUrl: string | null = null
+      let audioBase64: string | null = null
 
       try {
         const response = await fetch('/api/dj/greet', {
@@ -150,14 +165,14 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             moodId,
-            locale,
+            locale: speechLocale,
             sessionType,
+            stationName: params.stationName,
           }),
         })
         const data = (await response.json()) as GreetApiResponse
         if (response.ok && data.success) {
           text = data.text
-          audioUrl = data.audioUrl ?? null
         }
       } catch {
         // keep local preset fallback
@@ -176,36 +191,50 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
       const hideDelay = sessionType === 'interval' ? 7000 : 9000
 
       if (voiceEnabled && isDjAudioSupported()) {
-        onDuckMusic?.(true)
         setState((prev) => ({ ...prev, speaking: true }))
 
+        // Duck music only when audio actually starts playing, not while fetching TTS.
+        // This prevents permanent duck if the fetch fails or audio never plays.
+        let duckActive = false
         const playbackOptions = {
+          onStart: () => {
+            duckActive = true
+            onDuckMusic?.(true)
+          },
           onEnd: () => {
-            onDuckMusic?.(false)
+            if (duckActive) onDuckMusic?.(false)
+            duckActive = false
             setState((prev) => ({ ...prev, speaking: false }))
             scheduleHide(4000)
           },
           onError: () => {
-            onDuckMusic?.(false)
+            if (duckActive) onDuckMusic?.(false)
+            duckActive = false
             setState((prev) => ({ ...prev, speaking: false }))
             scheduleHide(hideDelay)
           },
         }
 
         try {
+          const speakText = truncateTextForEdgeTts(text)
           if (!audioUrl) {
-            audioUrl = await fetchDjSpeechUrl(text, moodId)
+            let audio = await fetchDjSpeechAudio(speakText, moodId, speechLocale)
+            if (!audio?.audioUrl && !audio?.audioBase64 && speakText !== text) {
+              audio = await fetchDjSpeechAudio(truncateTextForEdgeTts(text, 280), moodId, speechLocale)
+            }
+            audioUrl = audio?.audioUrl ?? null
+            audioBase64 = audio?.audioBase64 ?? null
           }
 
           if (audioUrl) {
             await playDjAudioFromUrl(audioUrl, playbackOptions)
+          } else if (audioBase64) {
+            await playDjAudioFromBase64(audioBase64, playbackOptions)
           } else {
-            onDuckMusic?.(false)
-            setState((prev) => ({ ...prev, speaking: false }))
-            scheduleHide(hideDelay)
+            await playDjSpeechSynthesis(speakText, speechLangForLocale(locale), playbackOptions)
           }
         } catch {
-          onDuckMusic?.(false)
+          if (duckActive) onDuckMusic?.(false)
           setState((prev) => ({ ...prev, speaking: false }))
           scheduleHide(hideDelay)
         }
@@ -226,7 +255,7 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
       sessionType?: 'enter' | 'return'
       force?: boolean
     }) => {
-      await speakLine({
+      return await speakLine({
         moodId: params.moodId,
         sessionType: params.sessionType ?? 'enter',
         stationName: params.stationName,

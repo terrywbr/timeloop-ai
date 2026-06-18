@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { getDjPersona, pickRandomPresetLine } from '@/lib/ai-dj-personas'
-import { resolveTtsWithCache } from '@/lib/dj-tts-cache'
+import { getDjPersona } from '@/lib/ai-dj-personas'
 import { isMusicMoodId, type MusicMoodId } from '@/lib/music-moods'
 import type { DjSessionType } from '@/lib/dj-types'
-import { isOpenAiTtsConfigured } from '@/lib/openai-tts'
 import type { Language } from '@/lib/translations'
+import { djSpeechLocaleForUiLocale } from '@/lib/dj-speech-locale'
+import { generateDjLine } from '@/lib/dj-llm'
 
 export const runtime = 'nodejs'
 
@@ -12,6 +12,7 @@ type GreetRequestBody = {
   moodId?: string
   locale?: string
   sessionType?: DjSessionType
+  stationName?: string
 }
 
 type GreetSuccess = {
@@ -19,9 +20,7 @@ type GreetSuccess = {
   text: string
   moodId: MusicMoodId
   personaId: string
-  source: 'preset'
-  audioUrl?: string
-  cacheHit?: boolean
+  source: 'llm' | 'preset'
 }
 
 type GreetError = { success: false; error: string }
@@ -32,48 +31,40 @@ function isLocale(value: string): value is Language {
   return LOCALES.includes(value as Language)
 }
 
-function jsonOk(body: GreetSuccess) {
-  return NextResponse.json(body)
-}
-
-function jsonError(message: string, status: number) {
-  return NextResponse.json({ success: false, error: message } satisfies GreetError, { status })
-}
-
 export async function POST(req: Request) {
   let body: GreetRequestBody
   try {
     body = (await req.json()) as GreetRequestBody
   } catch {
-    return jsonError('Invalid JSON body', 400)
+    return NextResponse.json({ success: false, error: 'Invalid JSON body' } satisfies GreetError, {
+      status: 400,
+    })
   }
 
   const moodId = body.moodId ?? ''
   if (!isMusicMoodId(moodId)) {
-    return jsonError('Invalid moodId', 400)
+    return NextResponse.json({ success: false, error: 'Invalid moodId' } satisfies GreetError, {
+      status: 400,
+    })
   }
 
-  const locale: Language = body.locale && isLocale(body.locale) ? body.locale : 'en'
+  const uiLocale: Language = body.locale && isLocale(body.locale) ? body.locale : 'en'
+  const speechLocale = djSpeechLocaleForUiLocale(uiLocale)
+  const sessionType: DjSessionType = body.sessionType ?? 'enter'
   const persona = getDjPersona(moodId)
-  const text = pickRandomPresetLine(moodId, locale)
 
-  const response: GreetSuccess = {
+  const { text, source } = await generateDjLine({
+    moodId,
+    locale: speechLocale,
+    sessionType,
+    stationName: body.stationName,
+  })
+
+  return NextResponse.json({
     success: true,
     text,
     moodId,
     personaId: persona.id,
-    source: 'preset',
-  }
-
-  if (isOpenAiTtsConfigured()) {
-    try {
-      const cached = await resolveTtsWithCache(text, persona.tts)
-      response.audioUrl = cached.audioUrl
-      response.cacheHit = cached.cacheHit
-    } catch (error) {
-      console.warn('[api/dj/greet] TTS cache path failed:', error)
-    }
-  }
-
-  return jsonOk(response)
+    source,
+  } satisfies GreetSuccess)
 }

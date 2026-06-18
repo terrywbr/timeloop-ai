@@ -23,8 +23,10 @@ export function getExternalStreamProxyBase(): string {
   return base.replace(/\/$/, '')
 }
 
-export function buildApiProxiedStreamUrl(station: RadioStation): string {
-  return `/api/stream?url=${encodeURIComponent(station.urlResolved)}`
+export function buildApiProxiedStreamUrl(station: RadioStation, fallbackFromExternal = false): string {
+  const params = new URLSearchParams({ url: station.urlResolved })
+  if (fallbackFromExternal) params.set('timeloop-stream-proxy-fallback', '1')
+  return `/api/stream?${params.toString()}`
 }
 
 export function buildExternalProxiedStreamUrl(station: RadioStation): string | null {
@@ -35,7 +37,7 @@ export function buildExternalProxiedStreamUrl(station: RadioStation): string | n
 
 /** Build proxied playback URL (external worker preferred, else same-origin API). */
 export function buildProxiedStreamUrl(station: RadioStation, tier: 'external' | 'api' = 'external'): string {
-  if (tier === 'api') return buildApiProxiedStreamUrl(station)
+  if (tier === 'api') return buildApiProxiedStreamUrl(station, true)
   return buildExternalProxiedStreamUrl(station) ?? buildApiProxiedStreamUrl(station)
 }
 
@@ -51,6 +53,7 @@ export function buildStreamPlaybackUrl(station: RadioStation, tier: StreamProxyT
 export function isStreamUrlForStation(station: RadioStation, playbackUrl: string): boolean {
   if (playbackUrl === station.urlResolved) return true
   if (playbackUrl === buildApiProxiedStreamUrl(station)) return true
+  if (playbackUrl === buildApiProxiedStreamUrl(station, true)) return true
   const external = buildExternalProxiedStreamUrl(station)
   if (external && playbackUrl === external) return true
   return false

@@ -7,9 +7,6 @@ import { useIsMobile } from '@/hooks/use-mobile'
 import { useOrientation } from '@/hooks/use-orientation'
 import { useClientMounted } from '@/hooks/use-client-mounted'
 import { useAiDj } from '@/hooks/use-ai-dj'
-import { useCompanion } from '@/hooks/use-companion'
-import { useGoogleCalendar } from '@/hooks/use-google-calendar'
-import type { CompanionEvent } from '@/lib/companion/types'
 import { DJ_INTERVAL_MS } from '@/lib/dj-types'
 import { markIntervalSpoken, shouldSpeakInterval, clearGreetDate } from '@/lib/dj-settings'
 import type { Language } from '@/lib/translations'
@@ -23,11 +20,17 @@ import { createSupabaseBrowserClient } from '@/lib/supabase-client'
 import { signInWithGoogle } from '@/lib/auth-google'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import {
+  activateStreamerScenePack,
+  addGeneratedStreamerBackground,
+  createStreamerScenePack,
+  deleteStreamerScenePack,
   deleteWorld,
   deleteStreamerBackground,
   downloadBackgroundImage,
+  fetchStreamerScenePacks,
   fetchStreamerBackgrounds,
   fetchStreamerSettings,
+  generateStreamerScenePackImages,
   fetchUserProfile,
   fetchWorldById,
   fetchWorlds,
@@ -35,6 +38,7 @@ import {
   recordWorldView,
   saveStreamerSettings,
   startCheckout,
+  type StreamerScenePack,
   uploadStreamerBackground,
   updateWorldTitle,
   type CheckoutKind,
@@ -53,7 +57,7 @@ import type { VideoBackgroundRef } from '@/components/ui/video-background'
 import { AMBIENCE_AUDIO_SOURCES, AMBIENCE_VOLUME_RATIO } from '@/lib/timeloop/constants'
 import type { AmbientWorldLayer, GalleryWorldAssets, GenerateApiResponse } from '@/lib/timeloop/types'
 import { normalizeVisualEffectScene, resolveParticlePreset, resolvePresetWorld, type VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
-import { buildStreamPlaybackUrl } from '@/lib/radio-station'
+import { buildStreamPlaybackUrl, resolveInitialProxyTier } from '@/lib/radio-station'
 import { primeStreamAudio } from '@/lib/prime-stream-audio'
 import {
   fetchGeoFromApi,
@@ -69,10 +73,87 @@ type UseTimeloopPageOptions = {
   getDjPersonaName: (moodId: MusicMoodId) => string
 }
 
+const STREAMER_ROTATION_MAX = 20
+const LOCAL_STREAMER_BACKGROUNDS_KEY_PREFIX = 'timeloop.streamer.rotation.backgrounds'
+const LOCAL_STREAMER_BACKGROUNDS_FALLBACK_KEY = 'timeloop.streamer.rotation.backgrounds:last'
+const LOCAL_STREAMER_ROTATION_WORLD_IDS_KEY = 'timeloop.streamer.rotation.worldIds'
+
+function isMissingStreamerTablesError(message: string) {
+  const lower = message.toLowerCase()
+  const missing = lower.includes('could not find') || lower.includes('does not exist')
+  const table = lower.includes('public.streamer_backgrounds') || lower.includes('public.streamer_settings')
+  return missing && table
+}
+
+function normalizeStreamerBackgrounds(
+  items: Array<{ id: string; public_url: string; sort_order: number }>,
+) {
+  const byUrl = new Map<string, { id: string; public_url: string; sort_order: number }>()
+  for (const item of items) {
+    const key = item.public_url.trim()
+    if (!key || byUrl.has(key)) continue
+    byUrl.set(key, item)
+  }
+  return Array.from(byUrl.values())
+    .slice(0, STREAMER_ROTATION_MAX)
+    .map((item, index) => ({ ...item, sort_order: index }))
+}
+
+function normalizeRotationUrls(urls: string[]) {
+  const uniqueUrls: string[] = []
+  const seen = new Set<string>()
+  for (const url of urls) {
+    const key = url.trim()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    uniqueUrls.push(key)
+  }
+  return uniqueUrls.slice(0, STREAMER_ROTATION_MAX)
+}
+
+function normalizeRotationWorldIds(ids: string[]) {
+  const uniqueIds: string[] = []
+  const seen = new Set<string>()
+  for (const id of ids) {
+    const key = id.trim()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    uniqueIds.push(key)
+  }
+  return uniqueIds.slice(0, STREAMER_ROTATION_MAX)
+}
+
+function readStoredRotationWorldIds() {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.localStorage.getItem(LOCAL_STREAMER_ROTATION_WORLD_IDS_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+    return normalizeRotationWorldIds(parsed.filter((id): id is string => typeof id === 'string'))
+  } catch {
+    return []
+  }
+}
+
+function writeStoredRotationWorldIds(ids: string[]) {
+  if (typeof window === 'undefined') return
+  try {
+    window.localStorage.setItem(
+      LOCAL_STREAMER_ROTATION_WORLD_IDS_KEY,
+      JSON.stringify(normalizeRotationWorldIds(ids)),
+    )
+  } catch {
+    // Ignore local storage write errors in private/incognito contexts.
+  }
+}
+
 export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageOptions) {
   const music = useMusicStation()
   const videoRef = useRef<VideoBackgroundRef>(null)
   const greetTriggeredRef = useRef(false)
+  const firstVisitIntroPlayedRef = useRef(false)
+  const backgroundRotationLastTickRef = useRef(Date.now())
   const [isGenerating, setIsGenerating] = useState(false)
   const [leftPanelExpanded, setLeftPanelExpanded] = useState(false)
   const [rightPanelExpanded, setRightPanelExpanded] = useState(false)
@@ -96,13 +177,22 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   const [coFocusEnabled, setCoFocusEnabled] = useState(false)
   const [enteredPublicWorldId, setEnteredPublicWorldId] = useState<string | null>(null)
   const [selectedVisualEffect, setSelectedVisualEffect] = useState<VisualEffectSceneKey>('cyberpunk')
+  const [manualPreviewActive, setManualPreviewActive] = useState(false)
   const [isStreamMode] = useState(() => readStreamModeFromWindow())
   const [streamerSettings, setStreamerSettings] = useState<StreamerSettings>(DEFAULT_STREAMER_SETTINGS)
   const [streamerBackgrounds, setStreamerBackgrounds] = useState<
     Array<{ id: string; public_url: string; sort_order: number }>
   >([])
+  const [selectedRotationWorldIds, setSelectedRotationWorldIds] = useState<string[]>(() =>
+    readStoredRotationWorldIds(),
+  )
+  const selectedRotationWorldIdsRef = useRef<string[]>(selectedRotationWorldIds)
   const [isStreamerBackgroundUploading, setIsStreamerBackgroundUploading] = useState(false)
   const [backgroundRotationIndex, setBackgroundRotationIndex] = useState(0)
+  const [streamerScenePacks, setStreamerScenePacks] = useState<StreamerScenePack[]>([])
+  const [isScenePackGenerating, setIsScenePackGenerating] = useState(false)
+  const [activeScenePackItemIndex, setActiveScenePackItemIndex] = useState(0)
+  const [communityRefreshKey, setCommunityRefreshKey] = useState(0)
   const isMobile = useIsMobile()
   const { isLandscape, isMobilePortrait } = useOrientation()
   const isClientMounted = useClientMounted()
@@ -122,7 +212,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     onDuckMusic: setMusicDuckActive,
   })
 
-  const effectiveMusicVolume = musicDuckActive ? Math.round(musicVolume * 0.7) : musicVolume
+  const effectiveMusicVolume = musicDuckActive ? Math.round(musicVolume * 0.3) : musicVolume
 
   const moodAmbientLayer = useMemo(() => {
     if (worldOverrideActive || !music.primaryMood) return null
@@ -130,18 +220,60 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   }, [music.primaryMood, worldOverrideActive])
 
   const presetWorld = resolvePresetWorld(currentWorldId, currentGalleryAssets?.particlePreset)
-  const rotatedStreamerBackground =
-    streamerBackgrounds.length > 0
-      ? streamerBackgrounds[backgroundRotationIndex % streamerBackgrounds.length]?.public_url
+  const activeScenePack = useMemo(
+    () => streamerScenePacks.find((pack) => pack.status === 'active') ?? null,
+    [streamerScenePacks],
+  )
+  const activeScenePackItems = useMemo(
+    () =>
+      (activeScenePack?.items ?? [])
+        .slice()
+        .sort((a, b) => a.sortOrder - b.sortOrder),
+    [activeScenePack],
+  )
+  const activeScenePackImage =
+    activeScenePackItems.length > 0
+      ? activeScenePackItems[activeScenePackItemIndex % activeScenePackItems.length]?.imageUrl
       : null
+  const rotationWorlds = useMemo(
+    () =>
+      normalizeRotationWorldIds(selectedRotationWorldIds).flatMap((worldId) => {
+        const world = savedWorlds.find((item) => item.id === worldId)
+        return world ? [world] : []
+      }),
+    [savedWorlds, selectedRotationWorldIds],
+  )
+  const rotationBackgrounds = useMemo(
+    () => {
+      const rowsByUrl = new Map(streamerBackgrounds.map((item) => [item.public_url, item]))
+      return rotationWorlds.map((world, index) => {
+        const url = world.backgroundImage.trim()
+        const row = rowsByUrl.get(url)
+        return row ?? { id: `world:${world.id}`, public_url: url, sort_order: index }
+      })
+    },
+    [rotationWorlds, streamerBackgrounds],
+  )
+  const rotatedStreamerWorld =
+    rotationWorlds.length > 0 ? rotationWorlds[backgroundRotationIndex % rotationWorlds.length] : null
+  const rotatedStreamerBackground =
+    rotatedStreamerWorld?.backgroundImage ?? rotationBackgrounds[backgroundRotationIndex % rotationBackgrounds.length]?.public_url ?? null
   const activeBackgroundImage =
+    (manualPreviewActive ? currentGalleryAssets?.backgroundImage : null) ??
     rotatedStreamerBackground ??
+    activeScenePackImage ??
     moodAmbientLayer?.backgroundImage ??
     currentGalleryAssets?.backgroundImage ??
     presetWorld.backgroundImage
   const activeDepthMap =
-    moodAmbientLayer?.depthMap ?? currentGalleryAssets?.depthMap ?? presetWorld.depthMap
-  const activeParticlePreset = resolveParticlePreset(selectedVisualEffect, presetWorld.particlePreset)
+    rotatedStreamerWorld?.depthMap ??
+    moodAmbientLayer?.depthMap ??
+    currentGalleryAssets?.depthMap ??
+    presetWorld.depthMap
+  const activeParticlePreset = resolveParticlePreset(
+    selectedVisualEffect,
+    rotatedStreamerWorld?.particlePreset ?? presetWorld.particlePreset,
+  )
   const activeShaderPreset = moodAmbientLayer?.shaderPreset ?? presetWorld.shaderPreset
   const activeAmbienceAudio = moodAmbientLayer?.ambienceAudio ?? presetWorld.ambienceAudio
   const activeMusicStreamUrl = music.activeMusicStreamUrl
@@ -149,7 +281,8 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   const ambienceVolume = Math.round(musicVolume * AMBIENCE_VOLUME_RATIO)
   const activeAmbientLayer = useMemo<AmbientWorldLayer>(
     () => ({
-      key: moodAmbientLayer?.key ?? [
+      key: [
+        moodAmbientLayer?.key ?? 'custom',
         currentWorldId,
         activeBackgroundImage,
         activeDepthMap,
@@ -184,6 +317,10 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     }
   }, [])
 
+  useEffect(() => {
+    selectedRotationWorldIdsRef.current = selectedRotationWorldIds
+  }, [selectedRotationWorldIds])
+
   const loadMoodWorld = useCallback(
     (moodId: MusicMoodId) => {
       music.setPrimaryMood(moodId)
@@ -191,6 +328,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
       setActiveWorldId(null)
       setCurrentWorldId(moodId)
       setCurrentGalleryAssets(null)
+      setManualPreviewActive(false)
     },
     [music],
   )
@@ -208,12 +346,135 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     }
   }, [music.activeMusicStreamUrl, musicVolume])
 
+  // Unlock audio on the very first user interaction anywhere on the page,
+  // so music starts without requiring a click on the specific unlock button.
+  useEffect(() => {
+    if (isAudioUnlocked) return
+    const unlock = () => { handleUnlockAudio() }
+    document.addEventListener('pointerdown', unlock, { once: true, passive: true })
+    return () => { document.removeEventListener('pointerdown', unlock) }
+  }, [isAudioUnlocked, handleUnlockAudio])
+
   const showPortraitRotateGate = !isStreamMode && isClientMounted && isMobilePortrait
   const showMobileLandscapeUi = isClientMounted && (!isMobile || isLandscape)
   const showMusicOnboarding = !isStreamMode && showMobileLandscapeUi && !music.musicOnboarded
   const showCockpit = !isStreamMode && showMobileLandscapeUi && music.musicOnboarded
   const showStreamLayout = isStreamMode && music.musicOnboarded
-  const isStreamer = Boolean(userProfile?.isStreamer)
+  const shouldKeepMusicAlive = showMusicOnboarding || showCockpit || showStreamLayout
+
+  useEffect(() => {
+    if (!shouldKeepMusicAlive || !music.activeMusicStreamUrl) return
+    if (isMusicPlaying) return
+
+    // Live-broadcast requirement: keep music continuously alive.
+    setIsAudioUnlocked(true)
+    setIsMusicPlaying(true)
+    primeStreamAudio(music.activeMusicStreamUrl, musicVolume)
+  }, [
+    shouldKeepMusicAlive,
+    music.activeMusicStreamUrl,
+    isMusicPlaying,
+    musicVolume,
+  ])
+
+  useEffect(() => {
+    if (isStreamMode || music.musicOnboarded || !showMusicOnboarding) return
+    if (firstVisitIntroPlayedRef.current) return
+
+    firstVisitIntroPlayedRef.current = true
+    const initialMood = music.primaryMood ?? 'deep-night'
+    setIsAudioUnlocked(true)
+    setIsMusicPlaying(true)
+    if (music.activeMusicStreamUrl) {
+      primeStreamAudio(music.activeMusicStreamUrl, musicVolume)
+    }
+    let retryTimer: number | null = null
+    void (async () => {
+      const played = await triggerGreeting({
+        moodId: initialMood,
+        stationName: music.currentStation?.name,
+        sessionType: 'enter',
+        force: true,
+      })
+      if (played) return
+
+      // First-visit reliability: retry exactly once after 2s when the initial
+      // attempt was skipped (e.g. another line was in-flight at the same time).
+      retryTimer = window.setTimeout(() => {
+        void triggerGreeting({
+          moodId: initialMood,
+          stationName: music.currentStation?.name,
+          sessionType: 'enter',
+          force: true,
+        })
+      }, 2000)
+    })()
+
+    return () => {
+      if (retryTimer !== null) {
+        window.clearTimeout(retryTimer)
+      }
+    }
+  }, [
+    isStreamMode,
+    music.musicOnboarded,
+    showMusicOnboarding,
+    music.primaryMood,
+    music.activeMusicStreamUrl,
+    music.currentStation?.name,
+    musicVolume,
+    triggerGreeting,
+  ])
+
+  const hasCreatorTools = Boolean(userProfile?.hasCreatorTools)
+  const localStreamerBackgroundsKey = authUser?.id
+    ? `${LOCAL_STREAMER_BACKGROUNDS_KEY_PREFIX}:${authUser.id}`
+    : null
+
+  const readLocalStreamerBackgrounds = useCallback(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      const keys = [
+        localStreamerBackgroundsKey,
+        LOCAL_STREAMER_BACKGROUNDS_FALLBACK_KEY,
+      ].filter((key): key is string => Boolean(key))
+      const items = keys.flatMap((key) => {
+        const raw = window.localStorage.getItem(key)
+        if (!raw) return []
+        const parsed = JSON.parse(raw) as Array<{ id: string; public_url: string; sort_order: number }>
+        if (!Array.isArray(parsed)) return []
+        return parsed.filter(
+          (item): item is { id: string; public_url: string; sort_order: number } =>
+            Boolean(
+              item &&
+                typeof item.id === 'string' &&
+                typeof item.public_url === 'string' &&
+                typeof item.sort_order === 'number',
+            ),
+        )
+      })
+      return normalizeStreamerBackgrounds(items)
+    } catch {
+      return []
+    }
+  }, [localStreamerBackgroundsKey])
+
+  const writeLocalStreamerBackgrounds = useCallback(
+    (items: Array<{ id: string; public_url: string; sort_order: number }>) => {
+      if (typeof window === 'undefined') return
+      try {
+        const normalized = normalizeStreamerBackgrounds(items)
+        const serialized = JSON.stringify(normalized)
+        window.localStorage.setItem(LOCAL_STREAMER_BACKGROUNDS_FALLBACK_KEY, serialized)
+        if (localStreamerBackgroundsKey) {
+          window.localStorage.setItem(localStreamerBackgroundsKey, serialized)
+        }
+      } catch {
+        // Ignore local storage write errors in private/incognito contexts.
+      }
+    },
+    [localStreamerBackgroundsKey],
+  )
   const preferCreditPack = regionPreference === 'cn' || isCnHost
   const effectiveOverlaySettings = useMemo(() => {
     const settings = normalizeStreamerSettings(streamerSettings)
@@ -227,57 +488,6 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     }
     return settings.overlay
   }, [language, streamerSettings])
-
-  const handleCompanionEvent = useCallback(
-    (event: CompanionEvent) => {
-      const moodId = music.primaryMood ?? 'deep-night'
-      if (event.type === 'pomodoro') {
-        if (event.phase === 'idle') return
-        if (event.previousPhase === 'idle' && event.phase === 'focus') {
-          void speakLine({ moodId, sessionType: 'pomodoro', context: { phase: 'focus' }, force: true })
-        } else if (event.previousPhase === 'focus' && event.phase !== 'focus') {
-          void speakLine({ moodId, sessionType: 'pomodoro', context: { phase: event.phase }, force: true })
-        }
-        return
-      }
-      if (event.type === 'alarm') {
-        void speakLine({
-          moodId,
-          sessionType: 'alarm',
-          context: { alarmLabel: event.alarm.label || 'Alarm' },
-          force: true,
-        })
-      }
-    },
-    [music.primaryMood, speakLine],
-  )
-
-  const handleCalendarReminder = useCallback(
-    (context: { eventTitle?: string; minutesUntil?: number }) => {
-      const moodId = music.primaryMood ?? 'deep-night'
-      void speakLine({
-        moodId,
-        sessionType: 'calendar',
-        context,
-        force: true,
-      })
-    },
-    [music.primaryMood, speakLine],
-  )
-
-  const companion = useCompanion({
-    cockpitActive: showCockpit,
-    onCompanionEvent: handleCompanionEvent,
-    isDjBusy: isBusy,
-  })
-
-  const calendar = useGoogleCalendar({
-    cockpitActive: showCockpit,
-    isAuthenticated: Boolean(authUser),
-    accessToken,
-    onCalendarReminder: handleCalendarReminder,
-    isDjBusy: isBusy,
-  })
 
   const refreshAccountData = useCallback(async () => {
     if (!supabase) return
@@ -313,7 +523,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     loadMoodWorld(primaryMood)
     setIsAudioUnlocked(true)
     setIsMusicPlaying(true)
-    primeStreamAudio(buildStreamPlaybackUrl(initial), musicVolume)
+    primeStreamAudio(buildStreamPlaybackUrl(initial, resolveInitialProxyTier()), musicVolume)
   }, [
     isStreamMode,
     loadMoodWorld,
@@ -323,32 +533,119 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   ])
 
   useEffect(() => {
-    if (!accessToken || !isStreamer) return
+    if (!accessToken || !hasCreatorTools) return
     void (async () => {
-      const [settings, backgrounds] = await Promise.all([
-        fetchStreamerSettings(accessToken),
-        fetchStreamerBackgrounds(accessToken),
-      ])
-      if (settings) {
-        setStreamerSettings(normalizeStreamerSettings(settings as StreamerSettings))
-      }
-      if (backgrounds.length > 0) {
-        setStreamerBackgrounds(backgrounds)
-      } else {
-        setStreamerBackgrounds([])
+      try {
+        const [settings, backgrounds, packs] = await Promise.all([
+          fetchStreamerSettings(accessToken),
+          fetchStreamerBackgrounds(accessToken),
+          fetchStreamerScenePacks(accessToken),
+        ])
+        if (settings) {
+          setStreamerSettings(normalizeStreamerSettings(settings as StreamerSettings))
+        }
+
+        const localBackgrounds = readLocalStreamerBackgrounds()
+        setStreamerBackgrounds((current) => {
+          const next = normalizeStreamerBackgrounds([
+            ...current,
+            ...localBackgrounds,
+            ...backgrounds,
+          ])
+          writeLocalStreamerBackgrounds(next)
+          return next
+        })
+        setStreamerScenePacks(packs)
+        setActiveScenePackItemIndex(0)
+      } catch {
+        const localBackgrounds = readLocalStreamerBackgrounds()
+        setStreamerBackgrounds((current) => normalizeStreamerBackgrounds([...current, ...localBackgrounds]))
       }
     })()
-  }, [accessToken, isStreamer])
+  }, [
+    accessToken,
+    hasCreatorTools,
+    readLocalStreamerBackgrounds,
+    writeLocalStreamerBackgrounds,
+  ])
 
   useEffect(() => {
-    if (streamerBackgrounds.length < 2) return
-    const minutes = streamerSettings.backgroundRotationMinutes
+    const restoreLocalBackgrounds = () => {
+      const localBackgrounds = readLocalStreamerBackgrounds()
+      const nextWorldIds = readStoredRotationWorldIds()
+      if (nextWorldIds.length > 0) {
+        selectedRotationWorldIdsRef.current = nextWorldIds
+        setSelectedRotationWorldIds(nextWorldIds)
+      }
+      if (localBackgrounds.length === 0) return
+      setStreamerBackgrounds((current) =>
+        normalizeStreamerBackgrounds([...current, ...localBackgrounds]),
+      )
+    }
+
+    restoreLocalBackgrounds()
+    window.addEventListener('focus', restoreLocalBackgrounds)
+    document.addEventListener('visibilitychange', restoreLocalBackgrounds)
+    return () => {
+      window.removeEventListener('focus', restoreLocalBackgrounds)
+      document.removeEventListener('visibilitychange', restoreLocalBackgrounds)
+    }
+  }, [readLocalStreamerBackgrounds])
+
+  useEffect(() => {
+    if (savedWorlds.length === 0 || selectedRotationWorldIds.length === 0) return
+    const myWorldIds = new Set(savedWorlds.map((world) => world.id))
+    const nextWorldIds = normalizeRotationWorldIds(
+      selectedRotationWorldIds.filter((id) => myWorldIds.has(id)),
+    )
+    if (nextWorldIds.length === selectedRotationWorldIds.length) return
+    selectedRotationWorldIdsRef.current = nextWorldIds
+    setSelectedRotationWorldIds(nextWorldIds)
+    writeStoredRotationWorldIds(nextWorldIds)
+    setBackgroundRotationIndex(0)
+  }, [savedWorlds, selectedRotationWorldIds])
+
+  useEffect(() => {
+    if (rotationWorlds.length === 0) {
+      setBackgroundRotationIndex(0)
+      return
+    }
+    setBackgroundRotationIndex((index) => index % rotationWorlds.length)
+  }, [rotationWorlds.length])
+
+  useEffect(() => {
+    const rotationCount = rotationWorlds.length
+    backgroundRotationLastTickRef.current = Date.now()
+    if (rotationCount < 2) return
+
+    const minutes = streamerSettings.backgroundRotationMinutes === 10 ? 10 : 5
     const intervalMs = minutes * 60 * 1000
     const timer = window.setInterval(() => {
-      setBackgroundRotationIndex((index) => (index + 1) % streamerBackgrounds.length)
-    }, intervalMs)
+      const now = Date.now()
+      if (now - backgroundRotationLastTickRef.current < intervalMs) return
+      backgroundRotationLastTickRef.current = now
+      setManualPreviewActive(false)
+      setBackgroundRotationIndex((index) => (index + 1) % rotationCount)
+    }, 1000)
+
     return () => window.clearInterval(timer)
-  }, [streamerBackgrounds, streamerSettings.backgroundRotationMinutes])
+  }, [rotationWorlds.length, streamerSettings.backgroundRotationMinutes])
+
+  useEffect(() => {
+    if (activeScenePackItems.length <= 1) return
+    const currentItem = activeScenePackItems[activeScenePackItemIndex % activeScenePackItems.length]
+    const delayMs = Math.max(15, currentItem?.durationSec ?? 120) * 1000
+    const timer = window.setTimeout(() => {
+      setActiveScenePackItemIndex((index) => {
+        if (activeScenePack?.playOrder === 'random') {
+          return Math.floor(Math.random() * activeScenePackItems.length)
+        }
+        const next = index + 1
+        return activeScenePack?.isLoop === false ? Math.min(next, activeScenePackItems.length - 1) : next % activeScenePackItems.length
+      })
+    }, delayMs)
+    return () => window.clearTimeout(timer)
+  }, [activeScenePack, activeScenePackItems, activeScenePackItemIndex])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -409,7 +706,6 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
 
   useEffect(() => {
     if (!music.musicOnboarded || !music.currentStation) return
-    setIsAudioUnlocked(true)
     setIsMusicPlaying(true)
   }, [music.musicOnboarded, music.currentStation])
 
@@ -513,6 +809,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     setIsMusicPlaying(true)
     setLeftPanelExpanded(false)
     setLeftDrawerOpen(false)
+    setManualPreviewActive(true)
   }, [])
 
   const handleDeleteWorld = useCallback(
@@ -579,6 +876,99 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     [getAccessToken, handleRequireAuth, preferCreditPack],
   )
 
+  const handleCreateStreamerScenePack = useCallback(
+    async (input: { name: string; moodId: MusicMoodId }) => {
+      const token = await getAccessToken()
+      if (!token) {
+        await handleRequireAuth()
+        return
+      }
+      try {
+        const pack = await createStreamerScenePack(token, {
+          name: input.name,
+          moodId: input.moodId,
+          playOrder: 'sequential',
+          isLoop: true,
+        })
+        setStreamerScenePacks((items) => [pack, ...items])
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Create scene pack failed'
+        window.alert(message)
+      }
+    },
+    [getAccessToken, handleRequireAuth],
+  )
+
+  const handleGenerateStreamerScenePack = useCallback(
+    async (packId: string, input: { prompt: string; count: number; durationSec: number }) => {
+      const token = await getAccessToken()
+      if (!token) {
+        await handleRequireAuth()
+        return
+      }
+      setIsScenePackGenerating(true)
+      try {
+        const result = await generateStreamerScenePackImages(token, packId, {
+          prompt: input.prompt,
+          count: input.count,
+          durationSec: input.durationSec,
+          particlePreset: selectedVisualEffect,
+        })
+        setUserProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                streamerMonthlyQuotaImages: result.usage.quotaImages,
+                streamerUsedImages: result.usage.usedImages,
+                streamerRemainingImages: result.usage.remainingImages,
+              }
+            : prev,
+        )
+        const packs = await fetchStreamerScenePacks(token)
+        setStreamerScenePacks(packs)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Generate scene pack images failed'
+        window.alert(message)
+      } finally {
+        setIsScenePackGenerating(false)
+      }
+    },
+    [getAccessToken, handleRequireAuth, selectedVisualEffect],
+  )
+
+  const handleActivateStreamerScenePack = useCallback(
+    async (packId: string) => {
+      const token = await getAccessToken()
+      if (!token) return
+      try {
+        await activateStreamerScenePack(token, packId)
+        const packs = await fetchStreamerScenePacks(token)
+        setStreamerScenePacks(packs)
+        setActiveScenePackItemIndex(0)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Activate scene pack failed'
+        window.alert(message)
+      }
+    },
+    [getAccessToken],
+  )
+
+  const handleDeleteStreamerScenePack = useCallback(
+    async (packId: string) => {
+      const token = await getAccessToken()
+      if (!token) return
+      try {
+        await deleteStreamerScenePack(token, packId)
+        setStreamerScenePacks((items) => items.filter((item) => item.id !== packId))
+        setActiveScenePackItemIndex(0)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Delete scene pack failed'
+        window.alert(message)
+      }
+    },
+    [getAccessToken],
+  )
+
   const handleUploadStreamerBackground = useCallback(
     async (file: File) => {
       const token = await getAccessToken()
@@ -589,9 +979,11 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
       setIsStreamerBackgroundUploading(true)
       try {
         const background = await uploadStreamerBackground(token, file)
-        setStreamerBackgrounds((items) =>
-          [...items, background].sort((a, b) => a.sort_order - b.sort_order),
-        )
+        const next = normalizeStreamerBackgrounds([...streamerBackgrounds, background])
+        setStreamerBackgrounds((items) => {
+          writeLocalStreamerBackgrounds(next)
+          return next
+        })
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Upload failed'
         window.alert(message)
@@ -599,23 +991,149 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
         setIsStreamerBackgroundUploading(false)
       }
     },
-    [getAccessToken, handleRequireAuth],
+    [getAccessToken, handleRequireAuth, streamerBackgrounds, writeLocalStreamerBackgrounds],
   )
 
   const handleDeleteStreamerBackground = useCallback(
     async (id: string) => {
       const token = await getAccessToken()
       if (!token) return
+      if (id.startsWith('local:')) {
+        setStreamerBackgrounds((items) => {
+          const next = normalizeStreamerBackgrounds(items.filter((item) => item.id !== id))
+          writeLocalStreamerBackgrounds(next)
+          return next
+        })
+        setBackgroundRotationIndex(0)
+        return
+      }
       try {
         await deleteStreamerBackground(token, id)
-        setStreamerBackgrounds((items) => items.filter((item) => item.id !== id))
+        setStreamerBackgrounds((items) => {
+          const next = normalizeStreamerBackgrounds(items.filter((item) => item.id !== id))
+          writeLocalStreamerBackgrounds(next)
+          return next
+        })
         setBackgroundRotationIndex(0)
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Delete failed'
+        if (isMissingStreamerTablesError(message)) {
+          setStreamerBackgrounds((items) => {
+            const next = normalizeStreamerBackgrounds(items.filter((item) => item.id !== id))
+            writeLocalStreamerBackgrounds(next)
+            return next
+          })
+          setBackgroundRotationIndex(0)
+          return
+        }
         window.alert(message)
       }
     },
-    [getAccessToken],
+    [getAccessToken, writeLocalStreamerBackgrounds],
+  )
+
+  const isWorldInStreamerRotation = useCallback(
+    (world: PublicGeneratedWorld) => selectedRotationWorldIds.includes(world.id),
+    [selectedRotationWorldIds],
+  )
+
+  const handleToggleWorldInStreamerRotation = useCallback(
+    async (world: PublicGeneratedWorld) => {
+      if (!hasCreatorTools) {
+        window.alert('此功能需要 Streamer 權限。')
+        return
+      }
+      const token = await getAccessToken()
+      if (!token) {
+        await handleRequireAuth()
+        return
+      }
+
+      const worldImageUrl = world.backgroundImage.trim()
+      const existingItems = streamerBackgrounds.filter((item) => item.public_url === worldImageUrl)
+      const currentSelectedIds = selectedRotationWorldIdsRef.current
+      const toggledOff = currentSelectedIds.includes(world.id)
+      const nextSelectedIds = toggledOff
+        ? normalizeRotationWorldIds(currentSelectedIds.filter((id) => id !== world.id))
+        : normalizeRotationWorldIds([...currentSelectedIds, world.id])
+
+      if (!toggledOff && currentSelectedIds.length >= STREAMER_ROTATION_MAX) {
+        window.alert(`我的圖已勾選 ${STREAMER_ROTATION_MAX} 張輪播圖，請先取消一張再加入。`)
+        return
+      }
+
+      selectedRotationWorldIdsRef.current = nextSelectedIds
+      setSelectedRotationWorldIds(nextSelectedIds)
+      writeStoredRotationWorldIds(nextSelectedIds)
+
+      if (toggledOff) {
+        setStreamerBackgrounds((items) => {
+          const next = normalizeStreamerBackgrounds(
+            items.filter((item) => item.public_url !== worldImageUrl),
+          )
+          writeLocalStreamerBackgrounds(next)
+          return next
+        })
+        setBackgroundRotationIndex((index) => {
+          if (nextSelectedIds.length <= 0) return 0
+          return Math.min(index, nextSelectedIds.length - 1)
+        })
+        setManualPreviewActive(false)
+
+        void Promise.allSettled(
+          existingItems
+            .filter((item) => !item.id.startsWith('local:') && !item.id.startsWith('world:'))
+            .map((item) => deleteStreamerBackground(token, item.id)),
+        )
+        return
+      }
+
+      try {
+        const background = await addGeneratedStreamerBackground(token, worldImageUrl)
+        const next = normalizeStreamerBackgrounds([...rotationBackgrounds, background])
+        setStreamerBackgrounds((items) => {
+          writeLocalStreamerBackgrounds(next)
+          return next
+        })
+        setBackgroundRotationIndex(Math.max(0, nextSelectedIds.length - 1))
+        setManualPreviewActive(false)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : '加入輪播失敗'
+        if (message.toLowerCase().includes('maximum') && message.includes(String(STREAMER_ROTATION_MAX))) {
+          setBackgroundRotationIndex(Math.max(0, nextSelectedIds.length - 1))
+          setManualPreviewActive(false)
+          return
+        }
+        if (isMissingStreamerTablesError(message)) {
+          const localAdded = {
+            id: `local:${crypto.randomUUID()}`,
+            public_url: worldImageUrl,
+            sort_order: rotationBackgrounds.length,
+          }
+          const next = normalizeStreamerBackgrounds([
+            ...rotationBackgrounds,
+            localAdded,
+          ])
+          setStreamerBackgrounds((items) => {
+            writeLocalStreamerBackgrounds(next)
+            return next
+          })
+          setBackgroundRotationIndex(Math.max(0, nextSelectedIds.length - 1))
+          setManualPreviewActive(false)
+          return
+        }
+        window.alert(message)
+      }
+    },
+    [
+      getAccessToken,
+      handleRequireAuth,
+      hasCreatorTools,
+      rotationBackgrounds,
+      selectedRotationWorldIds,
+      streamerBackgrounds,
+      writeLocalStreamerBackgrounds,
+    ],
   )
 
   const handleStreamerRotationChange = useCallback(
@@ -636,7 +1154,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   )
 
   const handleDownload = useCallback(async () => {
-    if (!userProfile?.isVip && !userProfile?.isStreamer) {
+    if (!userProfile?.hasDownloadAccess) {
       window.alert('下載功能僅限 VIP / Streamer Pass 會員使用，請先升級。')
       return
     }
@@ -672,8 +1190,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     currentWorldId,
     getAccessToken,
     handleRequireAuth,
-    userProfile?.isStreamer,
-    userProfile?.isVip,
+    userProfile?.hasDownloadAccess,
   ])
 
   useEffect(() => {
@@ -699,7 +1216,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
       loadMoodWorld(primaryMood)
       setIsAudioUnlocked(true)
       setIsMusicPlaying(true)
-      primeStreamAudio(buildStreamPlaybackUrl(initial), musicVolume)
+      primeStreamAudio(buildStreamPlaybackUrl(initial, resolveInitialProxyTier()), musicVolume)
       resetGreetSchedule()
       greetTriggeredRef.current = true
       markIntervalSpoken()
@@ -734,6 +1251,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
       setCurrentWorldId(nextWorldId)
       setCurrentGalleryAssets({ backgroundImage, depthMap })
       setWorldOverrideActive(true)
+      setManualPreviewActive(true)
       setIsAudioUnlocked(true)
       music.loadStationForWorld(nextWorldId)
       setIsMusicPlaying(true)
@@ -754,6 +1272,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
       })
       setSelectedVisualEffect(normalizeVisualEffectScene(world.particlePreset))
       setWorldOverrideActive(true)
+      setManualPreviewActive(true)
       setIsAudioUnlocked(true)
       const moodForStation =
         world.moodId && isMusicMoodId(world.moodId)
@@ -777,6 +1296,18 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
       }
       try {
         await publishWorld(token, worldId, { isPublic })
+        setSavedWorlds((worlds) =>
+          worlds.map((world) =>
+            world.id === worldId
+              ? {
+                  ...world,
+                  isPrivate: !isPublic,
+                  publishedAt: isPublic ? new Date().toISOString() : null,
+                }
+              : world,
+          ),
+        )
+        setCommunityRefreshKey((key) => key + 1)
         void refreshAccountData()
       } catch (error) {
         window.alert(error instanceof Error ? error.message : 'Publish failed')
@@ -888,10 +1419,12 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
         })
         setSelectedVisualEffect(normalizeVisualEffectScene(res.world.particlePreset))
         setWorldOverrideActive(true)
+        setManualPreviewActive(true)
         setIsAudioUnlocked(true)
         setIsMusicPlaying(true)
         setLeftPanelExpanded(false)
         setLeftDrawerOpen(false)
+
         void refreshAccountData()
       } catch (error) {
         console.error('[handleGenerate] Unexpected error:', error)
@@ -899,7 +1432,13 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
         setIsGenerating(false)
       }
     },
-    [authUser, handleRequireAuth, refreshAccountData, selectedVisualEffect, supabase],
+    [
+      authUser,
+      handleRequireAuth,
+      refreshAccountData,
+      selectedVisualEffect,
+      supabase,
+    ],
   )
 
   useEffect(() => {
@@ -995,6 +1534,12 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     speakLine,
   ])
 
+  const streamerQuota = {
+    total: userProfile?.streamerMonthlyQuotaImages ?? 300,
+    used: userProfile?.streamerUsedImages ?? 0,
+    remaining: userProfile?.streamerRemainingImages ?? (userProfile?.streamerMonthlyQuotaImages ?? 300),
+  }
+
   return {
     videoRef,
     isGenerating,
@@ -1022,11 +1567,22 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     showCockpit,
     showStreamLayout,
     isStreamMode,
-    isStreamer,
+    isStreamer: hasCreatorTools,
+    hasCreatorTools,
     streamerBackgrounds,
     isStreamerBackgroundUploading,
+    streamerScenePacks,
+    isScenePackGenerating,
+    streamerQuota,
+    communityRefreshKey,
+    handleCreateStreamerScenePack,
+    handleGenerateStreamerScenePack,
+    handleActivateStreamerScenePack,
+    handleDeleteStreamerScenePack,
     handleUploadStreamerBackground,
     handleDeleteStreamerBackground,
+    isWorldInStreamerRotation,
+    handleToggleWorldInStreamerRotation,
     handleStreamerRotationChange,
     streamerSettings,
     effectiveOverlaySettings,
@@ -1064,7 +1620,5 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     setDjVoiceEnabled: setVoiceEnabled,
     setDjIntervalEnabled: setIntervalEnabled,
     dismissAiDj,
-    companion,
-    calendar,
   }
 }

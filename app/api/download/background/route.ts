@@ -3,7 +3,7 @@ import {
   createSupabaseAdminClient,
   ensureUserProfile,
   getAuthenticatedUser,
-  hasStreamerAccess,
+  hasDownloadAccess,
 } from '@/lib/supabase-server'
 
 export const runtime = 'nodejs'
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     const supabase = createSupabaseAdminClient()
     const profile = await ensureUserProfile(supabase, auth.user)
 
-    if (!hasStreamerAccess(profile)) {
+    if (!hasDownloadAccess(profile)) {
       return jsonError('下載功能僅限 VIP / Streamer Pass 會員。', 403)
     }
 

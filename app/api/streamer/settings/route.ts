@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import {
+  hasCreatorToolsAccess,
   createSupabaseAdminClient,
   ensureUserProfile,
   getAuthenticatedUser,
-  hasStreamerAccess,
 } from '@/lib/supabase-server'
 import { DEFAULT_STREAMER_SETTINGS, normalizeStreamerSettings } from '@/lib/streamer-settings'
 
@@ -17,7 +17,10 @@ export async function GET(req: Request) {
   try {
     const auth = await getAuthenticatedUser(req)
     const supabase = createSupabaseAdminClient()
-    await ensureUserProfile(supabase, auth.user)
+    const profile = await ensureUserProfile(supabase, auth.user)
+    if (!hasCreatorToolsAccess(profile)) {
+      return jsonError('Streamer Pass required', 403)
+    }
 
     const { data } = await supabase
       .from('streamer_settings')
@@ -48,22 +51,35 @@ export async function PUT(req: Request) {
     const supabase = createSupabaseAdminClient()
     const profile = await ensureUserProfile(supabase, auth.user)
 
-    if (!hasStreamerAccess(profile)) {
+    if (!hasCreatorToolsAccess(profile)) {
       return jsonError('Streamer Pass required', 403)
     }
 
     const body = (await req.json()) as Partial<typeof DEFAULT_STREAMER_SETTINGS>
     const settings = normalizeStreamerSettings(body)
 
-    const { error } = await supabase.from('streamer_settings').upsert(
-      {
-        user_id: auth.user.id,
-        overlay: settings.overlay,
-        background_rotation_minutes: settings.backgroundRotationMinutes,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id' },
-    )
+    const payloadWithUpdatedAt = {
+      user_id: auth.user.id,
+      overlay: settings.overlay,
+      background_rotation_minutes: settings.backgroundRotationMinutes,
+      updated_at: new Date().toISOString(),
+    }
+    let { error } = await supabase
+      .from('streamer_settings')
+      .upsert(payloadWithUpdatedAt, { onConflict: 'user_id' })
+
+    // Backward compatibility: some old streamer_settings tables may not have updated_at.
+    if (error && String(error.message).includes('updated_at')) {
+      const fallback = await supabase.from('streamer_settings').upsert(
+        {
+          user_id: auth.user.id,
+          overlay: settings.overlay,
+          background_rotation_minutes: settings.backgroundRotationMinutes,
+        },
+        { onConflict: 'user_id' },
+      )
+      error = fallback.error
+    }
 
     if (error) throw error
 

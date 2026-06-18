@@ -5,6 +5,13 @@ export type CommunityStrings = {
   tabNewest: string
   tabFollowing: string
   tabOfficial: string
+  tabMine: string
+  myImagesTitle: string
+  noMyImages: string
+  rotationSelect: string
+  rotationSelected: string
+  rotationStreamerOnly: string
+  rotationStats: string
   publish: string
   unpublish: string
   publishConfirm: string
@@ -30,6 +37,13 @@ const EN: CommunityStrings = {
   tabNewest: 'Newest',
   tabFollowing: 'Following',
   tabOfficial: 'Official',
+  tabMine: 'My Images',
+  myImagesTitle: 'My Generated Images',
+  noMyImages: 'No generated images yet',
+  rotationSelect: 'Add to rotation',
+  rotationSelected: 'In rotation',
+  rotationStreamerOnly: 'Rotation selection is Streamer-only',
+  rotationStats: 'Selected for rotation: {selected}/{max}',
   publish: 'Publish to gallery',
   unpublish: 'Make private',
   publishConfirm: 'Anyone will be able to enter your scene. Continue?',
@@ -56,6 +70,13 @@ const ZH_TW: CommunityStrings = {
   tabNewest: '最新',
   tabFollowing: '關注',
   tabOfficial: '官方',
+  tabMine: '我的圖',
+  myImagesTitle: '我的生成圖片',
+  noMyImages: '目前還沒有生成圖片',
+  rotationSelect: '加入輪播',
+  rotationSelected: '輪播中',
+  rotationStreamerOnly: '輪播勾選僅限 Streamer',
+  rotationStats: '已勾選輪播：{selected}/{max}',
   publish: '公開到畫廊',
   unpublish: '改為私人',
   publishConfirm: '公開後，任何人都可進入你的場景。確定要公開嗎？',
@@ -82,6 +103,13 @@ const ZH_CN: CommunityStrings = {
   tabNewest: '最新',
   tabFollowing: '关注',
   tabOfficial: '官方',
+  tabMine: '我的图',
+  myImagesTitle: '我的生成图片',
+  noMyImages: '目前还没有生成图片',
+  rotationSelect: '加入轮播',
+  rotationSelected: '轮播中',
+  rotationStreamerOnly: '轮播勾选仅限 Streamer',
+  rotationStats: '已勾选轮播：{selected}/{max}',
   publish: '公开到画廊',
   unpublish: '改为私密',
   publishConfirm: '公开后，任何人都可进入你的场景。确定要公开吗？',
@@ -108,6 +136,13 @@ const JA: CommunityStrings = {
   tabNewest: '新着',
   tabFollowing: 'フォロー中',
   tabOfficial: '公式',
+  tabMine: 'マイ画像',
+  myImagesTitle: '自分の生成画像',
+  noMyImages: '生成画像はまだありません',
+  rotationSelect: 'ローテーションに追加',
+  rotationSelected: 'ローテーション中',
+  rotationStreamerOnly: 'ローテーション選択は Streamer 限定',
+  rotationStats: 'ローテーション選択済み：{selected}/{max}',
   publish: 'ギャラリーに公開',
   unpublish: '非公開にする',
   publishConfirm: '公開すると誰でもシーンに入れます。続けますか？',
@@ -128,16 +163,75 @@ const JA: CommunityStrings = {
   loginToInteract: 'いいね・保存・フォローにはログインが必要です',
 }
 
-const KO: CommunityStrings = { ...JA, tabFeatured: '추천', tabNewest: '최신', tabFollowing: '팔로잉', tabOfficial: '공식' }
-const ES: CommunityStrings = { ...EN, tabFeatured: 'Destacados', tabNewest: 'Recientes', tabFollowing: 'Siguiendo', tabOfficial: 'Oficial' }
-const FR: CommunityStrings = { ...EN, tabFeatured: 'À la une', tabNewest: 'Récents', tabFollowing: 'Abonnements', tabOfficial: 'Officiel' }
-const DE: CommunityStrings = { ...EN, tabFeatured: 'Empfohlen', tabNewest: 'Neu', tabFollowing: 'Folge ich', tabOfficial: 'Offiziell' }
+const KO: CommunityStrings = {
+  ...JA,
+  tabFeatured: '추천',
+  tabNewest: '최신',
+  tabFollowing: '팔로잉',
+  tabOfficial: '공식',
+  tabMine: '내 이미지',
+  myImagesTitle: '내 생성 이미지',
+  noMyImages: '생성된 이미지가 아직 없습니다',
+  rotationSelect: '로테이션 추가',
+  rotationSelected: '로테이션 중',
+  rotationStreamerOnly: '로테이션 선택은 Streamer 전용',
+  rotationStats: '로테이션 선택됨: {selected}/{max}',
+}
+const ES: CommunityStrings = {
+  ...EN,
+  tabFeatured: 'Destacados',
+  tabNewest: 'Recientes',
+  tabFollowing: 'Siguiendo',
+  tabOfficial: 'Oficial',
+  tabMine: 'Mis imágenes',
+  myImagesTitle: 'Mis imágenes generadas',
+  noMyImages: 'Aún no hay imágenes generadas',
+  rotationSelect: 'Añadir a rotación',
+  rotationSelected: 'En rotación',
+  rotationStreamerOnly: 'La selección de rotación es solo para Streamer',
+  rotationStats: 'Seleccionadas para rotación: {selected}/{max}',
+}
+const FR: CommunityStrings = {
+  ...EN,
+  tabFeatured: 'À la une',
+  tabNewest: 'Récents',
+  tabFollowing: 'Abonnements',
+  tabOfficial: 'Officiel',
+  tabMine: 'Mes images',
+  myImagesTitle: 'Mes images générées',
+  noMyImages: 'Aucune image générée pour le moment',
+  rotationSelect: 'Ajouter à la rotation',
+  rotationSelected: 'Dans la rotation',
+  rotationStreamerOnly: 'La sélection de rotation est réservée aux Streamer',
+  rotationStats: 'Sélectionnées pour la rotation : {selected}/{max}',
+}
+const DE: CommunityStrings = {
+  ...EN,
+  tabFeatured: 'Empfohlen',
+  tabNewest: 'Neu',
+  tabFollowing: 'Folge ich',
+  tabOfficial: 'Offiziell',
+  tabMine: 'Meine Bilder',
+  myImagesTitle: 'Meine generierten Bilder',
+  noMyImages: 'Noch keine generierten Bilder',
+  rotationSelect: 'Zur Rotation hinzufügen',
+  rotationSelected: 'In Rotation',
+  rotationStreamerOnly: 'Rotationsauswahl nur für Streamer',
+  rotationStats: 'Für Rotation ausgewählt: {selected}/{max}',
+}
 const TH: CommunityStrings = {
   ...EN,
   tabFeatured: 'แนะนำ',
   tabNewest: 'ล่าสุด',
   tabFollowing: 'กำลังติดตาม',
   tabOfficial: 'ทางการ',
+  tabMine: 'รูปของฉัน',
+  myImagesTitle: 'รูปที่ฉันสร้าง',
+  noMyImages: 'ยังไม่มีรูปที่สร้าง',
+  rotationSelect: 'เพิ่มเข้าวนภาพ',
+  rotationSelected: 'อยู่ในวนภาพ',
+  rotationStreamerOnly: 'การเลือกวนภาพเฉพาะ Streamer',
+  rotationStats: 'เลือกสำหรับวนภาพ: {selected}/{max}',
   publish: 'เผยแพร่ในแกลเลอรี',
   unpublish: 'ตั้งเป็นส่วนตัว',
   coFocus: 'โฟกัสร่วม',
@@ -152,6 +246,13 @@ const VI: CommunityStrings = {
   tabNewest: 'Mới nhất',
   tabFollowing: 'Đang theo dõi',
   tabOfficial: 'Chính thức',
+  tabMine: 'Ảnh của tôi',
+  myImagesTitle: 'Ảnh đã tạo của tôi',
+  noMyImages: 'Chưa có ảnh đã tạo',
+  rotationSelect: 'Thêm vào luân phiên',
+  rotationSelected: 'Đang luân phiên',
+  rotationStreamerOnly: 'Chọn luân phiên chỉ dành cho Streamer',
+  rotationStats: 'Đã chọn luân phiên: {selected}/{max}',
   publish: 'Xuất bản lên thư viện',
   unpublish: 'Đặt riêng tư',
   coFocus: 'Đồng tập trung',

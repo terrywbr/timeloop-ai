@@ -1,28 +1,56 @@
-const CORE_BILLING_ENV_VARS = [
-  'LEMON_SQUEEZY_API_KEY',
-  'LEMON_SQUEEZY_STORE_ID',
-  'LEMON_SQUEEZY_VIP_VARIANT_ID',
-] as const
+const CORE_BILLING_ENV_VARS = ['LEMON_SQUEEZY_API_KEY', 'LEMON_SQUEEZY_STORE_ID'] as const
 
 const CREDIT_PACK_ENV_VARS = ['LEMON_SQUEEZY_CREDIT_PACK_VARIANT_ID'] as const
 
 export type CheckoutProductKind = 'vip' | 'streamer' | 'credits'
 
-export function getMissingBillingEnvVars(): string[] {
-  const missing: string[] = CORE_BILLING_ENV_VARS.filter((name) => !process.env[name]?.trim())
-  const hasAnyCreditPack = CREDIT_PACK_ENV_VARS.some((name) => Boolean(process.env[name]?.trim()))
-  if (!hasAnyCreditPack) {
-    missing.push('LEMON_SQUEEZY_CREDIT_PACK_VARIANT_ID')
+function isEnvSet(name: string) {
+  return Boolean(process.env[name]?.trim())
+}
+
+export function getMissingBillingCoreEnvVars(): string[] {
+  return CORE_BILLING_ENV_VARS.filter((name) => !isEnvSet(name))
+}
+
+export function getMissingCheckoutEnvVars(kind: CheckoutProductKind): string[] {
+  const missing: string[] = [...getMissingBillingCoreEnvVars()]
+  if (kind === 'vip' && !isEnvSet('LEMON_SQUEEZY_VIP_VARIANT_ID')) {
+    missing.push('LEMON_SQUEEZY_VIP_VARIANT_ID')
+  }
+  if (kind === 'streamer' && !isEnvSet('LEMON_SQUEEZY_STREAMER_VARIANT_ID')) {
+    missing.push('LEMON_SQUEEZY_STREAMER_VARIANT_ID')
+  }
+  if (kind === 'credits') {
+    const hasAnyCreditPack = CREDIT_PACK_ENV_VARS.some((name) => isEnvSet(name))
+    if (!hasAnyCreditPack) {
+      missing.push('LEMON_SQUEEZY_CREDIT_PACK_VARIANT_ID')
+    }
   }
   return missing
 }
 
+export function getMissingBillingEnvVars(): string[] {
+  return getMissingBillingCoreEnvVars()
+}
+
 export function isBillingConfigured() {
-  return getMissingBillingEnvVars().length === 0
+  return getMissingBillingCoreEnvVars().length === 0
+}
+
+export function isVipCheckoutConfigured() {
+  return getMissingCheckoutEnvVars('vip').length === 0
 }
 
 export function isStreamerCheckoutConfigured() {
-  return Boolean(process.env.LEMON_SQUEEZY_STREAMER_VARIANT_ID?.trim())
+  return getMissingCheckoutEnvVars('streamer').length === 0
+}
+
+export function isCreditsCheckoutConfigured() {
+  return getMissingCheckoutEnvVars('credits').length === 0
+}
+
+export function isCheckoutConfigured(kind: CheckoutProductKind) {
+  return getMissingCheckoutEnvVars(kind).length === 0
 }
 
 export function billingNotConfiguredMessage() {

@@ -15,16 +15,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
-  Plus,
-  Layers,
 } from 'lucide-react'
 import LanguageSelector from '@/components/language-selector'
 import GoogleSignInButton from '@/components/google-sign-in-button'
-import CompanionPanel from '@/components/companion/companion-panel'
-import type { useCompanion } from '@/hooks/use-companion'
-import type { useGoogleCalendar } from '@/hooks/use-google-calendar'
 import { useLanguage } from '@/lib/language-context'
-import { getCommunityStrings } from '@/lib/community-i18n'
 import type { RadioStation } from '@/lib/radio-station'
 import {
   exitAppFullscreen,
@@ -38,8 +32,6 @@ import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import type { VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
 import { VISUAL_EFFECT_SCENE_KEYS } from '@/lib/timeloop/world-resolver'
 import MembershipPanel from '@/components/billing/membership-panel'
-import StreamerBackgroundsPanel from '@/components/stream/streamer-backgrounds-panel'
-import type { StreamerBackgroundItem } from '@/components/stream/streamer-backgrounds-panel'
 
 export interface MobileControlContentProps {
   videoRef: React.RefObject<VideoBackgroundRef | null>
@@ -62,8 +54,6 @@ export interface MobileControlContentProps {
   onDjVoiceEnabledChange: (enabled: boolean) => void
   djIntervalEnabled: boolean
   onDjIntervalEnabledChange: (enabled: boolean) => void
-  companion: ReturnType<typeof useCompanion>
-  calendar: ReturnType<typeof useGoogleCalendar>
   isMusicPlaying: boolean
   onMusicPlayingChange: (playing: boolean) => void
   musicVolume: number
@@ -75,6 +65,8 @@ export interface MobileControlContentProps {
   onDeleteWorld: (worldId: string) => void
   onRenameWorld: (worldId: string, title: string) => void
   onPublishWorld: (worldId: string, isPublic: boolean) => void | Promise<void>
+  onToggleWorldInRotation?: (world: PublicGeneratedWorld) => void | Promise<void>
+  isWorldInRotation?: (world: PublicGeneratedWorld) => boolean
   onCheckout: (kind: CheckoutKind) => void
   onDownload: () => void
   preferCreditPack: boolean
@@ -82,12 +74,6 @@ export interface MobileControlContentProps {
   cnWechatSupportId?: string
   selectedVisualEffect: VisualEffectSceneKey
   onVisualEffectChange: (scene: VisualEffectSceneKey) => void
-  streamerBackgrounds?: StreamerBackgroundItem[]
-  isStreamerBackgroundUploading?: boolean
-  streamerRotationMinutes?: 5 | 10
-  onUploadStreamerBackground?: (file: File) => void | Promise<void>
-  onDeleteStreamerBackground?: (id: string) => void | Promise<void>
-  onStreamerRotationChange?: (minutes: 5 | 10) => void | Promise<void>
 }
 
 export default function MobileControlContent({
@@ -111,8 +97,6 @@ export default function MobileControlContent({
   onDjVoiceEnabledChange,
   djIntervalEnabled,
   onDjIntervalEnabledChange,
-  companion,
-  calendar,
   isMusicPlaying,
   onMusicPlayingChange: setIsMusicPlaying,
   musicVolume,
@@ -124,6 +108,8 @@ export default function MobileControlContent({
   onDeleteWorld,
   onRenameWorld,
   onPublishWorld,
+  onToggleWorldInRotation,
+  isWorldInRotation,
   onCheckout,
   onDownload,
   preferCreditPack,
@@ -131,21 +117,12 @@ export default function MobileControlContent({
   cnWechatSupportId = '',
   selectedVisualEffect,
   onVisualEffectChange,
-  streamerBackgrounds = [],
-  isStreamerBackgroundUploading = false,
-  streamerRotationMinutes = 5,
-  onUploadStreamerBackground,
-  onDeleteStreamerBackground,
-  onStreamerRotationChange,
 }: MobileControlContentProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showFavoriteToast, setShowFavoriteToast] = useState(false)
-  const [showSceneInput, setShowSceneInput] = useState(false)
-  const [newSceneName, setNewSceneName] = useState('')
   const [isFavoritesHeartFilled, setIsFavoritesHeartFilled] = useState(false)
   const [prompt, setPrompt] = useState('')
   const { t, language } = useLanguage()
-  const ct = getCommunityStrings(language)
 
   const scenes = VISUAL_EFFECT_SCENE_KEYS
   const stationLabel = currentStation?.name ?? t.music.scanning
@@ -157,26 +134,6 @@ export default function MobileControlContent({
       window.setTimeout(() => setShowFavoriteToast(false), 2000)
     }
     onToggleFavorite()
-  }
-
-  const handleSaveScene = () => {
-    if (!isAuthenticated) {
-      void onRequireAuth()
-      return
-    }
-    if (!activeWorldId || !newSceneName.trim()) return
-    onRenameWorld(activeWorldId, newSceneName.trim())
-    setNewSceneName('')
-    setShowSceneInput(false)
-  }
-
-  const handleLoadScene = (world: PublicGeneratedWorld) => {
-    onLoadWorld(world)
-    setIsMusicPlaying(true)
-  }
-
-  const handleRemoveScene = (id: string) => {
-    onDeleteWorld(id)
   }
 
   // Fullscreen toggle handler
@@ -391,23 +348,6 @@ export default function MobileControlContent({
         </div>
       </div>
 
-      <CompanionPanel
-        pomodoro={companion.pomodoro}
-        onStartPomodoro={companion.startPomodoroTimer}
-        onPausePomodoro={companion.pausePomodoroTimer}
-        onResetPomodoro={companion.resetPomodoroTimer}
-        onSkipPomodoro={companion.skipPomodoroTimer}
-        alarms={companion.alarms}
-        onAddAlarm={companion.addAlarm}
-        onRemoveAlarm={companion.removeAlarm}
-        onToggleAlarm={companion.toggleAlarm}
-        calendarEvents={calendar.calendarEvents}
-        calendarConnected={calendar.calendarConnected}
-        calendarLoading={calendar.calendarLoading}
-        isAuthenticated={isAuthenticated}
-        onConnectCalendar={() => void calendar.connectCalendar()}
-      />
-
       {/* My Favorites Section */}
       <div className="mb-6 space-y-2">
         <button 
@@ -448,109 +388,6 @@ export default function MobileControlContent({
         )}
       </div>
 
-      {/* My Scenes Section */}
-      <div className="mb-6 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Layers className="h-4 w-4 text-accent" />
-            <span className="text-xs font-medium text-muted-foreground">{t.myScenes.title}</span>
-          </div>
-          <button
-            onClick={() => {
-              if (!isAuthenticated) {
-                void onRequireAuth()
-                return
-              }
-              if (!activeWorldId) return
-              setShowSceneInput(true)
-            }}
-            disabled={!activeWorldId}
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-foreground/10 bg-secondary/50 text-foreground/70 transition-all hover:border-accent/50 hover:bg-accent/20 hover:text-accent hover:shadow-[0_0_10px_rgba(var(--accent)/0.3)] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Plus className="h-3.5 w-3.5" />
-          </button>
-        </div>
-        
-        {showSceneInput && (
-          <div className="glass animate-fade-in-up space-y-2 rounded-lg border border-accent/40 bg-popover/60 p-3 shadow-[0_0_20px_rgba(var(--accent)/0.2)]">
-            <input
-              type="text"
-              value={newSceneName}
-              onChange={(e) => setNewSceneName(e.target.value)}
-              placeholder={t.myScenes.namePlaceholder}
-              className="glass w-full rounded-md border border-foreground/20 bg-input/30 px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:border-accent/50 focus:outline-none focus:shadow-[0_0_10px_rgba(var(--accent)/0.3)]"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSaveScene()
-                if (e.key === 'Escape') setShowSceneInput(false)
-              }}
-            />
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowSceneInput(false)}
-                className="flex-1 rounded-md border border-foreground/10 bg-secondary/50 px-3 py-2 text-sm text-foreground/70 transition-all hover:bg-secondary"
-              >
-                {t.myScenes.cancel}
-              </button>
-              <button
-                onClick={handleSaveScene}
-                disabled={!newSceneName.trim()}
-                className="flex-1 rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground transition-all hover:bg-accent/90 hover:shadow-[0_0_12px_rgba(var(--accent)/0.4)] disabled:opacity-50"
-              >
-                {t.myScenes.confirm}
-              </button>
-            </div>
-          </div>
-        )}
-        
-        {savedWorlds.length === 0 && !showSceneInput ? (
-          <p className="text-xs text-muted-foreground/60 italic">
-            {isAuthenticated ? t.myScenes.noScenes : t.myScenes.loginRequired}
-          </p>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {savedWorlds.map((world, index) => (
-              <div
-                key={world.id}
-                className={`glass group animate-fade-in-up relative flex items-center gap-1.5 rounded-full border px-3 py-1.5 transition-all duration-300 hover:border-accent/40 hover:bg-accent/15 hover:shadow-[0_0_12px_rgba(var(--accent)/0.25)] ${
-                  world.id === activeWorldId
-                    ? 'border-accent/50 bg-accent/10'
-                    : 'border-foreground/15 bg-popover/50'
-                }`}
-                style={{ animationDelay: `${index * 0.05}s` }}
-              >
-                <button
-                  onClick={() => handleLoadScene(world)}
-                  className="max-w-[100px] truncate text-xs text-foreground/80 transition-colors hover:text-foreground"
-                  title={world.title}
-                >
-                  {world.title}
-                </button>
-                {isAuthenticated ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const makePublic = world.isPrivate !== false
-                      if (makePublic && !window.confirm(ct.publishConfirm)) return
-                      void onPublishWorld(world.id, makePublic)
-                    }}
-                    className="text-[9px] text-accent"
-                  >
-                    {world.isPrivate === false ? '●' : '○'}
-                  </button>
-                ) : null}
-                <button
-                  onClick={() => handleRemoveScene(world.id)}
-                  className="flex h-4 w-4 items-center justify-center rounded-full opacity-0 transition-all hover:bg-red-500/20 group-hover:opacity-100"
-                >
-                  <X className="h-2.5 w-2.5 text-red-500" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Spacer */}
       <div className="flex-1" />
 
@@ -580,21 +417,6 @@ export default function MobileControlContent({
           <p className="text-xs text-muted-foreground">{t.auth.signInPrompt}</p>
           <GoogleSignInButton onClick={() => void onRequireAuth()} />
         </div>
-      ) : null}
-
-      {userProfile?.isStreamer &&
-      onUploadStreamerBackground &&
-      onDeleteStreamerBackground &&
-      onStreamerRotationChange ? (
-        <StreamerBackgroundsPanel
-          backgrounds={streamerBackgrounds}
-          maxBackgrounds={10}
-          rotationMinutes={streamerRotationMinutes}
-          isUploading={isStreamerBackgroundUploading}
-          onUpload={onUploadStreamerBackground}
-          onDelete={onDeleteStreamerBackground}
-          onRotationChange={onStreamerRotationChange}
-        />
       ) : null}
 
       <MembershipPanel

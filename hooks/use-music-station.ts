@@ -77,22 +77,27 @@ export function useMusicStation() {
   }, [syncProxyTier])
 
   useEffect(() => {
-    setMusicOnboarded(isMusicOnboarded())
+    const onboarded = isMusicOnboarded()
+    setMusicOnboarded(onboarded)
     let moods = loadSelectedMoods()
-    if (isMusicOnboarded() && moods.length === 0) {
+    if (moods.length === 0) {
       moods = [MUSIC_MOOD_IDS[1] ?? 'deep-night']
-      saveSelectedMoods(moods)
+      if (onboarded) {
+        saveSelectedMoods(moods)
+      }
     }
     setSelectedMoods(moods)
     const storedPrimary = loadPrimaryMood()
     const primary = storedPrimary && moods.includes(storedPrimary) ? storedPrimary : moods[0] ?? null
     setPrimaryMoodState(primary)
     setFavoriteStations(loadFavoriteStations())
-    if (isMusicOnboarded() && moods.length > 0) {
+    if (moods.length > 0) {
       const initial = pickInitialStation(moods)
       setCurrentStation(initial)
-      historyRef.current = [initial]
-      historyIndexRef.current = 0
+      if (onboarded) {
+        historyRef.current = [initial]
+        historyIndexRef.current = 0
+      }
     }
   }, [])
 

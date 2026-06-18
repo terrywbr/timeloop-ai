@@ -15,20 +15,14 @@ import {
   ChevronLeft,
   Heart,
   X,
-  Plus,
-  Layers,
 } from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
-import { getCommunityStrings } from '@/lib/community-i18n'
 import LanguageSelector from './language-selector'
 import type { VideoBackgroundRef } from './ui/video-background'
 import type { RadioStation } from '@/lib/radio-station'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import type { UserAccountProfile, CheckoutKind } from '@/lib/api-client'
 import GoogleSignInButton from '@/components/google-sign-in-button'
-import CompanionPanel from '@/components/companion/companion-panel'
-import type { useCompanion } from '@/hooks/use-companion'
-import type { useGoogleCalendar } from '@/hooks/use-google-calendar'
 import {
   exitAppFullscreen,
   getFullscreenElement,
@@ -37,8 +31,6 @@ import {
 } from '@/lib/fullscreen'
 import { VISUAL_EFFECT_SCENE_KEYS, type VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
 import MembershipPanel from '@/components/billing/membership-panel'
-import StreamerBackgroundsPanel from '@/components/stream/streamer-backgrounds-panel'
-import type { StreamerBackgroundItem } from '@/components/stream/streamer-backgrounds-panel'
 
 interface ControlPanelProps {
   videoRef: React.RefObject<VideoBackgroundRef | null>
@@ -62,8 +54,6 @@ interface ControlPanelProps {
   onDjVoiceEnabledChange: (enabled: boolean) => void
   djIntervalEnabled: boolean
   onDjIntervalEnabledChange: (enabled: boolean) => void
-  companion: ReturnType<typeof useCompanion>
-  calendar: ReturnType<typeof useGoogleCalendar>
   isMusicPlaying: boolean
   onMusicPlayingChange: (playing: boolean) => void
   musicVolume: number
@@ -75,6 +65,8 @@ interface ControlPanelProps {
   onDeleteWorld: (worldId: string) => void
   onRenameWorld: (worldId: string, title: string) => void
   onPublishWorld: (worldId: string, isPublic: boolean) => void | Promise<void>
+  onToggleWorldInRotation?: (world: PublicGeneratedWorld) => void | Promise<void>
+  isWorldInRotation?: (world: PublicGeneratedWorld) => boolean
   onCheckout: (kind: CheckoutKind) => void
   onDownload: () => void
   preferCreditPack: boolean
@@ -82,12 +74,6 @@ interface ControlPanelProps {
   cnWechatSupportId?: string
   selectedVisualEffect: VisualEffectSceneKey
   onVisualEffectChange: (scene: VisualEffectSceneKey) => void
-  streamerBackgrounds?: StreamerBackgroundItem[]
-  isStreamerBackgroundUploading?: boolean
-  streamerRotationMinutes?: 5 | 10
-  onUploadStreamerBackground?: (file: File) => void | Promise<void>
-  onDeleteStreamerBackground?: (id: string) => void | Promise<void>
-  onStreamerRotationChange?: (minutes: 5 | 10) => void | Promise<void>
 }
 
 export default function ControlPanel({
@@ -112,8 +98,6 @@ export default function ControlPanel({
   onDjVoiceEnabledChange,
   djIntervalEnabled,
   onDjIntervalEnabledChange,
-  companion,
-  calendar,
   isMusicPlaying,
   onMusicPlayingChange: setIsMusicPlaying,
   musicVolume,
@@ -125,6 +109,8 @@ export default function ControlPanel({
   onDeleteWorld,
   onRenameWorld,
   onPublishWorld,
+  onToggleWorldInRotation,
+  isWorldInRotation,
   onCheckout,
   onDownload,
   preferCreditPack,
@@ -132,23 +118,14 @@ export default function ControlPanel({
   cnWechatSupportId = '',
   selectedVisualEffect,
   onVisualEffectChange,
-  streamerBackgrounds = [],
-  isStreamerBackgroundUploading = false,
-  streamerRotationMinutes = 5,
-  onUploadStreamerBackground,
-  onDeleteStreamerBackground,
-  onStreamerRotationChange,
 }: ControlPanelProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showFavoriteToast, setShowFavoriteToast] = useState(false)
-  const [showSceneInput, setShowSceneInput] = useState(false)
-  const [newSceneName, setNewSceneName] = useState('')
   const [isFavoritesHeartFilled, setIsFavoritesHeartFilled] = useState(false)
   const [prompt, setPrompt] = useState('')
   const panelRef = useRef<HTMLDivElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { t, language } = useLanguage()
-  const ct = getCommunityStrings(language)
 
   const scenes = VISUAL_EFFECT_SCENE_KEYS
 
@@ -191,26 +168,6 @@ export default function ControlPanel({
   }
 
   const stationLabel = currentStation?.name ?? t.music.scanning
-
-  const handleSaveScene = () => {
-    if (!isAuthenticated) {
-      void onRequireAuth()
-      return
-    }
-    if (!activeWorldId || !newSceneName.trim()) return
-    onRenameWorld(activeWorldId, newSceneName.trim())
-    setNewSceneName('')
-    setShowSceneInput(false)
-  }
-
-  const handleLoadScene = (world: PublicGeneratedWorld) => {
-    onLoadWorld(world)
-    setIsMusicPlaying(true)
-  }
-
-  const handleRemoveScene = (id: string) => {
-    onDeleteWorld(id)
-  }
 
   const handleFullscreenToggle = useCallback(() => {
     if (!getFullscreenElement()) {
@@ -331,7 +288,7 @@ export default function ControlPanel({
               <ControlButton
                 onClick={onDownload}
                 icon={Download}
-                tooltip={userProfile?.isVip || userProfile?.isStreamer ? t.controls.download : `${t.controls.download} (VIP)`}
+                tooltip={userProfile?.hasDownloadAccess ? t.controls.download : `${t.controls.download} (VIP)`}
               />
               <ControlButton
                 onClick={onReopenMusicOnboarding}
@@ -463,23 +420,6 @@ export default function ControlPanel({
 
           </div>
 
-          <CompanionPanel
-            pomodoro={companion.pomodoro}
-            onStartPomodoro={companion.startPomodoroTimer}
-            onPausePomodoro={companion.pausePomodoroTimer}
-            onResetPomodoro={companion.resetPomodoroTimer}
-            onSkipPomodoro={companion.skipPomodoroTimer}
-            alarms={companion.alarms}
-            onAddAlarm={companion.addAlarm}
-            onRemoveAlarm={companion.removeAlarm}
-            onToggleAlarm={companion.toggleAlarm}
-            calendarEvents={calendar.calendarEvents}
-            calendarConnected={calendar.calendarConnected}
-            calendarLoading={calendar.calendarLoading}
-            isAuthenticated={isAuthenticated}
-            onConnectCalendar={() => void calendar.connectCalendar()}
-          />
-
           {/* My Favorites Section */}
           <div className="mb-6 space-y-2">
             <button 
@@ -520,112 +460,6 @@ export default function ControlPanel({
             )}
           </div>
 
-          {/* My Scenes Section */}
-          <div className="mb-6 space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Layers className="h-4 w-4 text-accent" />
-                <span className="text-xs font-medium text-muted-foreground">{t.myScenes.title}</span>
-              </div>
-              <button
-                onClick={() => {
-                  if (!isAuthenticated) {
-                    void onRequireAuth()
-                    return
-                  }
-                  if (!activeWorldId) return
-                  setShowSceneInput(true)
-                }}
-                disabled={!activeWorldId}
-                className="flex h-6 w-6 items-center justify-center rounded-md border border-foreground/10 bg-secondary/50 text-foreground/70 transition-all hover:border-accent/50 hover:bg-accent/20 hover:text-accent hover:shadow-[0_0_10px_rgba(var(--accent)/0.3)] disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <Plus className="h-3 w-3" />
-              </button>
-            </div>
-            
-            {/* Scene Name Input */}
-            {showSceneInput && (
-              <div className="glass animate-fade-in-up space-y-2 rounded-lg border border-accent/40 bg-popover/60 p-2 shadow-[0_0_20px_rgba(var(--accent)/0.2)]">
-                <input
-                  type="text"
-                  value={newSceneName}
-                  onChange={(e) => setNewSceneName(e.target.value)}
-                  placeholder={t.myScenes.namePlaceholder}
-                  className="glass w-full rounded-md border border-foreground/20 bg-input/30 px-2 py-1.5 text-xs text-foreground placeholder-muted-foreground focus:border-accent/50 focus:outline-none focus:shadow-[0_0_10px_rgba(var(--accent)/0.3)]"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveScene()
-                    if (e.key === 'Escape') setShowSceneInput(false)
-                  }}
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowSceneInput(false)}
-                    className="flex-1 rounded-md border border-foreground/10 bg-secondary/50 px-2 py-1 text-xs text-foreground/70 transition-all hover:bg-secondary"
-                  >
-                    {t.myScenes.cancel}
-                  </button>
-                  <button
-                    onClick={handleSaveScene}
-                    disabled={!newSceneName.trim()}
-                    className="flex-1 rounded-md bg-accent px-2 py-1 text-xs font-medium text-accent-foreground transition-all hover:bg-accent/90 hover:shadow-[0_0_12px_rgba(var(--accent)/0.4)] disabled:opacity-50"
-                  >
-                    {t.myScenes.confirm}
-                  </button>
-                </div>
-              </div>
-            )}
-            
-            {/* Saved Scenes List */}
-            {savedWorlds.length === 0 && !showSceneInput ? (
-              <p className="text-xs text-muted-foreground/60 italic">
-                {isAuthenticated ? t.myScenes.noScenes : t.myScenes.loginRequired}
-              </p>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {savedWorlds.map((world, index) => (
-                  <div
-                    key={world.id}
-                    className={`glass group animate-fade-in-up relative flex items-center gap-1.5 rounded-full border px-2.5 py-1 transition-all duration-300 hover:border-accent/40 hover:bg-accent/15 hover:shadow-[0_0_12px_rgba(var(--accent)/0.25)] ${
-                      world.id === activeWorldId
-                        ? 'border-accent/50 bg-accent/10'
-                        : 'border-foreground/15 bg-popover/50'
-                    }`}
-                    style={{ animationDelay: `${index * 0.05}s` }}
-                  >
-                    <button
-                      onClick={() => handleLoadScene(world)}
-                      className="max-w-[100px] truncate text-xs text-foreground/80 transition-colors hover:text-foreground"
-                      title={world.title}
-                    >
-                      {world.title}
-                    </button>
-                    {isAuthenticated ? (
-                      <button
-                        type="button"
-                        title={world.isPrivate === false ? ct.unpublish : ct.publish}
-                        onClick={() => {
-                          const makePublic = world.isPrivate !== false
-                          if (makePublic && !window.confirm(ct.publishConfirm)) return
-                          void onPublishWorld(world.id, makePublic)
-                        }}
-                        className="text-[9px] text-accent hover:underline"
-                      >
-                        {world.isPrivate === false ? '●' : '○'}
-                      </button>
-                    ) : null}
-                    <button
-                      onClick={() => handleRemoveScene(world.id)}
-                      className="flex h-4 w-4 items-center justify-center rounded-full opacity-0 transition-all hover:bg-red-500/20 group-hover:opacity-100"
-                    >
-                      <X className="h-2.5 w-2.5 text-red-500" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Spacer */}
           <div className="flex-1" />
 
@@ -655,21 +489,6 @@ export default function ControlPanel({
               <p className="text-xs text-muted-foreground">{t.auth.signInPrompt}</p>
               <GoogleSignInButton onClick={() => void onRequireAuth()} />
             </div>
-          ) : null}
-
-          {userProfile?.isStreamer &&
-          onUploadStreamerBackground &&
-          onDeleteStreamerBackground &&
-          onStreamerRotationChange ? (
-            <StreamerBackgroundsPanel
-              backgrounds={streamerBackgrounds}
-              maxBackgrounds={10}
-              rotationMinutes={streamerRotationMinutes}
-              isUploading={isStreamerBackgroundUploading}
-              onUpload={onUploadStreamerBackground}
-              onDelete={onDeleteStreamerBackground}
-              onRotationChange={onStreamerRotationChange}
-            />
           ) : null}
 
           <MembershipPanel

@@ -41,6 +41,10 @@ export async function POST(req: Request) {
       updates.vip_until = body.vipUntil ?? null
     }
 
+    if (body.plan === 'streamer') {
+      updates.lemon_squeezy_variant_id = process.env.LEMON_SQUEEZY_STREAMER_VARIANT_ID?.trim() ?? null
+    }
+
     const { data: profile, error } = await supabase
       .from('users')
       .update(updates)
@@ -48,7 +52,29 @@ export async function POST(req: Request) {
       .select('*')
       .maybeSingle()
 
-    if (error) throw error
+    if (error) {
+      // Compatibility fallback: some environments still enforce users.plan in ('free','vip').
+      if (body.plan === 'streamer' && String(error.message).includes('users_plan_check')) {
+        const { data: fallbackProfile, error: fallbackError } = await supabase
+          .from('users')
+          .update({
+            ...updates,
+            plan: 'vip',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', body.userId)
+          .select('*')
+          .maybeSingle()
+        if (fallbackError) throw fallbackError
+        if (!fallbackProfile) return jsonError('User not found', 404)
+        return NextResponse.json({
+          success: true,
+          profile: fallbackProfile,
+          compatibilityMode: 'streamer_plan_fallback_to_vip_variant',
+        })
+      }
+      throw error
+    }
     if (!profile) return jsonError('User not found', 404)
 
     if (body.addCredits && body.addCredits > 0) {

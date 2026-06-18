@@ -6,6 +6,7 @@ type PlayOptions = {
 
 let activeAudio: HTMLAudioElement | null = null
 let activeObjectUrl: string | null = null
+let activeUtterance: SpeechSynthesisUtterance | null = null
 
 function cleanupPlayback() {
   if (activeAudio) {
@@ -20,10 +21,17 @@ function cleanupPlayback() {
     URL.revokeObjectURL(activeObjectUrl)
     activeObjectUrl = null
   }
+  if (typeof window !== 'undefined' && window.speechSynthesis) {
+    window.speechSynthesis.cancel()
+    activeUtterance = null
+  }
 }
 
 export function isDjAudioSupported(): boolean {
-  return typeof window !== 'undefined' && typeof Audio !== 'undefined'
+  return (
+    typeof window !== 'undefined' &&
+    (typeof Audio !== 'undefined' || typeof window.speechSynthesis !== 'undefined')
+  )
 }
 
 export function stopDjSpeech() {
@@ -109,5 +117,47 @@ export function playDjAudioFromUrl(url: string, options?: PlayOptions): Promise<
       options?.onEnd?.()
       resolve()
     })
+  })
+}
+
+export function playDjSpeechSynthesis(text: string, lang: string, options?: PlayOptions): Promise<void> {
+  return new Promise((resolve) => {
+    cleanupPlayback()
+
+    if (typeof window === 'undefined' || !window.speechSynthesis || !window.SpeechSynthesisUtterance) {
+      options?.onError?.(new Error('Speech synthesis is not supported'))
+      options?.onEnd?.()
+      resolve()
+      return
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text)
+    activeUtterance = utterance
+    utterance.lang = lang
+    utterance.rate = 0.92
+    utterance.pitch = 0.95
+    utterance.volume = 1
+
+    const voices = window.speechSynthesis.getVoices()
+    const langPrefix = lang.split('-')[0]
+    const matchingVoice = voices.find((voice) => voice.lang === lang) ??
+      voices.find((voice) => voice.lang.toLowerCase().startsWith(`${langPrefix.toLowerCase()}-`))
+    if (matchingVoice) utterance.voice = matchingVoice
+
+    utterance.onstart = () => options?.onStart?.()
+    utterance.onend = () => {
+      activeUtterance = null
+      options?.onEnd?.()
+      resolve()
+    }
+    utterance.onerror = (event) => {
+      activeUtterance = null
+      options?.onError?.(new Error(event.error || 'Speech synthesis failed'))
+      options?.onEnd?.()
+      resolve()
+    }
+
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.speak(utterance)
   })
 }

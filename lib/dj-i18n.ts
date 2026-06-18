@@ -23,6 +23,12 @@ function buildStaticFallbacks(presetLocale: 'en' | 'zh'): Record<MusicMoodId, st
 
 const STATIC_EN_FALLBACKS = buildStaticFallbacks('en')
 const STATIC_ZH_FALLBACKS = buildStaticFallbacks('zh')
+const STATIC_TH_FALLBACKS = Object.fromEntries(
+  MUSIC_MOOD_IDS.map((id) => [id, pickRandomPresetLine(id, 'th')]),
+) as Record<MusicMoodId, string>
+const STATIC_VI_FALLBACKS = Object.fromEntries(
+  MUSIC_MOOD_IDS.map((id) => [id, pickRandomPresetLine(id, 'vi')]),
+) as Record<MusicMoodId, string>
 
 const djEn: DjUiCopy = {
   label: 'AI DJ',
@@ -179,14 +185,14 @@ const djTh: DjUiCopy = {
   autoDjComingSoon: 'Auto DJ — เร็วๆ นี้',
   intervalCompanion: 'เพื่อนร่วมทาง 30 นาที',
   personas: {
-    'neon-tokyo': { name: 'Underground Rebel DJ', sceneTitle: 'Blade Runner: Neon Rain Rooftop' },
-    'deep-night': { name: 'Houston Commander', sceneTitle: 'NASA ISS Observation Deck' },
-    'deep-space': { name: 'Submarine AI', sceneTitle: 'Deep Ocean Submarine 3000ft' },
-    'galactic-tavern': { name: 'Jazz Bartender', sceneTitle: '1920 Smoky Jazz Lounge' },
-    'galactic-classical': { name: 'Digital Secretary', sceneTitle: 'Nordic Glass Cabin' },
-    'retro-earth': { name: 'Outdoor Explorer', sceneTitle: 'Alpine Campfire Tent' },
+    'neon-tokyo': { name: 'ดีเจกบฏใต้ดิน', sceneTitle: 'Blade Runner: ดาดฟ้าฝนนีออน' },
+    'deep-night': { name: 'ผู้บัญชาการฮิวสตัน', sceneTitle: 'ดาดฟ้าสังเกตการณ์ ISS' },
+    'deep-space': { name: 'AI เรือดำน้ำ', sceneTitle: 'เรือดำน้ำใต้ทะเลลึก 3000 ฟุต' },
+    'galactic-tavern': { name: 'บาร์เทนเดอร์แจ๊ส', sceneTitle: 'เลานจ์แจ๊สควันยุค 1920' },
+    'galactic-classical': { name: 'เลขานุการดิจิทัล', sceneTitle: 'กระท่อมกระจกสไตล์นอร์ดิก' },
+    'retro-earth': { name: 'นักสำรวจกลางแจ้ง', sceneTitle: 'เต็นท์กองไฟบนเทือกเขาแอลป์' },
   },
-  fallbacks: STATIC_EN_FALLBACKS,
+  fallbacks: STATIC_TH_FALLBACKS,
 }
 
 const djVi: DjUiCopy = {
@@ -198,14 +204,14 @@ const djVi: DjUiCopy = {
   autoDjComingSoon: 'Auto DJ — sắp ra mắt',
   intervalCompanion: 'Đồng hành 30 phút',
   personas: {
-    'neon-tokyo': { name: 'Underground Rebel DJ', sceneTitle: 'Blade Runner: Neon Rain Rooftop' },
-    'deep-night': { name: 'Houston Commander', sceneTitle: 'NASA ISS Observation Deck' },
-    'deep-space': { name: 'Submarine AI', sceneTitle: 'Deep Ocean Submarine 3000ft' },
-    'galactic-tavern': { name: 'Jazz Bartender', sceneTitle: '1920 Smoky Jazz Lounge' },
-    'galactic-classical': { name: 'Digital Secretary', sceneTitle: 'Nordic Glass Cabin' },
-    'retro-earth': { name: 'Outdoor Explorer', sceneTitle: 'Alpine Campfire Tent' },
+    'neon-tokyo': { name: 'DJ nổi loạn ngầm', sceneTitle: 'Blade Runner: sân thượng mưa neon' },
+    'deep-night': { name: 'Chỉ huy Houston', sceneTitle: 'Đài quan sát ISS' },
+    'deep-space': { name: 'AI tàu ngầm', sceneTitle: 'Tàu ngầm biển sâu 3000ft' },
+    'galactic-tavern': { name: 'Bartender jazz', sceneTitle: 'Phòng jazz khói năm 1920' },
+    'galactic-classical': { name: 'Thư ký số', sceneTitle: 'Cabin kính Bắc Âu' },
+    'retro-earth': { name: 'Nhà thám hiểm ngoài trời', sceneTitle: 'Lều lửa trại Alpine' },
   },
-  fallbacks: STATIC_EN_FALLBACKS,
+  fallbacks: STATIC_VI_FALLBACKS,
 }
 
 export const DJ_I18N: Record<Language, DjUiCopy> = {

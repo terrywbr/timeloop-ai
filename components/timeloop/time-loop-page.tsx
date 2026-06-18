@@ -43,12 +43,13 @@ function TimeLoopPageInner() {
         <MusicMoodOnboarding onComplete={page.handleCompleteMusicOnboarding} />
       ) : null}
 
-      {!page.showStreamLayout && page.musicOnboarded && page.activeMusicStreamUrl ? (
+      {!page.showStreamLayout && page.activeMusicStreamUrl ? (
         <StreamAudioPlayer
           streamUrl={page.activeMusicStreamUrl}
           playing={page.isMusicPlaying}
           volume={page.effectiveMusicVolume}
           muted={!page.isAudioUnlocked}
+          streamMode
           onPlaybackError={(url) => void page.handleStreamFailure(url)}
         />
       ) : null}
@@ -82,7 +83,7 @@ function TimeLoopPageInner() {
           <NowPlayingTuner station={page.tunerStation} />
           <AiDjOverlay aiDj={page.aiDj} onDismiss={page.dismissAiDj} />
 
-          {!page.isAudioUnlocked && !page.isMobile && !page.musicOnboarded ? (
+          {!page.isAudioUnlocked && !page.isMobile && page.musicOnboarded ? (
             <AudioUnlockButton onUnlock={page.handleUnlockAudio} />
           ) : null}
 
@@ -115,8 +116,6 @@ function TimeLoopPageInner() {
             onDjVoiceEnabledChange={page.setDjVoiceEnabled}
             djIntervalEnabled={page.aiDj.intervalEnabled}
             onDjIntervalEnabledChange={page.setDjIntervalEnabled}
-            companion={page.companion}
-            calendar={page.calendar}
             isMusicPlaying={page.isMusicPlaying}
             onMusicPlayingChange={page.handleMusicPlayingChange}
             musicVolume={page.musicVolume}
@@ -128,6 +127,8 @@ function TimeLoopPageInner() {
             onDeleteWorld={page.handleDeleteWorld}
             onRenameWorld={page.handleRenameWorld}
             onPublishWorld={page.handlePublishWorld}
+            onToggleWorldInRotation={page.handleToggleWorldInStreamerRotation}
+            isWorldInRotation={page.isWorldInStreamerRotation}
             onCheckout={page.handleCheckout}
             onDownload={page.handleDownload}
             preferCreditPack={page.preferCreditPack}
@@ -135,24 +136,17 @@ function TimeLoopPageInner() {
             cnWechatSupportId={process.env.NEXT_PUBLIC_CN_WECHAT_SUPPORT_ID ?? ''}
             selectedVisualEffect={page.selectedVisualEffect}
             onVisualEffectChange={page.setSelectedVisualEffect}
-            streamerBackgrounds={page.streamerBackgrounds}
-            isStreamerBackgroundUploading={page.isStreamerBackgroundUploading}
-            streamerRotationMinutes={page.streamerSettings.backgroundRotationMinutes}
-            onUploadStreamerBackground={page.handleUploadStreamerBackground}
-            onDeleteStreamerBackground={page.handleDeleteStreamerBackground}
-            onStreamerRotationChange={page.handleStreamerRotationChange}
           />
 
           <CommunityGallery
             isExpanded={page.rightPanelExpanded}
             onExpandedChange={page.setRightPanelExpanded}
-            accessToken={page.accessToken}
-            onRequireAuth={page.handleRequireAuth}
+            myWorlds={page.savedWorlds}
+            onEnterMyWorld={page.handleLoadWorld}
+            canToggleRotation={page.hasCreatorTools}
+            isWorldInRotation={page.isWorldInStreamerRotation}
+            onToggleWorldRotation={page.handleToggleWorldInStreamerRotation}
             onEnterOfficialScene={page.handleEnterGalleryScene}
-            onEnterWorld={page.handleEnterPublicWorld}
-            coFocusEnabled={page.coFocusEnabled}
-            onCoFocusEnabledChange={page.setCoFocusEnabled}
-            presenceCount={page.presenceCount}
           />
 
           <TimeloopMobileDrawers
@@ -179,8 +173,6 @@ function TimeLoopPageInner() {
             onDjVoiceEnabledChange={page.setDjVoiceEnabled}
             djIntervalEnabled={page.aiDj.intervalEnabled}
             onDjIntervalEnabledChange={page.setDjIntervalEnabled}
-            companion={page.companion}
-            calendar={page.calendar}
             isMusicPlaying={page.isMusicPlaying}
             onMusicPlayingChange={page.handleMusicPlayingChange}
             musicVolume={page.musicVolume}
@@ -199,18 +191,9 @@ function TimeLoopPageInner() {
             selectedVisualEffect={page.selectedVisualEffect}
             onVisualEffectChange={page.setSelectedVisualEffect}
             onPublishWorld={page.handlePublishWorld}
-            accessToken={page.accessToken}
+            onToggleWorldInRotation={page.handleToggleWorldInStreamerRotation}
+            isWorldInRotation={page.isWorldInStreamerRotation}
             onEnterOfficialScene={page.handleEnterGalleryScene}
-            onEnterWorld={page.handleEnterPublicWorld}
-            coFocusEnabled={page.coFocusEnabled}
-            onCoFocusEnabledChange={page.setCoFocusEnabled}
-            presenceCount={page.presenceCount}
-            streamerBackgrounds={page.streamerBackgrounds}
-            isStreamerBackgroundUploading={page.isStreamerBackgroundUploading}
-            streamerRotationMinutes={page.streamerSettings.backgroundRotationMinutes}
-            onUploadStreamerBackground={page.handleUploadStreamerBackground}
-            onDeleteStreamerBackground={page.handleDeleteStreamerBackground}
-            onStreamerRotationChange={page.handleStreamerRotationChange}
           />
 
           {page.isGenerating ? <GeneratingOverlay /> : null}

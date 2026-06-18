@@ -15,6 +15,7 @@ export type UserProfile = {
   monthly_generation_limit: number
   remaining_credits: number
   credits_reset_at: string
+  streamer_monthly_quota_images: number
   lemon_squeezy_customer_id: string | null
   lemon_squeezy_subscription_id: string | null
   lemon_squeezy_subscription_item_id: string | null

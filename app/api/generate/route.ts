@@ -4,7 +4,7 @@ import {
   createSupabaseAdminClient,
   ensureUserProfile,
   getAuthenticatedUser,
-  hasStreamerAccess,
+  hasUnlimitedGenerationAccess,
   uploadRemoteAssetToStorage,
 } from '@/lib/supabase-server'
 import { getGenerationCreditCost } from '@/lib/credits'
@@ -218,7 +218,6 @@ function buildImagePrompt(userPrompt: string): string {
     containsLocalizedText
       ? 'Translate the multilingual source text semantically; do not use its script or language as a cultural, national, or architectural style cue'
       : 'Use globally understandable visual design unless a specific culture or location is explicitly requested',
-    'The selected UI effect preset controls only particles and ambient rendering after generation; it must not affect subject, location, architecture, era, or culture',
     'Do not add cyberpunk, neon skyline, modern skyscrapers, or sci-fi city elements unless the user explicitly asks for them',
     'Do not add East Asian architecture, Chinese scenery, temples, pagodas, or traditional curved roofs unless the user explicitly asks for them',
   ].join('. ')
@@ -275,7 +274,6 @@ async function rewriteImagePromptWithModel(
 
   return [
     rewrittenPrompt,
-    'The UI visual effect preset must not change the subject, location, architecture, era, culture, or action',
     'Use the prompt semantics only; do not use the input language as a style cue',
   ].join('. ')
 }
@@ -406,7 +404,7 @@ export async function POST(req: Request) {
       return jsonError(message, 401)
     }
     const profile = await ensureUserProfile(supabase, auth.user)
-    const unlimitedGeneration = hasStreamerAccess(profile)
+    const unlimitedGeneration = hasUnlimitedGenerationAccess(profile)
     const generationCost = getGenerationCreditCost('standard')
 
     if (!unlimitedGeneration && profile.remaining_credits < generationCost) {

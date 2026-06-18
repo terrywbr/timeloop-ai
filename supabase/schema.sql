@@ -25,14 +25,15 @@ create table if not exists public.users (
   avatar_url text,
 
   plan text not null default 'free'
-    check (plan in ('free', 'vip')),
+    check (plan in ('free', 'vip', 'streamer')),
   vip_status text not null default 'inactive'
     check (vip_status in ('inactive', 'active', 'past_due', 'cancelled', 'paused', 'expired')),
   vip_until timestamptz,
 
-  monthly_generation_limit integer not null default 5,
-  remaining_credits integer not null default 5 check (remaining_credits >= 0),
+  monthly_generation_limit integer not null default 50,
+  remaining_credits integer not null default 50 check (remaining_credits >= 0),
   credits_reset_at timestamptz not null default (now() + interval '1 month'),
+  streamer_monthly_quota_images integer not null default 300,
 
   lemon_squeezy_customer_id text,
   lemon_squeezy_subscription_id text,
@@ -44,9 +45,10 @@ create table if not exists public.users (
 );
 
 comment on table public.users is 'App profile: billing, VIP, credits (1:1 with auth.users)';
-comment on column public.users.plan is 'free | vip';
+comment on column public.users.plan is 'free | vip | streamer';
 comment on column public.users.vip_status is 'Lemon Squeezy subscription lifecycle';
-comment on column public.users.remaining_credits is 'Free-tier generations; VIP bypasses deduction in API';
+comment on column public.users.remaining_credits is 'Free-tier credits; standard generation costs 10 credits, VIP/Streamer bypass deduction';
+comment on column public.users.streamer_monthly_quota_images is 'Streamer monthly generated-scene-pack image quota (default 300)';
 
 -- -----------------------------------------------------------------------------
 -- 2. public.generated_worlds — AI 生成世界（背景圖 + 深度圖 + 元資料）

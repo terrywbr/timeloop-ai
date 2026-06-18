@@ -1,6 +1,15 @@
 import { NextResponse } from 'next/server'
-import { getMissingBillingEnvVars, isBillingConfigured, isStreamerCheckoutConfigured } from '@/lib/billing-config'
+import {
+  getMissingBillingEnvVars,
+  getMissingCheckoutEnvVars,
+  isBillingConfigured,
+  isCreditsCheckoutConfigured,
+  isStreamerCheckoutConfigured,
+  isVipCheckoutConfigured,
+} from '@/lib/billing-config'
 import { isOpenAiTtsConfigured } from '@/lib/openai-tts'
+import { isDeepSeekConfigured } from '@/lib/deepseek-chat'
+import { isEdgeTtsCacheable } from '@/lib/dj-edge-tts-cache'
 
 export const runtime = 'nodejs'
 
@@ -27,8 +36,16 @@ export async function GET(req: Request) {
       supabaseAnon: Boolean(readEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY')),
       billing: isBillingConfigured(),
       billingMissing: getMissingBillingEnvVars(),
+      vipCheckout: isVipCheckoutConfigured(),
+      vipCheckoutMissing: getMissingCheckoutEnvVars('vip'),
       streamerCheckout: isStreamerCheckoutConfigured(),
+      streamerCheckoutMissing: getMissingCheckoutEnvVars('streamer'),
+      creditsCheckout: isCreditsCheckoutConfigured(),
+      creditsCheckoutMissing: getMissingCheckoutEnvVars('credits'),
       openAiTts: isOpenAiTtsConfigured(),
+      deepSeekDj: isDeepSeekConfigured(),
+      edgeTts: true,
+      edgeTtsCache: isEdgeTtsCacheable(),
       lemonWebhook: Boolean(readEnv('LEMON_SQUEEZY_WEBHOOK_SECRET')),
       togetherKeyLength: togetherKey?.length ?? 0,
       supabaseServiceKeyLength: supabaseServiceKey?.length ?? 0,

@@ -18,107 +18,131 @@ type ParticlePresetConfig = {
   size: number
   riseSpeed: number
   horizontalDrift: number
+  motion: 'rise' | 'fall' | 'float' | 'bubble' | 'streak' | 'haze'
+  shape: 'spark' | 'star' | 'ring' | 'flake' | 'leaf' | 'streak' | 'mist'
 }
 
 const presetConfigs: Record<string, ParticlePresetConfig> = {
   cyberpunk: {
-    count: 430,
+    count: 620,
     colorA: '#5ff3ff',
     colorB: '#ff6bd6',
-    opacity: 0.62,
-    size: 0.026,
-    riseSpeed: 0.068,
-    horizontalDrift: 0.02,
+    opacity: 0.78,
+    size: 0.09,
+    riseSpeed: 0.2,
+    horizontalDrift: 0.08,
+    motion: 'rise',
+    shape: 'spark',
   },
   'rain-neon-dust': {
-    count: 430,
+    count: 620,
     colorA: '#5ff3ff',
     colorB: '#ff6bd6',
-    opacity: 0.62,
-    size: 0.026,
-    riseSpeed: 0.068,
-    horizontalDrift: 0.02,
+    opacity: 0.78,
+    size: 0.09,
+    riseSpeed: 0.2,
+    horizontalDrift: 0.08,
+    motion: 'rise',
+    shape: 'spark',
   },
   'cosmic-dust': {
-    count: 340,
+    count: 520,
     colorA: '#ffffff',
     colorB: '#cfd8ff',
-    opacity: 0.46,
-    size: 0.03,
-    riseSpeed: 0.038,
-    horizontalDrift: 0.012,
+    opacity: 0.7,
+    size: 0.12,
+    riseSpeed: 0.08,
+    horizontalDrift: 0.055,
+    motion: 'float',
+    shape: 'star',
   },
   'floating-stardust': {
-    count: 340,
+    count: 520,
     colorA: '#ffffff',
     colorB: '#cfd8ff',
-    opacity: 0.46,
-    size: 0.03,
-    riseSpeed: 0.038,
-    horizontalDrift: 0.012,
+    opacity: 0.7,
+    size: 0.12,
+    riseSpeed: 0.08,
+    horizontalDrift: 0.055,
+    motion: 'float',
+    shape: 'star',
   },
   'underwater-mist': {
-    count: 380,
+    count: 430,
     colorA: '#8be9ff',
     colorB: '#2f8dff',
-    opacity: 0.42,
-    size: 0.034,
-    riseSpeed: 0.032,
-    horizontalDrift: 0.016,
+    opacity: 0.72,
+    size: 0.16,
+    riseSpeed: 0.14,
+    horizontalDrift: 0.075,
+    motion: 'bubble',
+    shape: 'ring',
   },
   'jazz-golden-dust': {
-    count: 280,
+    count: 420,
     colorA: '#ffd978',
     colorB: '#c9a227',
-    opacity: 0.38,
-    size: 0.032,
-    riseSpeed: 0.024,
-    horizontalDrift: 0.01,
+    opacity: 0.68,
+    size: 0.1,
+    riseSpeed: 0.08,
+    horizontalDrift: 0.05,
+    motion: 'float',
+    shape: 'spark',
   },
   'nordic-snow-dust': {
-    count: 320,
+    count: 520,
     colorA: '#f5f8ff',
     colorB: '#b8cce8',
-    opacity: 0.4,
-    size: 0.028,
-    riseSpeed: 0.022,
-    horizontalDrift: 0.018,
+    opacity: 0.76,
+    size: 0.115,
+    riseSpeed: 0.1,
+    horizontalDrift: 0.09,
+    motion: 'fall',
+    shape: 'flake',
   },
   'campfire-embers': {
-    count: 360,
+    count: 520,
     colorA: '#ffb347',
     colorB: '#ff6b2b',
-    opacity: 0.52,
-    size: 0.022,
-    riseSpeed: 0.078,
-    horizontalDrift: 0.024,
+    opacity: 0.82,
+    size: 0.085,
+    riseSpeed: 0.24,
+    horizontalDrift: 0.08,
+    motion: 'rise',
+    shape: 'spark',
   },
   'nature-leaves': {
-    count: 300,
+    count: 360,
     colorA: '#7dff9a',
     colorB: '#3cb878',
-    opacity: 0.48,
-    size: 0.024,
-    riseSpeed: 0.028,
-    horizontalDrift: 0.028,
+    opacity: 0.72,
+    size: 0.145,
+    riseSpeed: 0.09,
+    horizontalDrift: 0.13,
+    motion: 'fall',
+    shape: 'leaf',
   },
   'city-light-streaks': {
-    count: 360,
+    count: 460,
     colorA: '#ffd978',
     colorB: '#ff9f43',
-    opacity: 0.55,
-    size: 0.02,
-    riseSpeed: 0.052,
-    horizontalDrift: 0.034,
+    opacity: 0.86,
+    size: 0.22,
+    riseSpeed: 0.26,
+    horizontalDrift: 0.12,
+    motion: 'streak',
+    shape: 'streak',
   },
   'desert-sand-mist': {
-    count: 420,
+    count: 360,
     colorA: '#f4d4a0',
     colorB: '#c9956a',
-    opacity: 0.44,
-    size: 0.03,
-    riseSpeed: 0.022,
-    horizontalDrift: 0.026,
+    opacity: 0.62,
+    size: 0.2,
+    riseSpeed: 0.055,
+    horizontalDrift: 0.16,
+    motion: 'haze',
+    shape: 'mist',
   },
 }
 
@@ -127,9 +151,11 @@ const defaultPreset: ParticlePresetConfig = {
   colorA: '#d8e8ff',
   colorB: '#9ec4ff',
   opacity: 0.42,
-  size: 0.028,
-  riseSpeed: 0.04,
-  horizontalDrift: 0.014,
+  size: 0.1,
+  riseSpeed: 0.08,
+  horizontalDrift: 0.05,
+  motion: 'float',
+  shape: 'star',
 }
 
 function rand(min: number, max: number) {
@@ -144,11 +170,100 @@ function getPresetConfig(preset: string) {
   return presetConfigs[preset] ?? defaultPreset
 }
 
+function createParticleTexture(shape: ParticlePresetConfig['shape']) {
+  const canvas = document.createElement('canvas')
+  canvas.width = 96
+  canvas.height = 96
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  ctx.translate(48, 48)
+  ctx.fillStyle = 'white'
+  ctx.strokeStyle = 'white'
+  ctx.lineCap = 'round'
+  ctx.lineJoin = 'round'
+
+  if (shape === 'streak') {
+    const gradient = ctx.createLinearGradient(-44, 0, 44, 0)
+    gradient.addColorStop(0, 'rgba(255,255,255,0)')
+    gradient.addColorStop(0.45, 'rgba(255,255,255,0.95)')
+    gradient.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.strokeStyle = gradient
+    ctx.lineWidth = 9
+    ctx.beginPath()
+    ctx.moveTo(-42, 0)
+    ctx.lineTo(42, 0)
+    ctx.stroke()
+  } else if (shape === 'ring') {
+    ctx.lineWidth = 6
+    ctx.globalAlpha = 0.9
+    ctx.beginPath()
+    ctx.arc(0, 0, 26, 0, Math.PI * 2)
+    ctx.stroke()
+    ctx.globalAlpha = 0.25
+    ctx.beginPath()
+    ctx.arc(0, 0, 36, 0, Math.PI * 2)
+    ctx.stroke()
+  } else if (shape === 'leaf') {
+    ctx.rotate(-0.5)
+    ctx.beginPath()
+    ctx.ellipse(0, 0, 14, 32, 0, 0, Math.PI * 2)
+    ctx.fill()
+  } else if (shape === 'flake') {
+    ctx.lineWidth = 4
+    for (let i = 0; i < 6; i += 1) {
+      ctx.rotate(Math.PI / 3)
+      ctx.beginPath()
+      ctx.moveTo(0, 0)
+      ctx.lineTo(0, 32)
+      ctx.stroke()
+    }
+    ctx.beginPath()
+    ctx.arc(0, 0, 7, 0, Math.PI * 2)
+    ctx.fill()
+  } else if (shape === 'mist') {
+    const gradient = ctx.createRadialGradient(0, 0, 4, 0, 0, 42)
+    gradient.addColorStop(0, 'rgba(255,255,255,0.55)')
+    gradient.addColorStop(0.45, 'rgba(255,255,255,0.25)')
+    gradient.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = gradient
+    ctx.beginPath()
+    ctx.arc(0, 0, 42, 0, Math.PI * 2)
+    ctx.fill()
+  } else if (shape === 'star') {
+    ctx.lineWidth = 5
+    ctx.beginPath()
+    ctx.moveTo(-28, 0)
+    ctx.lineTo(28, 0)
+    ctx.moveTo(0, -28)
+    ctx.lineTo(0, 28)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.arc(0, 0, 9, 0, Math.PI * 2)
+    ctx.fill()
+  } else {
+    const gradient = ctx.createRadialGradient(0, 0, 2, 0, 0, 34)
+    gradient.addColorStop(0, 'rgba(255,255,255,1)')
+    gradient.addColorStop(0.35, 'rgba(255,255,255,0.75)')
+    gradient.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = gradient
+    ctx.beginPath()
+    ctx.arc(0, 0, 34, 0, Math.PI * 2)
+    ctx.fill()
+  }
+
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.needsUpdate = true
+  return texture
+}
+
 export default function ParticleLayer({ preset, paused = false, intensity = 1 }: ParticleLayerProps) {
   const config = getPresetConfig(preset)
   const pointsRef = useRef<THREE.Points>(null)
   const positionRef = useRef<THREE.BufferAttribute>(null)
   const volume = useMemo(() => ({ x: 7.5, y: 4.4, z: 4.8 }), [])
+  const particleTexture = useMemo(() => createParticleTexture(config.shape), [config.shape])
 
   const positions = useMemo(() => {
     const arr = new Float32Array(config.count * 3)
@@ -190,16 +305,44 @@ export default function ParticleLayer({ preset, paused = false, intensity = 1 }:
       const idx = i * 3
       const phase = i * 0.137
 
-      const verticalDrift = config.riseSpeed * (0.65 + safeIntensity * 0.55)
-      const verticalBob = Math.sin(now * 0.42 + phase) * dt * config.riseSpeed * 0.32
+      const speed = config.riseSpeed * (0.65 + safeIntensity * 0.55)
+      const bob = Math.sin(now * 0.42 + phase) * dt * config.riseSpeed * 0.32
 
-      arr[idx + 1] += dt * verticalDrift + verticalBob
-      arr[idx] += Math.sin(now * 0.08 + phase) * dt * config.horizontalDrift
-      arr[idx + 2] += Math.cos(now * 0.06 + phase) * dt * config.horizontalDrift * 0.6
+      switch (config.motion) {
+        case 'fall':
+          arr[idx + 1] -= dt * speed * 1.8 + bob
+          arr[idx] += Math.sin(now * 0.32 + phase) * dt * config.horizontalDrift * 3.8
+          break
+        case 'bubble':
+          arr[idx + 1] += dt * speed * 2 + bob
+          arr[idx] += Math.sin(now * 1.35 + phase) * dt * config.horizontalDrift * 4
+          arr[idx + 2] += Math.cos(now * 0.8 + phase) * dt * config.horizontalDrift * 1.5
+          break
+        case 'streak':
+          arr[idx] += dt * speed * 5.5
+          arr[idx + 1] += Math.sin(now * 0.45 + phase) * dt * config.horizontalDrift * 1.5
+          break
+        case 'haze':
+          arr[idx] += dt * config.horizontalDrift * (1.9 + safeIntensity)
+          arr[idx + 1] += Math.sin(now * 0.3 + phase) * dt * config.riseSpeed * 1.1
+          arr[idx + 2] += Math.cos(now * 0.26 + phase) * dt * config.horizontalDrift * 1.5
+          break
+        case 'float':
+          arr[idx + 1] += Math.sin(now * 0.45 + phase) * dt * speed * 1.8
+          arr[idx] += Math.sin(now * 0.24 + phase) * dt * config.horizontalDrift * 2.8
+          arr[idx + 2] += Math.cos(now * 0.18 + phase) * dt * config.horizontalDrift * 1.8
+          break
+        case 'rise':
+        default:
+          arr[idx + 1] += dt * speed * 2 + bob
+          arr[idx] += Math.sin(now * 0.2 + phase) * dt * config.horizontalDrift * 2.4
+          arr[idx + 2] += Math.cos(now * 0.14 + phase) * dt * config.horizontalDrift * 1.4
+          break
+      }
 
-      if (arr[idx + 1] > volume.y) {
-        arr[idx] = rand(-volume.x, volume.x)
-        arr[idx + 1] = -volume.y
+      if (arr[idx + 1] > volume.y || arr[idx + 1] < -volume.y || arr[idx] > volume.x || arr[idx] < -volume.x) {
+        arr[idx] = config.motion === 'streak' ? -volume.x : rand(-volume.x, volume.x)
+        arr[idx + 1] = config.motion === 'fall' ? volume.y : config.motion === 'rise' || config.motion === 'bubble' ? -volume.y : rand(-volume.y, volume.y)
         arr[idx + 2] = rand(-volume.z, volume.z)
       }
     }
@@ -207,8 +350,11 @@ export default function ParticleLayer({ preset, paused = false, intensity = 1 }:
     attr.needsUpdate = true
 
     if (pointsRef.current) {
-      pointsRef.current.position.y = Math.sin(now * 0.12) * 0.18 * safeIntensity
-      pointsRef.current.rotation.z = Math.sin(now * 0.035) * 0.012
+      pointsRef.current.position.y = Math.sin(now * 0.16) * 0.3 * safeIntensity
+      pointsRef.current.rotation.z =
+        config.motion === 'streak'
+          ? -0.16
+          : Math.sin(now * (config.motion === 'haze' ? 0.08 : 0.05)) * 0.04
     }
   })
 
@@ -227,6 +373,8 @@ export default function ParticleLayer({ preset, paused = false, intensity = 1 }:
       </bufferGeometry>
       <pointsMaterial
         vertexColors
+        map={particleTexture ?? undefined}
+        alphaTest={0.02}
         size={config.size}
         sizeAttenuation
         transparent

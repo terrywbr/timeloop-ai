@@ -247,23 +247,23 @@ AI DJ 開口說話時，音樂音量會 **暫時降至 70%**（ducking），說�
 | 實際程式 | 約 **每 1 分鐘** 檢查一次是否該播報（非 30 分鐘） |
 | 建議 | 若需精確 30 分鐘間隔，請等待 Phase 2 修正；目前以實際體驗為準 |
 
-### 4.4 東南亞 th / vi 硬性規則（產品設計，非 Bug）
+### 4.4 泰文 / 越南文 DJ 語音
 
 針對 **泰語（th）** 與 **越南語（vi）** 市場：
 
 | 層級 | 語言 |
 |------|------|
 | 前端 UI、Overlay 範本 | **100% 泰文 / 越南文** |
-| AI DJ **口播文案**（LLM + fallback） | **固定英語** |
-| AI DJ **TTS 語音** | **固定 en-US** |
+| AI DJ **口播文案**（LLM + fallback） | **泰文 / 越南文** |
+| AI DJ **TTS 語音** | Edge TTS **th-TH / vi-VN** |
 
-**設計理由：** 規避東南亞本地 TTS 機械感，提升深夜直播間國際格調。
+Edge TTS 已提供可用的泰文與越南文 Neural voice，因此這兩種語言會和其他語言一樣，文字與語音都使用當地語言。
 
 **操作範例：**
 
 1. 語言選單切換至 **ไทย**
 2. 控制面板、畫廊等 UI 顯示泰文
-3. 開啟 DJ 語音 → 聽到 **英語** 口播，字幕亦為英語
+3. 開啟 DJ 語音 → 聽到 **泰文** 口播，字幕亦為泰文
 
 ---
 
@@ -443,9 +443,9 @@ AI DJ 開口說話時，音樂音量會 **暫時降至 70%**（ducking），說�
 
 | 方案 | 主要權益 | 取得方式 |
 |------|----------|----------|
-| **Free** | 每月 5 次 AI 生成（UI 文案） | 註冊預設 |
+| **Free** | 每月 50 點（標準 AI 生圖每次 10 點） | 註冊預設 |
 | **VIP** | 無限生成、下載背景 JPG | Lemon Squeezy 月訂閱（全球站） |
-| **Streamer** | 自定義 Overlay、背景輪播 API、圖庫上傳 | 管理員手動開通；Lemon 第三 variant（Phase 2） |
+| **Streamer** | 自定義 Overlay、背景輪播 API、圖庫上傳、Scene Packs（24h 自動輪播）與每月生成配額 | 管理員手動開通；可選 Lemon 第三 variant（已配置時） |
 | **Credits 包** | 額外生成點數 | Lemon 一次性購買 |
 
 ### 9.2 全球站結帳（Lemon Squeezy）
@@ -563,8 +563,8 @@ https://cn.timeloopai.net/?stream=1
 | Español | es | — |
 | Français | fr | — |
 | Deutsch | de | — |
-| ไทย | th | **UI 泰文；DJ 語音英語** |
-| Tiếng Việt | vi | **UI 越南文；DJ 語音英語** |
+| ไทย | th | UI 泰文；DJ 文字與語音泰文 |
+| Tiếng Việt | vi | UI 越南文；DJ 文字與語音越南文 |
 
 選擇後立即生效，偏好保存在 `localStorage`（`timeloop-language`）。首次訪問會依瀏覽器語言自動偵測。
 
@@ -735,7 +735,7 @@ curl https://app.timeloopai.net/api/health
 | 生成按鈕無反應 | 未登入或點數不足 | Google 登入；確認 Credits 或升級 VIP |
 | CN 站找不到 VIP 按鈕 | 產品設計 | 使用微信手動開通面板 |
 | 想上傳自訂背景 / Overlay | 非 Streamer | 管理員 grant `streamer` 或等待 Phase 2 自助購買 |
-| 泰文/越南文 UI 但 DJ 說英語 | **產品設計** | 東南亞市場硬性 EN 語音，非 Bug |
+| 泰文/越南文 UI 但 DJ 說英語 | 語音 locale 或 Edge voice 對應異常 | 檢查 `/api/dj/greet`、`/api/dj/speak` 的 locale 與 Edge TTS 設定 |
 | admin grant 401 | Secret 錯誤 | 檢查 `x-admin-secret` 與 Wrangler secret |
 | admin grant 503 | 未配置 | 設定 `ADMIN_API_SECRET` 並重新 deploy |
 
@@ -756,13 +756,11 @@ curl https://app.timeloopai.net/api/health
 | 功能 | Free | VIP | Streamer |
 |------|------|-----|----------|
 | 專注艙 + 電台 | ✓ | ✓ | ✓ |
-| AI 生成 | 5 次/月* | 無限* | 同 VIP |
+| AI 生成 | 每月 50 點（標準每次 10 點） | 無限 | 無限 |
 | 下載背景 | ✗ | ✓ | ✓ |
 | `?stream=1` 觀看 | ✓（不限時） | ✓（不限時） | ✓（不限時） |
 | 背景輪播 API | ✗ | ✗ | ✓ |
 | Overlay 自訂 API | 預設範本 | 預設範本 | ✓（API） |
-
-\* UI 文案；實際扣點邏輯以伺服器 API 為準。
 
 ### 14.3 主要 API 一覽
 
@@ -777,13 +775,12 @@ curl https://app.timeloopai.net/api/health
 | `/api/admin/grant-plan` | POST | 人工開通 | x-admin-secret |
 | `/api/dj/greet` | POST | AI DJ 文案 | 無 |
 
-### 14.4 Phase 2 已知限制（尚未上線 UI）
+### 14.4 目前待完善項目
 
 | 功能 | 現況 |
 |------|------|
 | Overlay 視覺編輯器 | 僅 API + 語系預設範本 |
-| 背景圖庫上傳 UI | 控制面板 Streamer 區塊（Phase 1） |
-| Streamer Pass Lemon 自助購買 | 需第三 variant |
+| Streamer Pass Lemon 自助購買 | 需配置 `LEMON_SQUEEZY_STREAMER_VARIANT_ID` 後啟用 |
 | DJ 定時陪伴 30 分鐘 | UI 文案與程式 interval 不一致 |
 
 ### 14.5 修訂紀錄

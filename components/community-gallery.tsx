@@ -1,128 +1,63 @@
 'use client'
 
-import { useRef, useCallback, useEffect, useState } from 'react'
-import {
-  ChevronLeft,
-  ChevronDown,
-  ChevronUp,
-  ImageIcon,
-  Headphones,
-  Radio,
-  Sparkles,
-} from 'lucide-react'
+import { useRef, useCallback, useEffect, useMemo, useState } from 'react'
+import { ChevronLeft, ImageIcon, CheckSquare, Square } from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
 import { SCENE_DATA, type SceneGalleryItem } from '@/lib/scene-gallery-data'
-import type { MusicChannelKey } from '@/lib/music-channels'
-import type { GalleryWorld } from '@/lib/community/types'
 import { getCommunityStrings } from '@/lib/community-i18n'
-import { useCommunityGallery } from '@/hooks/use-community-gallery'
-import { submitWorldReport } from '@/lib/api-client'
-import { GalleryWorldCard } from '@/components/community/gallery-world-card'
-import { GalleryMysteryGrid } from '@/components/community/gallery-mystery-grid'
-import { GALLERY_GRID_SLOT_COUNT } from '@/lib/community/gallery-grid'
-import type { ComponentType } from 'react'
+import type { PublicGeneratedWorld } from '@/lib/supabase-types'
+
+const ROTATION_MAX = 20
 
 interface CommunityGalleryProps {
   isExpanded: boolean
   onExpandedChange: (expanded: boolean) => void
-  accessToken: string | null
-  onRequireAuth: () => void | Promise<boolean>
   onEnterOfficialScene?: (item: SceneGalleryItem) => void
-  onEnterWorld?: (world: GalleryWorld) => void
-  coFocusEnabled: boolean
-  onCoFocusEnabledChange: (enabled: boolean) => void
-  presenceCount: number
-}
-
-const stationHintIcon: Partial<Record<MusicChannelKey, ComponentType<{ className?: string }>>> = {
-  lofiChill: Headphones,
-  synthNight: Radio,
-  ambientForest: Sparkles,
+  myWorlds: PublicGeneratedWorld[]
+  onEnterMyWorld: (world: PublicGeneratedWorld) => void
+  canToggleRotation: boolean
+  isWorldInRotation: (world: PublicGeneratedWorld) => boolean
+  onToggleWorldRotation: (world: PublicGeneratedWorld) => void | Promise<void>
 }
 
 export default function CommunityGallery({
   isExpanded,
   onExpandedChange,
-  accessToken,
-  onRequireAuth,
   onEnterOfficialScene,
-  onEnterWorld,
-  coFocusEnabled,
-  onCoFocusEnabledChange,
-  presenceCount,
+  myWorlds,
+  onEnterMyWorld,
+  canToggleRotation,
+  isWorldInRotation,
+  onToggleWorldRotation,
 }: CommunityGalleryProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const [isAdExpanded, setIsAdExpanded] = useState(false)
+  const [tab, setTab] = useState<'official' | 'my'>('my')
   const { t, language } = useLanguage()
   const ct = getCommunityStrings(language)
-  const gallery = useCommunityGallery(accessToken)
+
+  const orderedMyWorlds = useMemo(
+    () =>
+      [...myWorlds].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
+    [myWorlds],
+  )
+  const selectedRotationCount = useMemo(
+    () => orderedMyWorlds.filter((world) => isWorldInRotation(world)).length,
+    [orderedMyWorlds, isWorldInRotation],
+  )
 
   const startCollapseTimer = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current)
     timeoutRef.current = setTimeout(() => onExpandedChange(false), 3000)
   }, [onExpandedChange])
 
-  const handleShare = useCallback((world: GalleryWorld) => {
-    const url = `${window.location.origin}/world/${world.id}`
-    void navigator.clipboard.writeText(url).then(() => {
-      window.alert(ct.shareCopied)
-    })
-  }, [ct.shareCopied])
-
-  const handleReport = useCallback(
-    async (world: GalleryWorld) => {
-      const ok = await onRequireAuth()
-      if (!ok || !accessToken) {
-        window.alert(ct.loginToInteract)
-        return
-      }
-      const reason = window.prompt(ct.reportPrompt)
-      if (!reason?.trim()) return
-      try {
-        await submitWorldReport(accessToken, world.id, reason.trim())
-        window.alert(ct.reportThanks)
-      } catch (e) {
-        window.alert(e instanceof Error ? e.message : 'Report failed')
-      }
-    },
-    [accessToken, ct, onRequireAuth],
-  )
-
-  const handleLike = useCallback(
-    async (world: GalleryWorld) => {
-      if (!accessToken) {
-        window.alert(ct.loginToInteract)
-        return
-      }
-      await gallery.handleLike(world)
-    },
-    [accessToken, ct.loginToInteract, gallery],
-  )
-
-  const handleSave = useCallback(
-    async (world: GalleryWorld) => {
-      if (!accessToken) {
-        window.alert(ct.loginToInteract)
-        return
-      }
-      await gallery.handleSave(world)
-    },
-    [accessToken, ct.loginToInteract, gallery],
-  )
-
   useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
   }, [])
-
-  const uniqueTabs = [
-    { key: 'newest', label: ct.tabNewest, galleryTab: 'community' as const, sort: 'newest' as const },
-    { key: 'featured', label: ct.tabFeatured, galleryTab: 'community' as const, sort: 'featured' as const },
-    { key: 'following', label: ct.tabFollowing, galleryTab: 'community' as const, sort: 'following' as const },
-    { key: 'official', label: ct.tabOfficial, galleryTab: 'official' as const, sort: null },
-  ]
 
   return (
     <div
@@ -164,116 +99,99 @@ export default function CommunityGallery({
             <h2 className="text-sm font-semibold text-foreground">{t.gallery.title}</h2>
           </div>
           <div className="flex flex-wrap gap-1">
-            {uniqueTabs.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => {
-                  gallery.setGalleryTab(tab.galleryTab)
-                  if (tab.sort) gallery.setSort(tab.sort)
-                }}
-                className={`rounded-md px-2 py-0.5 text-[10px] transition ${
-                  gallery.galleryTab === tab.galleryTab &&
-                  (tab.sort === null || gallery.sort === tab.sort)
-                    ? 'bg-accent/20 text-accent'
-                    : 'text-muted-foreground hover:bg-foreground/5'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-          {coFocusEnabled && presenceCount > 0 ? (
-            <p className="mt-2 text-[10px] text-muted-foreground">
-              {ct.coFocusCount.replace('{count}', String(presenceCount))}
-            </p>
-          ) : null}
-          <label className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
-            <input
-              type="checkbox"
-              checked={coFocusEnabled}
-              onChange={(e) => onCoFocusEnabledChange(e.target.checked)}
-              className="rounded border-foreground/20"
-            />
-            {coFocusEnabled ? ct.coFocusLeave : ct.coFocusJoin}
-          </label>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 md:grid-cols-3">
-          {gallery.galleryTab === 'official'
-            ? SCENE_DATA.map((item) => (
-                <OfficialSceneCard
-                  key={item.id}
-                  item={item}
-                  enterLabel={t.gallery.enterScene}
-                  onEnterScene={onEnterOfficialScene}
-                />
-              ))
-            : (
-              <>
-                <GalleryMysteryGrid
-                  worlds={gallery.worlds.slice(0, GALLERY_GRID_SLOT_COUNT)}
-                  ct={ct}
-                  enterLabel={t.gallery.enterScene}
-                  aspectClass="aspect-video"
-                  onEnter={(world) => onEnterWorld?.(world)}
-                  onLike={handleLike}
-                  onSave={handleSave}
-                  onShare={handleShare}
-                  onReport={handleReport}
-                />
-                {gallery.worlds.slice(GALLERY_GRID_SLOT_COUNT).map((world) => (
-                  <GalleryWorldCard
-                    key={world.id}
-                    world={world}
-                    ct={ct}
-                    enterLabel={t.gallery.enterScene}
-                    onEnter={() => onEnterWorld?.(world)}
-                    onLike={handleLike}
-                    onSave={handleSave}
-                    onShare={handleShare}
-                    onReport={handleReport}
-                    gridCell
-                    aspectClass="aspect-video"
-                  />
-                ))}
-              </>
-            )}
-        </div>
-
-        {gallery.galleryTab === 'community' && gallery.hasMore ? (
-          <div className="px-4 pb-4">
             <button
               type="button"
-              disabled={gallery.loading}
-              onClick={() => gallery.loadMore()}
-              className="w-full rounded-lg border border-foreground/10 py-2 text-xs text-muted-foreground hover:bg-foreground/5"
-            >
-              {gallery.loading ? '…' : 'More'}
-            </button>
-          </div>
-        ) : null}
-
-        <div className="sticky bottom-0 z-10 p-2">
-          <div className="glass overflow-hidden rounded-xl border border-foreground/10 bg-popover/50">
-            <button
-              onClick={() => setIsAdExpanded(!isAdExpanded)}
-              className="flex w-full items-center justify-between px-3 py-2 text-xs text-muted-foreground/60 transition-all hover:bg-foreground/5"
-            >
-              <span>Sponsored</span>
-              {isAdExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
-            </button>
-            <div
-              className={`overflow-hidden transition-all duration-300 ease-out ${
-                isAdExpanded ? 'max-h-[150px] opacity-100' : 'max-h-0 opacity-0'
+              onClick={() => setTab('official')}
+              className={`rounded-md px-2 py-0.5 text-[11px] transition ${
+                tab === 'official'
+                  ? 'bg-accent/20 text-accent'
+                  : 'text-muted-foreground hover:bg-foreground/5'
               }`}
             >
-              <div className="flex h-[120px] items-center justify-center border-t border-foreground/5 px-3 pb-3">
-                <span className="text-xs text-muted-foreground/40">Sponsored Content</span>
-              </div>
-            </div>
+              {ct.tabOfficial}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('my')}
+              className={`rounded-md px-2 py-0.5 text-[11px] transition ${
+                tab === 'my'
+                  ? 'bg-accent/20 text-accent'
+                  : 'text-muted-foreground hover:bg-foreground/5'
+              }`}
+            >
+              {ct.tabMine}
+            </button>
           </div>
         </div>
+
+        {tab === 'official' ? (
+          <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 md:grid-cols-3">
+            {SCENE_DATA.map((item) => (
+              <OfficialSceneCard
+                key={item.id}
+                item={item}
+                enterLabel={t.gallery.enterScene}
+                onEnterScene={onEnterOfficialScene}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3 p-4">
+            <p className="text-xs font-medium text-accent">{ct.myImagesTitle}</p>
+            <p className="text-xs text-muted-foreground">
+              {ct.rotationStats
+                .replace('{selected}', String(selectedRotationCount))
+                .replace('{max}', String(ROTATION_MAX))}
+            </p>
+            {orderedMyWorlds.length === 0 ? (
+              <p className="text-xs text-muted-foreground">{ct.noMyImages}</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {orderedMyWorlds.map((world) => {
+                  const selected = isWorldInRotation(world)
+                  return (
+                    <div key={world.id} className="overflow-hidden rounded-lg border border-foreground/10">
+                      <button
+                        type="button"
+                        onClick={() => onEnterMyWorld(world)}
+                        className="group relative block aspect-video w-full text-left"
+                        title={world.title}
+                      >
+                        <img
+                          src={world.backgroundImage}
+                          alt={world.title}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-x-0 bottom-0 bg-black/45 px-2 py-1">
+                          <p className="truncate text-[11px] text-white">{world.title}</p>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void onToggleWorldRotation(world)}
+                        disabled={!canToggleRotation}
+                        className={`flex w-full items-center justify-between px-3 py-2 text-xs transition ${
+                          canToggleRotation
+                            ? 'bg-foreground/5 hover:bg-foreground/10'
+                            : 'cursor-not-allowed bg-foreground/5 opacity-60'
+                        }`}
+                        title={canToggleRotation ? undefined : ct.rotationStreamerOnly}
+                      >
+                        <span>{selected ? ct.rotationSelected : ct.rotationSelect}</span>
+                        {selected ? (
+                          <CheckSquare className="h-4 w-4 text-emerald-300" />
+                        ) : (
+                          <Square className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

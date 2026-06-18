@@ -18,15 +18,20 @@ type StreamAudioPlayerProps = {
 const CROSSFADE_DURATION_MS = 2200
 const STALL_CHECK_MS = 20000
 const STREAM_STALL_CHECK_MS = 5000
+const HARD_KEEPALIVE_MS = 5000
+const SILENCE_CONSECUTIVE_THRESHOLD = 2
+const SILENT_RMS_THRESHOLD = 0.003
 const MAX_SOFT_RECONNECTS = 3
 const STREAM_CACHE_BUST_AFTER = 4
-const STREAM_FAILURE_AFTER = 12
+const STREAM_TIER_FALLBACK_AFTER = 3
 const SOFT_RECONNECT_DELAY_MS = 800
 const STREAM_MAX_RECONNECT_DELAY_MS = 30000
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
 const toAudioVolume = (volume: number) => clamp01(volume / 100)
 const lerp = (start: number, end: number, progress: number) => start + (end - start) * progress
+const isAutoplayBlocked = (error: unknown) =>
+  error instanceof DOMException && error.name === 'NotAllowedError'
 
 export default function StreamAudioPlayer({
   streamUrl,
@@ -47,10 +52,16 @@ export default function StreamAudioPlayer({
   const animationFrameRef = useRef<number | null>(null)
   const stallTimerRef = useRef<number | null>(null)
   const softReconnectTimerRef = useRef<number | null>(null)
+  const hardKeepaliveTimerRef = useRef<number | null>(null)
   const softReconnectCountRef = useRef(0)
+  const silentConsecutiveCountRef = useRef(0)
   const lastProgressAtRef = useRef(0)
   const streamModeRef = useRef(streamMode)
   const onPlaybackErrorRef = useRef(onPlaybackError)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
+  const analyserDataRef = useRef<Uint8Array | null>(null)
+  const sourceNodeMapRef = useRef<WeakMap<HTMLAudioElement, MediaElementAudioSourceNode>>(new WeakMap())
 
   useEffect(() => {
     streamModeRef.current = streamMode
@@ -90,14 +101,67 @@ export default function StreamAudioPlayer({
     }
   }
 
+  const clearHardKeepaliveTimer = () => {
+    if (hardKeepaliveTimerRef.current !== null) {
+      window.clearInterval(hardKeepaliveTimerRef.current)
+      hardKeepaliveTimerRef.current = null
+    }
+  }
+
   const reportFailure = (url: string) => {
     softReconnectCountRef.current = 0
+    silentConsecutiveCountRef.current = 0
     onPlaybackErrorRef.current?.(url)
   }
 
   const markProgress = () => {
     lastProgressAtRef.current = Date.now()
     softReconnectCountRef.current = 0
+    silentConsecutiveCountRef.current = 0
+  }
+
+  const sampleRms = (audio: HTMLAudioElement): number | null => {
+    const Ctx = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!Ctx) return null
+
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new Ctx()
+      }
+      if (audioContextRef.current.state === 'suspended') {
+        // Best-effort resume; some platforms require gesture.
+        void audioContextRef.current.resume().catch(() => {})
+        return null
+      }
+      if (!analyserRef.current) {
+        const analyser = audioContextRef.current.createAnalyser()
+        analyser.fftSize = 1024
+        analyser.smoothingTimeConstant = 0.85
+        analyserRef.current = analyser
+        analyserDataRef.current = new Uint8Array(analyser.fftSize)
+      }
+
+      let source = sourceNodeMapRef.current.get(audio)
+      if (!source) {
+        source = audioContextRef.current.createMediaElementSource(audio)
+        source.connect(analyserRef.current)
+        analyserRef.current.connect(audioContextRef.current.destination)
+        sourceNodeMapRef.current.set(audio, source)
+      }
+
+      const data = analyserDataRef.current
+      if (!data) return null
+      analyserRef.current.getByteTimeDomainData(data)
+      let sum = 0
+      for (let i = 0; i < data.length; i += 1) {
+        const centered = (data[i]! - 128) / 128
+        sum += centered * centered
+      }
+      return Math.sqrt(sum / data.length)
+    } catch {
+      // CORS/security restrictions on external streams can block analyser wiring.
+      return null
+    }
   }
 
   const scheduleStallCheck = (url: string, audio: HTMLAudioElement) => {
@@ -129,7 +193,7 @@ export default function StreamAudioPlayer({
       reportFailure(url)
       return
     }
-    if (isStream && softReconnectCountRef.current >= STREAM_FAILURE_AFTER) {
+    if (isStream && softReconnectCountRef.current >= STREAM_TIER_FALLBACK_AFTER) {
       reportFailure(url)
       return
     }
@@ -157,7 +221,8 @@ export default function StreamAudioPlayer({
           markProgress()
           scheduleStallCheck(url, audio)
         })
-        .catch(() => {
+        .catch((error: unknown) => {
+          if (isAutoplayBlocked(error)) return
           attemptSoftReconnect(url, audio)
         })
     }, getReconnectDelayMs())
@@ -244,7 +309,7 @@ export default function StreamAudioPlayer({
       const url = target.dataset.streamUrl ?? currentStreamUrlRef.current
       if (!url || !playingRef.current) return
       if (target !== getAudio(activeIndexRef.current)) return
-      if (Date.now() - lastProgressAtRef.current < 8000) return
+      if (Date.now() - lastProgressAtRef.current < getStallCheckMs()) return
       attemptSoftReconnect(url, target)
     }
 
@@ -325,7 +390,8 @@ export default function StreamAudioPlayer({
         markProgress()
         scheduleStallCheck(streamUrl, nextAudio)
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        if (isAutoplayBlocked(error)) return
         reportFailure(streamUrl)
       })
     fadeVolumes(
@@ -356,7 +422,8 @@ export default function StreamAudioPlayer({
           markProgress()
           scheduleStallCheck(currentStreamUrlRef.current, activeAudio)
         })
-        .catch(() => {
+        .catch((error: unknown) => {
+          if (isAutoplayBlocked(error)) return
           reportFailure(currentStreamUrlRef.current)
         })
       fadeVolumes(
@@ -373,6 +440,39 @@ export default function StreamAudioPlayer({
       })
     }
   }, [playing])
+
+  useEffect(() => {
+    clearHardKeepaliveTimer()
+    if (!streamModeRef.current) return
+
+    const monitor = () => {
+      if (!playingRef.current || mutedRef.current) {
+        silentConsecutiveCountRef.current = 0
+        return
+      }
+      const url = currentStreamUrlRef.current
+      const activeAudio = getAudio(activeIndexRef.current)
+      if (!url || !activeAudio) return
+
+      const noRecentProgress = Date.now() - lastProgressAtRef.current > HARD_KEEPALIVE_MS + 1000
+      const isBrokenState = activeAudio.error !== null || activeAudio.paused || activeAudio.readyState < 2
+      const rms = sampleRms(activeAudio)
+      const nearSilent = rms !== null && rms < SILENT_RMS_THRESHOLD
+
+      if (isBrokenState || noRecentProgress || nearSilent) {
+        silentConsecutiveCountRef.current += 1
+      } else {
+        silentConsecutiveCountRef.current = 0
+      }
+
+      if (silentConsecutiveCountRef.current >= SILENCE_CONSECUTIVE_THRESHOLD) {
+        reportFailure(url)
+      }
+    }
+
+    hardKeepaliveTimerRef.current = window.setInterval(monitor, HARD_KEEPALIVE_MS)
+    return () => clearHardKeepaliveTimer()
+  }, [streamMode, streamUrl, playing, muted])
 
   useEffect(() => {
     const tryPlay = () => {
@@ -402,6 +502,11 @@ export default function StreamAudioPlayer({
       stopFade()
       clearStallTimer()
       clearSoftReconnectTimer()
+      clearHardKeepaliveTimer()
+      if (audioContextRef.current) {
+        void audioContextRef.current.close().catch(() => {})
+        audioContextRef.current = null
+      }
     }
   }, [])
 
@@ -413,6 +518,7 @@ export default function StreamAudioPlayer({
         aria-hidden
         loop={loop}
         muted={muted}
+        crossOrigin="anonymous"
         playsInline
         preload="auto"
       />
@@ -422,6 +528,7 @@ export default function StreamAudioPlayer({
         aria-hidden
         loop={loop}
         muted={muted}
+        crossOrigin="anonymous"
         playsInline
         preload="auto"
       />

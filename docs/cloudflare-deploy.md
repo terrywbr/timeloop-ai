@@ -51,6 +51,7 @@ npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 npx wrangler secret put LEMON_SQUEEZY_API_KEY
 npx wrangler secret put LEMON_SQUEEZY_STORE_ID
 npx wrangler secret put LEMON_SQUEEZY_VIP_VARIANT_ID
+npx wrangler secret put LEMON_SQUEEZY_STREAMER_VARIANT_ID
 npx wrangler secret put LEMON_SQUEEZY_CREDIT_PACK_VARIANT_ID
 npx wrangler secret put LEMON_SQUEEZY_WEBHOOK_SECRET
 ```

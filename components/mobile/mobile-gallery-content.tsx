@@ -1,76 +1,47 @@
 'use client'
 
-import { useCallback } from 'react'
-import { ImageIcon, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { ImageIcon, X, CheckSquare, Square } from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
 import { SCENE_DATA, type SceneGalleryItem as GallerySceneItem } from '@/lib/scene-gallery-data'
-import type { GalleryWorld } from '@/lib/community/types'
 import { getCommunityStrings } from '@/lib/community-i18n'
-import { useCommunityGallery } from '@/hooks/use-community-gallery'
-import { submitWorldReport } from '@/lib/api-client'
-import { GalleryWorldCard } from '@/components/community/gallery-world-card'
-import { GalleryMysteryGrid } from '@/components/community/gallery-mystery-grid'
-import { GALLERY_GRID_SLOT_COUNT } from '@/lib/community/gallery-grid'
+import type { PublicGeneratedWorld } from '@/lib/supabase-types'
+
+const ROTATION_MAX = 20
 
 export interface MobileGalleryContentProps {
   onClose: () => void
-  accessToken: string | null
-  onRequireAuth: () => void | Promise<boolean>
   onEnterOfficialScene: (item: GallerySceneItem) => void
-  onEnterWorld: (world: GalleryWorld) => void
-  coFocusEnabled: boolean
-  onCoFocusEnabledChange: (enabled: boolean) => void
-  presenceCount: number
+  myWorlds: PublicGeneratedWorld[]
+  onEnterMyWorld: (world: PublicGeneratedWorld) => void
+  canToggleRotation: boolean
+  isWorldInRotation: (world: PublicGeneratedWorld) => boolean
+  onToggleWorldRotation: (world: PublicGeneratedWorld) => void | Promise<void>
 }
 
 export default function MobileGalleryContent({
   onClose,
-  accessToken,
-  onRequireAuth,
   onEnterOfficialScene,
-  onEnterWorld,
-  coFocusEnabled,
-  onCoFocusEnabledChange,
-  presenceCount,
+  myWorlds,
+  onEnterMyWorld,
+  canToggleRotation,
+  isWorldInRotation,
+  onToggleWorldRotation,
 }: MobileGalleryContentProps) {
   const { t, language } = useLanguage()
   const ct = getCommunityStrings(language)
-  const gallery = useCommunityGallery(accessToken)
-
-  const handleEnter = useCallback(
-    (world: GalleryWorld) => {
-      onEnterWorld(world)
-      onClose()
-    },
-    [onClose, onEnterWorld],
+  const [tab, setTab] = useState<'official' | 'my'>('my')
+  const orderedMyWorlds = useMemo(
+    () =>
+      [...myWorlds].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
+    [myWorlds],
   )
-
-  const handleShare = useCallback(
-    (world: GalleryWorld) => {
-      const url = `${window.location.origin}/world/${world.id}`
-      void navigator.clipboard.writeText(url).then(() => window.alert(ct.shareCopied))
-    },
-    [ct.shareCopied],
+  const selectedRotationCount = useMemo(
+    () => orderedMyWorlds.filter((world) => isWorldInRotation(world)).length,
+    [orderedMyWorlds, isWorldInRotation],
   )
-
-  const handleReport = useCallback(
-    async (world: GalleryWorld) => {
-      const ok = await onRequireAuth()
-      if (!ok || !accessToken) return
-      const reason = window.prompt(ct.reportPrompt)
-      if (!reason?.trim()) return
-      await submitWorldReport(accessToken, world.id, reason.trim())
-      window.alert(ct.reportThanks)
-    },
-    [accessToken, ct, onRequireAuth],
-  )
-
-  const tabButtons = [
-    { key: 'newest', label: ct.tabNewest, galleryTab: 'community' as const, sort: 'newest' as const },
-    { key: 'featured', label: ct.tabFeatured, galleryTab: 'community' as const, sort: 'featured' as const },
-    { key: 'following', label: ct.tabFollowing, galleryTab: 'community' as const, sort: 'following' as const },
-    { key: 'official', label: ct.tabOfficial, galleryTab: 'official' as const, sort: null },
-  ]
 
   return (
     <div className="no-scrollbar flex h-full flex-col overflow-y-auto p-4">
@@ -90,40 +61,29 @@ export default function MobileGalleryContent({
       </div>
 
       <div className="mb-3 flex flex-wrap gap-1">
-        {tabButtons.map((tab) => (
-          <button
-            key={tab.key}
-            type="button"
-            onClick={() => {
-              gallery.setGalleryTab(tab.galleryTab)
-              if (tab.sort) gallery.setSort(tab.sort)
-            }}
-            className={`rounded-md px-2 py-1 text-[10px] ${
-              gallery.galleryTab === tab.galleryTab &&
-              (tab.sort === null || gallery.sort === tab.sort)
-                ? 'bg-accent/20 text-accent'
-                : 'text-muted-foreground'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={() => setTab('official')}
+          className={`rounded-md px-2 py-1 text-[10px] ${
+            tab === 'official' ? 'bg-accent/20 text-accent' : 'text-muted-foreground'
+          }`}
+        >
+          {ct.tabOfficial}
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('my')}
+          className={`rounded-md px-2 py-1 text-[10px] ${
+            tab === 'my' ? 'bg-accent/20 text-accent' : 'text-muted-foreground'
+          }`}
+        >
+          {ct.tabMine}
+        </button>
       </div>
 
-      <label className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
-        <input
-          type="checkbox"
-          checked={coFocusEnabled}
-          onChange={(e) => onCoFocusEnabledChange(e.target.checked)}
-        />
-        {coFocusEnabled
-          ? ct.coFocusCount.replace('{count}', String(presenceCount))
-          : ct.coFocusJoin}
-      </label>
-
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        {gallery.galleryTab === 'official'
-          ? SCENE_DATA.map((item) => (
+      {tab === 'official' ? (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {SCENE_DATA.map((item) => (
               <button
                 key={item.id}
                 type="button"
@@ -135,64 +95,66 @@ export default function MobileGalleryContent({
               >
                 <img src={item.thumbnail} alt={item.title} className="h-full w-full object-cover" loading="lazy" />
               </button>
-            ))
-          : (
-            <>
-              <GalleryMysteryGrid
-                worlds={gallery.worlds.slice(0, GALLERY_GRID_SLOT_COUNT)}
-                ct={ct}
-                enterLabel={t.gallery.enterScene}
-                aspectClass="aspect-square"
-                compact
-                onEnter={handleEnter}
-                onLike={async (w) => {
-                  if (!accessToken) {
-                    window.alert(ct.loginToInteract)
-                    return
-                  }
-                  await gallery.handleLike(w)
-                }}
-                onSave={async (w) => {
-                  if (!accessToken) {
-                    window.alert(ct.loginToInteract)
-                    return
-                  }
-                  await gallery.handleSave(w)
-                }}
-                onShare={handleShare}
-                onReport={handleReport}
-              />
-              {gallery.worlds.slice(GALLERY_GRID_SLOT_COUNT).map((world) => (
-                <GalleryWorldCard
-                  key={world.id}
-                  world={world}
-                  ct={ct}
-                  enterLabel={t.gallery.enterScene}
-                  onEnter={handleEnter}
-                  onLike={async (w) => {
-                    if (!accessToken) {
-                      window.alert(ct.loginToInteract)
-                      return
-                    }
-                    await gallery.handleLike(w)
-                  }}
-                  onSave={async (w) => {
-                    if (!accessToken) {
-                      window.alert(ct.loginToInteract)
-                      return
-                    }
-                    await gallery.handleSave(w)
-                  }}
-                  onShare={handleShare}
-                  onReport={handleReport}
-                  compact
-                  gridCell
-                  aspectClass="aspect-square"
-                />
-              ))}
-            </>
+            ))}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-xs font-medium text-accent">{ct.myImagesTitle}</p>
+          <p className="text-xs text-muted-foreground">
+            {ct.rotationStats
+              .replace('{selected}', String(selectedRotationCount))
+              .replace('{max}', String(ROTATION_MAX))}
+          </p>
+          {orderedMyWorlds.length === 0 ? (
+            <p className="text-xs text-muted-foreground">{ct.noMyImages}</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {orderedMyWorlds.map((world) => {
+                const selected = isWorldInRotation(world)
+                return (
+                  <div key={world.id} className="overflow-hidden rounded-lg border border-foreground/10">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onEnterMyWorld(world)
+                        onClose()
+                      }}
+                      className="group relative block aspect-video w-full text-left"
+                      title={world.title}
+                    >
+                      <img
+                        src={world.backgroundImage}
+                        alt={world.title}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 bg-black/45 px-2 py-1">
+                        <p className="truncate text-[11px] text-white">{world.title}</p>
+                      </div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void onToggleWorldRotation(world)}
+                      disabled={!canToggleRotation}
+                      className={`flex w-full items-center justify-between px-3 py-2 text-xs ${
+                        canToggleRotation ? 'bg-foreground/5' : 'cursor-not-allowed bg-foreground/5 opacity-60'
+                      }`}
+                      title={canToggleRotation ? undefined : ct.rotationStreamerOnly}
+                    >
+                      <span>{selected ? ct.rotationSelected : ct.rotationSelect}</span>
+                      {selected ? (
+                        <CheckSquare className="h-4 w-4 text-emerald-300" />
+                      ) : (
+                        <Square className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
           )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

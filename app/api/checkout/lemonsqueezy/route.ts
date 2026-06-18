@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import {
   billingNotConfiguredMessage,
-  isBillingConfigured,
+  getMissingCheckoutEnvVars,
+  isCheckoutConfigured,
   isStreamerCheckoutConfigured,
   type CheckoutProductKind,
 } from '@/lib/billing-config'
@@ -28,13 +29,14 @@ function normalizeCheckoutKind(raw: unknown): CheckoutProductKind {
 
 export async function POST(req: Request) {
   try {
-    if (!isBillingConfigured()) {
-      return jsonError(billingNotConfiguredMessage(), 503)
-    }
-
     const auth = await getAuthenticatedUser(req)
     const body = (await req.json()) as { kind?: unknown }
     const kind = normalizeCheckoutKind(body.kind)
+
+    if (!isCheckoutConfigured(kind)) {
+      const missing = getMissingCheckoutEnvVars(kind)
+      return jsonError(`${billingNotConfiguredMessage()} 缺少：${missing.join(', ')}`, 503)
+    }
 
     if (kind === 'streamer' && !isStreamerCheckoutConfigured()) {
       return jsonError('Streamer Pass 自助購買尚未開放，請聯繫客服。', 503)

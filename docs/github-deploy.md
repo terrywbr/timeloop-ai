@@ -53,9 +53,11 @@ Repo → **Settings → Secrets and variables → Actions → New repository sec
 | `LEMON_SQUEEZY_API_KEY` | Lemon Squeezy API key（VIP 付費） |
 | `LEMON_SQUEEZY_STORE_ID` | Lemon Squeezy Store ID |
 | `LEMON_SQUEEZY_VIP_VARIANT_ID` | VIP 訂閱 variant ID |
+| `LEMON_SQUEEZY_STREAMER_VARIANT_ID` | Streamer 訂閱 variant ID（啟用直播主自助購買） |
 | `LEMON_SQUEEZY_CREDIT_PACK_VARIANT_ID` | 點數包 variant ID |
 | `LEMON_SQUEEZY_CREDIT_PACK_CREDITS` | `100`（點數包額度，可選） |
 | `LEMON_SQUEEZY_WEBHOOK_SECRET` | Webhook 簽章密鑰 |
+| `DEEPSEEK_API_KEY` | AI DJ 台詞生成（DeepSeek Chat） |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role |
 | `TOGETHER_API_KEY` | AI 生圖 |
 | `REPLICATE_API_TOKEN` | 深度圖 |
@@ -78,8 +80,27 @@ GitHub Actions 部署 workflow 會自動同步上述 **Secret 類** 變數到 Wo
 | `LEMON_SQUEEZY_API_KEY` | 結帳（可稍後加） |
 | `LEMON_SQUEEZY_STORE_ID` | 結帳 |
 | `LEMON_SQUEEZY_VIP_VARIANT_ID` | VIP 訂閱 |
+| `LEMON_SQUEEZY_STREAMER_VARIANT_ID` | Streamer 訂閱（可選） |
 | `LEMON_SQUEEZY_CREDIT_PACK_VARIANT_ID` | 點數包 |
 | `LEMON_SQUEEZY_WEBHOOK_SECRET` | Webhook 驗簽 |
+| `DEEPSEEK_API_KEY` | AI DJ 台詞生成 |
+
+### 正式金流（APPWAVE AI store #261374）
+
+部署請使用 **正式** Lemon 變數，勿用本地測試 store `129532`：
+
+| Secret | 正式值 |
+|--------|--------|
+| `LEMON_SQUEEZY_STORE_ID` | `261374` |
+| `LEMON_SQUEEZY_VIP_VARIANT_ID` | `1752571` |
+| `LEMON_SQUEEZY_STREAMER_VARIANT_ID` | `1771738` |
+| `LEMON_SQUEEZY_CREDIT_PACK_VARIANT_ID` | `1752612` |
+
+本機已設定 `.env.local` 時，可一鍵同步到 GitHub（需先 `gh auth login`）：
+
+```powershell
+node scripts/sync-github-secrets.mjs
+```
 
 若 Worker 尚未存在，可先在本機執行一次 `npm run deploy:cf` 建立，或在第一次 GitHub Actions 成功後再來加 Secrets。
 

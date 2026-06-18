@@ -1,6 +1,7 @@
 import {
   billingNotConfiguredMessage,
-  isBillingConfigured,
+  getMissingCheckoutEnvVars,
+  isCheckoutConfigured,
   resolveCreditPackByKind,
   type CheckoutProductKind,
 } from '@/lib/billing-config'
@@ -71,8 +72,9 @@ export async function createLemonSqueezyCheckout({
   userId: string
   email?: string | null
 }) {
-  if (!isBillingConfigured()) {
-    throw new Error(billingNotConfiguredMessage())
+  if (!isCheckoutConfigured(kind)) {
+    const missing = getMissingCheckoutEnvVars(kind)
+    throw new Error(`${billingNotConfiguredMessage()} 缺少：${missing.join(', ')}`)
   }
 
   const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {

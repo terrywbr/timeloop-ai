@@ -2,7 +2,6 @@
 
 import { Menu, ImageIcon } from 'lucide-react'
 import type { SceneGalleryItem as GallerySceneItem } from '@/lib/scene-gallery-data'
-import type { GalleryWorld } from '@/lib/community/types'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import type { UserAccountProfile, CheckoutKind } from '@/lib/api-client'
 import type { VideoBackgroundRef } from '@/components/ui/video-background'
@@ -16,10 +15,7 @@ import {
 } from '@/components/ui/drawer'
 import MobileControlContent from '@/components/mobile/mobile-control-content'
 import MobileGalleryContent from '@/components/mobile/mobile-gallery-content'
-import type { useCompanion } from '@/hooks/use-companion'
-import type { useGoogleCalendar } from '@/hooks/use-google-calendar'
 import type { VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
-import type { StreamerBackgroundItem } from '@/components/stream/streamer-backgrounds-panel'
 
 type TimeloopMobileDrawersProps = {
   videoRef: React.RefObject<VideoBackgroundRef | null>
@@ -45,8 +41,6 @@ type TimeloopMobileDrawersProps = {
   onDjVoiceEnabledChange: (enabled: boolean) => void
   djIntervalEnabled: boolean
   onDjIntervalEnabledChange: (enabled: boolean) => void
-  companion: ReturnType<typeof useCompanion>
-  calendar: ReturnType<typeof useGoogleCalendar>
   isMusicPlaying: boolean
   onMusicPlayingChange: (playing: boolean) => void
   musicVolume: number
@@ -58,6 +52,8 @@ type TimeloopMobileDrawersProps = {
   onDeleteWorld: (worldId: string) => void
   onRenameWorld: (worldId: string, title: string) => void
   onPublishWorld: (worldId: string, isPublic: boolean) => void | Promise<void>
+  onToggleWorldInRotation?: (world: PublicGeneratedWorld) => void | Promise<void>
+  isWorldInRotation?: (world: PublicGeneratedWorld) => boolean
   onCheckout: (kind: CheckoutKind) => void
   onDownload: () => void
   preferCreditPack: boolean
@@ -65,18 +61,7 @@ type TimeloopMobileDrawersProps = {
   cnWechatSupportId?: string
   selectedVisualEffect: VisualEffectSceneKey
   onVisualEffectChange: (scene: VisualEffectSceneKey) => void
-  accessToken: string | null
   onEnterOfficialScene: (item: GallerySceneItem) => void
-  onEnterWorld: (world: GalleryWorld) => void
-  coFocusEnabled: boolean
-  onCoFocusEnabledChange: (enabled: boolean) => void
-  presenceCount: number
-  streamerBackgrounds?: StreamerBackgroundItem[]
-  isStreamerBackgroundUploading?: boolean
-  streamerRotationMinutes?: 5 | 10
-  onUploadStreamerBackground?: (file: File) => void | Promise<void>
-  onDeleteStreamerBackground?: (id: string) => void | Promise<void>
-  onStreamerRotationChange?: (minutes: 5 | 10) => void | Promise<void>
 }
 
 export default function TimeloopMobileDrawers({
@@ -103,8 +88,6 @@ export default function TimeloopMobileDrawers({
   onDjVoiceEnabledChange,
   djIntervalEnabled,
   onDjIntervalEnabledChange,
-  companion,
-  calendar,
   isMusicPlaying,
   onMusicPlayingChange,
   musicVolume,
@@ -116,6 +99,8 @@ export default function TimeloopMobileDrawers({
   onDeleteWorld,
   onRenameWorld,
   onPublishWorld,
+  onToggleWorldInRotation,
+  isWorldInRotation,
   onCheckout,
   onDownload,
   preferCreditPack,
@@ -123,18 +108,7 @@ export default function TimeloopMobileDrawers({
   cnWechatSupportId = '',
   selectedVisualEffect,
   onVisualEffectChange,
-  accessToken,
   onEnterOfficialScene,
-  onEnterWorld,
-  coFocusEnabled,
-  onCoFocusEnabledChange,
-  presenceCount,
-  streamerBackgrounds = [],
-  isStreamerBackgroundUploading = false,
-  streamerRotationMinutes = 5,
-  onUploadStreamerBackground,
-  onDeleteStreamerBackground,
-  onStreamerRotationChange,
 }: TimeloopMobileDrawersProps) {
   return (
     <>
@@ -175,8 +149,6 @@ export default function TimeloopMobileDrawers({
                   onDjVoiceEnabledChange={onDjVoiceEnabledChange}
                   djIntervalEnabled={djIntervalEnabled}
                   onDjIntervalEnabledChange={onDjIntervalEnabledChange}
-                  companion={companion}
-                  calendar={calendar}
                   isMusicPlaying={isMusicPlaying}
                   onMusicPlayingChange={onMusicPlayingChange}
                   musicVolume={musicVolume}
@@ -188,6 +160,8 @@ export default function TimeloopMobileDrawers({
                   onDeleteWorld={onDeleteWorld}
                   onRenameWorld={onRenameWorld}
                   onPublishWorld={onPublishWorld}
+                  onToggleWorldInRotation={onToggleWorldInRotation}
+                  isWorldInRotation={isWorldInRotation}
                   onCheckout={onCheckout}
                   onDownload={onDownload}
                   preferCreditPack={preferCreditPack}
@@ -195,12 +169,6 @@ export default function TimeloopMobileDrawers({
                   cnWechatSupportId={cnWechatSupportId}
                   selectedVisualEffect={selectedVisualEffect}
                   onVisualEffectChange={onVisualEffectChange}
-                  streamerBackgrounds={streamerBackgrounds}
-                  isStreamerBackgroundUploading={isStreamerBackgroundUploading}
-                  streamerRotationMinutes={streamerRotationMinutes}
-                  onUploadStreamerBackground={onUploadStreamerBackground}
-                  onDeleteStreamerBackground={onDeleteStreamerBackground}
-                  onStreamerRotationChange={onStreamerRotationChange}
                 />
               </>
             ) : null}
@@ -226,13 +194,12 @@ export default function TimeloopMobileDrawers({
                 </DrawerHeader>
                 <MobileGalleryContent
                   onClose={() => onRightDrawerOpenChange(false)}
-                  accessToken={accessToken}
-                  onRequireAuth={onRequireAuth}
                   onEnterOfficialScene={onEnterOfficialScene}
-                  onEnterWorld={onEnterWorld}
-                  coFocusEnabled={coFocusEnabled}
-                  onCoFocusEnabledChange={onCoFocusEnabledChange}
-                  presenceCount={presenceCount}
+                  myWorlds={savedWorlds}
+                  onEnterMyWorld={onLoadWorld}
+                  canToggleRotation={Boolean(userProfile?.hasCreatorTools)}
+                  isWorldInRotation={(world) => Boolean(isWorldInRotation?.(world))}
+                  onToggleWorldRotation={(world) => void onToggleWorldInRotation?.(world)}
                 />
               </>
             ) : null}

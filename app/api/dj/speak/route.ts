@@ -1,14 +1,25 @@
 import { NextResponse } from 'next/server'
 import { getDjPersona } from '@/lib/ai-dj-personas'
-import { resolveTtsWithCache } from '@/lib/dj-tts-cache'
 import { isMusicMoodId, type MusicMoodId } from '@/lib/music-moods'
-import { isOpenAiTtsConfigured } from '@/lib/openai-tts'
+import type { Language } from '@/lib/translations'
+import { djSpeechLocaleForUiLocale } from '@/lib/dj-speech-locale'
+import { synthesizeEdgeSpeech } from '@/lib/edge-tts'
+import { resolveEdgeVoice } from '@/lib/dj-edge-voices'
+import { isEdgeTtsCacheable, resolveTtsWithEdgeCache } from '@/lib/dj-edge-tts-cache'
+import { MAX_EDGE_TTS_CHARS, truncateTextForEdgeTts } from '@/lib/dj-tts-text'
 
 export const runtime = 'nodejs'
+
+const LOCALES: Language[] = ['en', 'zh-TW', 'zh-CN', 'ja', 'ko', 'es', 'fr', 'de', 'th', 'vi']
+
+function isLocale(value: string): value is Language {
+  return LOCALES.includes(value as Language)
+}
 
 type SpeakRequestBody = {
   text?: string
   moodId?: string
+  locale?: string
   format?: 'binary' | 'base64' | 'url'
 }
 
@@ -18,7 +29,8 @@ type SpeakSuccessUrl = {
   personaId: string
   voice: string
   mimeType: 'audio/mpeg'
-  audioUrl: string
+  audioUrl?: string
+  audioBase64?: string
   cacheHit: boolean
 }
 
@@ -34,7 +46,7 @@ type SpeakSuccessBase64 = {
 
 type SpeakError = { success: false; error: string }
 
-const MAX_SPEAK_CHARS = 2000
+const MAX_SPEAK_CHARS = MAX_EDGE_TTS_CHARS
 
 function jsonError(message: string, status: number) {
   return NextResponse.json({ success: false, error: message } satisfies SpeakError, { status })
@@ -50,10 +62,6 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 export async function POST(req: Request) {
-  if (!isOpenAiTtsConfigured()) {
-    return jsonError('AI voice is not configured (missing OPENAI_API_KEY)', 503)
-  }
-
   let body: SpeakRequestBody
   try {
     body = (await req.json()) as SpeakRequestBody
@@ -66,47 +74,86 @@ export async function POST(req: Request) {
     return jsonError('Invalid moodId', 400)
   }
 
-  const text = body.text?.trim() ?? ''
+  const rawText = body.text?.trim() ?? ''
+  if (!rawText) {
+    return jsonError('Missing text', 400)
+  }
+  const text = truncateTextForEdgeTts(rawText, MAX_SPEAK_CHARS)
   if (!text) {
     return jsonError('Missing text', 400)
   }
-  if (text.length > MAX_SPEAK_CHARS) {
-    return jsonError(`Text exceeds ${MAX_SPEAK_CHARS} characters`, 400)
-  }
 
+  const uiLocale: Language = body.locale && isLocale(body.locale) ? body.locale : 'en'
+  const speechLocale = djSpeechLocaleForUiLocale(uiLocale)
   const format = body.format ?? 'url'
   const persona = getDjPersona(moodId)
+  const edgeVoice = resolveEdgeVoice(moodId, speechLocale)
 
   try {
-    const resolved = await resolveTtsWithCache(text, persona.tts)
+    // Try Edge TTS with cache first.
+    if (isEdgeTtsCacheable()) {
+      const cached = await resolveTtsWithEdgeCache(text, moodId, speechLocale).catch(() => null)
+      if (cached) {
+        if (format === 'url') {
+          return NextResponse.json({
+            success: true,
+            moodId,
+            personaId: persona.id,
+            voice: edgeVoice.voice,
+            mimeType: 'audio/mpeg',
+            audioUrl: cached.audioUrl,
+            cacheHit: cached.cacheHit,
+          } satisfies SpeakSuccessUrl)
+        }
+        // Need the raw bytes for binary/base64 formats.
+        const audioResponse = await fetch(cached.audioUrl, { cache: 'no-store' })
+        if (!audioResponse.ok) throw new Error('Failed to read cached Edge TTS audio')
+        const audioBuffer = await audioResponse.arrayBuffer()
+        if (format === 'binary') {
+          return new NextResponse(audioBuffer, {
+            status: 200,
+            headers: {
+              'Content-Type': 'audio/mpeg',
+              'Cache-Control': 'public, max-age=31536000, immutable',
+              'X-DJ-Voice': edgeVoice.voice,
+            },
+          })
+        }
+        return NextResponse.json({
+          success: true,
+          moodId,
+          personaId: persona.id,
+          voice: edgeVoice.voice,
+          mimeType: 'audio/mpeg',
+          audioBase64: arrayBufferToBase64(audioBuffer),
+          cacheHit: cached.cacheHit,
+        } satisfies SpeakSuccessBase64)
+      }
+    }
+
+    // Synthesize fresh Edge TTS audio.
+    const audioBuffer = await synthesizeEdgeSpeech(text, edgeVoice)
 
     if (format === 'url') {
+      // Without a cache we can only return base64 inline.
       return NextResponse.json({
         success: true,
         moodId,
         personaId: persona.id,
-        voice: persona.tts.voice,
+        voice: edgeVoice.voice,
         mimeType: 'audio/mpeg',
-        audioUrl: resolved.audioUrl,
-        cacheHit: resolved.cacheHit,
+        audioBase64: arrayBufferToBase64(audioBuffer),
+        cacheHit: false,
       } satisfies SpeakSuccessUrl)
     }
-
-    const audioResponse = await fetch(resolved.audioUrl, { cache: 'no-store' })
-    if (!audioResponse.ok) {
-      throw new Error(`Failed to read cached audio (${audioResponse.status})`)
-    }
-    const audioBuffer = await audioResponse.arrayBuffer()
 
     if (format === 'binary') {
       return new NextResponse(audioBuffer, {
         status: 200,
         headers: {
           'Content-Type': 'audio/mpeg',
-          'Cache-Control': resolved.cacheHit ? 'public, max-age=31536000, immutable' : 'no-store',
-          'X-DJ-Persona-Id': persona.id,
-          'X-DJ-Voice': persona.tts.voice,
-          'X-DJ-Cache-Hit': resolved.cacheHit ? '1' : '0',
+          'Cache-Control': 'no-store',
+          'X-DJ-Voice': edgeVoice.voice,
         },
       })
     }
@@ -115,14 +162,39 @@ export async function POST(req: Request) {
       success: true,
       moodId,
       personaId: persona.id,
-      voice: persona.tts.voice,
+      voice: edgeVoice.voice,
       mimeType: 'audio/mpeg',
       audioBase64: arrayBufferToBase64(audioBuffer),
-      cacheHit: resolved.cacheHit,
+      cacheHit: false,
     } satisfies SpeakSuccessBase64)
   } catch (error) {
-    console.error('[api/dj/speak]', error)
-    const message = error instanceof Error ? error.message : 'TTS synthesis failed'
-    return jsonError(message, 502)
+    // Fallback: try OpenAI TTS if Edge fails.
+    console.warn('[api/dj/speak] Edge TTS failed, trying OpenAI fallback:', error)
+    try {
+      const { isOpenAiTtsConfigured, synthesizeOpenAiSpeech } = await import('@/lib/openai-tts')
+      if (!isOpenAiTtsConfigured()) {
+        throw new Error('OpenAI TTS is also not configured')
+      }
+      const audioBuffer = await synthesizeOpenAiSpeech(text, persona.tts)
+      if (format === 'binary') {
+        return new NextResponse(audioBuffer, {
+          status: 200,
+          headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' },
+        })
+      }
+      return NextResponse.json({
+        success: true,
+        moodId,
+        personaId: persona.id,
+        voice: persona.tts.voice,
+        mimeType: 'audio/mpeg',
+        audioBase64: arrayBufferToBase64(audioBuffer),
+        cacheHit: false,
+      } satisfies SpeakSuccessBase64)
+    } catch (fallbackError) {
+      console.error('[api/dj/speak]', fallbackError)
+      const message = fallbackError instanceof Error ? fallbackError.message : 'TTS synthesis failed'
+      return jsonError(message, 502)
+    }
   }
 }

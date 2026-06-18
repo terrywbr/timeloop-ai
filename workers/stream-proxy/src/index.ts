@@ -1,6 +1,12 @@
 /** Standalone audio stream proxy for mainland China (long-lived passthrough). */
 
 const BLOCKED_HOSTNAMES = new Set(['localhost', '127.0.0.1', '0.0.0.0', '[::1]'])
+const ALLOWED_HOST_SUFFIXES = [
+  'somafm.com',
+  'streamtheworld.com',
+  'securenetsystems.net',
+  'streamafrica.net',
+]
 
 function isPrivateIpv4(host: string): boolean {
   const parts = host.split('.').map((p) => Number.parseInt(p, 10))
@@ -19,7 +25,7 @@ function isAllowedUpstreamHost(hostname: string): boolean {
   if (BLOCKED_HOSTNAMES.has(host)) return false
   if (host.endsWith('.local') || host.endsWith('.internal')) return false
   if (isPrivateIpv4(host)) return false
-  return true
+  return ALLOWED_HOST_SUFFIXES.some((suffix) => host === suffix || host.endsWith(`.${suffix}`))
 }
 
 export default {

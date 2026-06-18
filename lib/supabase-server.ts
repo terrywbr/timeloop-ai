@@ -134,6 +134,8 @@ export async function ensureUserProfile(
       email: user.email ?? null,
       display_name: user.user_metadata?.name ?? user.user_metadata?.full_name ?? null,
       avatar_url: user.user_metadata?.avatar_url ?? null,
+      monthly_generation_limit: 50,
+      remaining_credits: 50,
     })
     .select('*')
     .single<UserProfile>()
@@ -146,9 +148,31 @@ export function hasVipAccess(profile: UserProfile) {
   return hasPlanEntitlement(profile, 'vip')
 }
 
-export function hasStreamerAccess(profile: UserProfile) {
+export function hasStreamerPlanAccess(profile: UserProfile) {
   if (hasPlanEntitlement(profile, 'streamer')) return true
-  return hasVipAccess(profile)
+  const streamerVariantId = process.env.LEMON_SQUEEZY_STREAMER_VARIANT_ID?.trim()
+  if (!streamerVariantId) return false
+  if (profile.lemon_squeezy_variant_id !== streamerVariantId) return false
+  if (profile.lemon_squeezy_subscription_id) {
+    return profile.vip_status === 'active' || profile.vip_status === 'past_due'
+  }
+  // Local/manual grants can carry streamer variant metadata without subscription id.
+  return profile.vip_status === 'active' || profile.vip_status === 'past_due'
+}
+
+/** VIP + Streamer: unlimited image generations. */
+export function hasUnlimitedGenerationAccess(profile: UserProfile) {
+  return hasVipAccess(profile) || hasStreamerPlanAccess(profile)
+}
+
+/** Streamer-only creator tools (overlay/background management). */
+export function hasCreatorToolsAccess(profile: UserProfile) {
+  return hasStreamerPlanAccess(profile)
+}
+
+/** VIP + Streamer: HD background download entitlement. */
+export function hasDownloadAccess(profile: UserProfile) {
+  return hasVipAccess(profile) || hasStreamerPlanAccess(profile)
 }
 
 function hasPlanEntitlement(profile: UserProfile, expectedPlan: UserProfile['plan']) {

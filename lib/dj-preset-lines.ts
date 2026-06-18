@@ -3,6 +3,37 @@ import type { Language } from '@/lib/translations'
 
 export type DjPresetLocale = 'en' | 'zh'
 
+const LOCALIZED_GENERIC_LINES: Partial<Record<Language, readonly string[]>> = {
+  ja: [
+    'キャプテン、信号は安定しています。外の雑音を閉じて、この静かな周波数に集中しましょう。',
+    '深夜のコックピットへようこそ。呼吸を整えて、次のひとつの作業だけに進みましょう。',
+  ],
+  ko: [
+    '캡틴, 신호가 안정적입니다. 바깥 소음은 닫아두고 이 조용한 주파수에 집중해요.',
+    '심야 콕핏에 오신 걸 환영합니다. 숨을 고르고, 지금 해야 할 한 가지에만 들어가 봅시다.',
+  ],
+  es: [
+    'Capitán, la señal está limpia. Dejamos el ruido afuera y entramos en una frecuencia tranquila.',
+    'Bienvenido a la cabina nocturna. Respira despacio y quédate con una sola tarea.',
+  ],
+  fr: [
+    'Capitaine, le signal est clair. On laisse le bruit dehors et on garde cette fréquence calme.',
+    'Bienvenue dans le cockpit de nuit. Respirez doucement et avancez sur une seule tâche.',
+  ],
+  de: [
+    'Captain, das Signal ist sauber. Wir lassen den Lärm draußen und bleiben auf dieser ruhigen Frequenz.',
+    'Willkommen im Nacht-Cockpit. Atme ruhig und konzentriere dich auf eine einzige Aufgabe.',
+  ],
+  th: [
+    'กัปตัน สัญญาณนิ่งแล้ว ปล่อยเสียงรบกวนไว้ข้างนอก แล้วค่อย ๆ เข้าสู่คลื่นที่สงบนี้ด้วยกัน',
+    'ยินดีต้อนรับสู่ห้องควบคุมยามค่ำ หายใจช้า ๆ แล้วเลือกทำเพียงสิ่งเดียวในตอนนี้',
+  ],
+  vi: [
+    'Thuyền trưởng, tín hiệu đã ổn định. Hãy để tiếng ồn ở bên ngoài và bước vào tần số yên tĩnh này.',
+    'Chào mừng trở lại buồng lái đêm. Hít thở chậm lại và chỉ giữ một việc quan trọng trước mắt.',
+  ],
+}
+
 /** Fixed immersive scripts — no dynamic timestamps so TTS cache keys stay stable. */
 export const DJ_PRESET_LINES: Record<MusicMoodId, Record<DjPresetLocale, readonly string[]>> = {
   'neon-tokyo': {
@@ -289,6 +320,12 @@ export function resolveDjPresetLocale(locale: Language): DjPresetLocale {
 }
 
 export function pickRandomPresetLine(moodId: MusicMoodId, locale: Language): string {
+  const localizedLines = LOCALIZED_GENERIC_LINES[locale]
+  if (localizedLines) {
+    const localizedIndex = Math.floor(Math.random() * localizedLines.length)
+    return localizedLines[localizedIndex] ?? localizedLines[0] ?? ''
+  }
+
   const presetLocale = resolveDjPresetLocale(locale)
   const lines = DJ_PRESET_LINES[moodId][presetLocale]
   const index = Math.floor(Math.random() * lines.length)

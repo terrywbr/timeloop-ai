@@ -7,7 +7,9 @@ __v0_jsx-dev-runtime.ts
 .vercel/
 
 # Environment variables
+.env
 .env*.local
+.openclaw-dev.log
 
 # Common ignores
 node_modules

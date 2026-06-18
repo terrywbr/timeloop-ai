@@ -53,7 +53,7 @@ export default function MembershipPanel({
         </p>
       ) : null}
 
-      {userProfile?.isStreamer ? (
+      {userProfile?.isStreamerPlan ? (
         <p className="text-accent">{t.membership.streamerActive}</p>
       ) : userProfile?.isVip ? (
         <p className="text-accent">{t.membership.vipActive}</p>
@@ -62,7 +62,7 @@ export default function MembershipPanel({
           <p>
             {t.membership.creditsRemaining.replace(
               '{count}',
-              String(userProfile?.remainingCredits ?? 5),
+              String(userProfile?.remainingCredits ?? userProfile?.monthlyGenerationLimit ?? 50),
             )}
           </p>
           <p>{t.membership.free}</p>
@@ -90,7 +90,7 @@ export default function MembershipPanel({
           />
         ) : null}
 
-        {!showCnManual && !userProfile?.isVip && !userProfile?.isStreamer ? (
+        {!showCnManual && !userProfile?.isVip && !userProfile?.isStreamerPlan ? (
           <button
             type="button"
             onClick={() => handlePaidAction('vip')}
@@ -100,7 +100,7 @@ export default function MembershipPanel({
           </button>
         ) : null}
 
-        {!showCnManual && !userProfile?.isStreamer ? (
+        {!showCnManual && !userProfile?.isStreamerPlan ? (
           <button
             type="button"
             onClick={() => handlePaidAction('streamer')}

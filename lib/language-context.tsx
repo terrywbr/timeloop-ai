@@ -4,7 +4,6 @@ import { createContext, useContext, useState, useMemo, type ReactNode } from 're
 import { type Language, translations } from './translations'
 import { MUSIC_I18N } from './music-i18n'
 import { DJ_I18N } from './dj-i18n'
-import { COMPANION_I18N } from './companion-i18n'
 import {
   FALLBACK_LANGUAGE,
   LANGUAGE_STORAGE_KEY,
@@ -15,7 +14,6 @@ import {
 type MergedTranslations = typeof translations['en'] & {
   music: typeof translations['en']['music'] & (typeof MUSIC_I18N)['en']
   dj: (typeof DJ_I18N)['en']
-  companion: (typeof COMPANION_I18N)['en']
 }
 
 type LanguageContextType = {
@@ -44,7 +42,6 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         ...MUSIC_I18N[language],
       },
       dj: DJ_I18N[language],
-      companion: COMPANION_I18N[language],
     }),
     [language],
   )

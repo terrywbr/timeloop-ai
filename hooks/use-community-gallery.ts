@@ -8,7 +8,7 @@ import {
   toggleWorldSave,
 } from '@/lib/api-client'
 
-export function useCommunityGallery(accessToken: string | null) {
+export function useCommunityGallery(accessToken: string | null, refreshKey = 0) {
   const [sort, setSort] = useState<PublicWorldsSort>('newest')
   const [galleryTab, setGalleryTab] = useState<'community' | 'official'>('community')
   const [worlds, setWorlds] = useState<GalleryWorld[]>([])
@@ -51,7 +51,7 @@ export function useCommunityGallery(accessToken: string | null) {
         setLoading(false)
       }
     })()
-  }, [accessToken, galleryTab, sort])
+  }, [accessToken, galleryTab, sort, refreshKey])
 
   const handleLike = useCallback(
     async (world: GalleryWorld) => {

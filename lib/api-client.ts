@@ -11,10 +11,37 @@ export type UserAccountProfile = {
   vipStatus: string
   vipUntil: string | null
   isVip: boolean
+  /** Plan-level streamer flag only (no VIP fallback). */
   isStreamer: boolean
+  isStreamerPlan: boolean
+  hasCreatorTools: boolean
+  hasUnlimitedGeneration: boolean
+  hasDownloadAccess: boolean
   remainingCredits: number
   monthlyGenerationLimit: number
   creditsResetAt: string
+  streamerMonthlyQuotaImages?: number
+  streamerUsedImages?: number
+  streamerRemainingImages?: number
+}
+
+export type StreamerScenePackItem = {
+  id: string
+  imageUrl: string
+  sortOrder: number
+  durationSec: number
+}
+
+export type StreamerScenePack = {
+  id: string
+  name: string
+  moodId: string
+  status: 'draft' | 'active' | 'archived'
+  isLoop: boolean
+  playOrder: 'sequential' | 'random'
+  createdAt: string
+  updatedAt: string
+  items: StreamerScenePackItem[]
 }
 
 type ApiErrorResponse = {
@@ -307,6 +334,22 @@ export async function uploadStreamerBackground(accessToken: string, file: File) 
   return payload.background
 }
 
+export async function addGeneratedStreamerBackground(accessToken: string, imageUrl: string) {
+  const response = await fetch('/api/streamer/backgrounds', {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify({ imageUrl }),
+  })
+  const payload = (await response.json()) as
+    | { success: true; background: { id: string; public_url: string; sort_order: number } }
+    | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    const message = payload.success ? 'Add generated background failed' : payload.error
+    throw new Error(message)
+  }
+  return payload.background
+}
+
 export async function deleteStreamerBackground(accessToken: string, id: string) {
   const response = await fetch(`/api/streamer/backgrounds?id=${encodeURIComponent(id)}`, {
     method: 'DELETE',
@@ -356,4 +399,146 @@ export async function updateWorldTitle(accessToken: string, worldId: string, tit
     const message = payload.success ? 'Update failed' : payload.error
     throw new Error(message)
   }
+}
+
+export async function fetchStreamerScenePacks(accessToken: string): Promise<StreamerScenePack[]> {
+  const response = await fetch('/api/streamer/scene-packs', {
+    headers: authHeaders(accessToken),
+  })
+  const payload = (await response.json()) as
+    | { success: true; packs: StreamerScenePack[] }
+    | ApiErrorResponse
+  if (!response.ok || !payload.success) return []
+  return payload.packs
+}
+
+export async function createStreamerScenePack(
+  accessToken: string,
+  input: { name: string; moodId: string; playOrder?: 'sequential' | 'random'; isLoop?: boolean },
+): Promise<StreamerScenePack> {
+  const response = await fetch('/api/streamer/scene-packs', {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(input),
+  })
+  const payload = (await response.json()) as
+    | { success: true; pack: StreamerScenePack }
+    | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.success ? 'Create scene pack failed' : payload.error)
+  }
+  return payload.pack
+}
+
+export async function updateStreamerScenePack(
+  accessToken: string,
+  packId: string,
+  input: Partial<{
+    name: string
+    moodId: string
+    status: 'draft' | 'active' | 'archived'
+    playOrder: 'sequential' | 'random'
+    isLoop: boolean
+  }>,
+): Promise<StreamerScenePack> {
+  const response = await fetch(`/api/streamer/scene-packs/${encodeURIComponent(packId)}`, {
+    method: 'PATCH',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(input),
+  })
+  const payload = (await response.json()) as
+    | { success: true; pack: StreamerScenePack }
+    | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.success ? 'Update scene pack failed' : payload.error)
+  }
+  return payload.pack
+}
+
+export async function deleteStreamerScenePack(accessToken: string, packId: string): Promise<void> {
+  const response = await fetch(`/api/streamer/scene-packs/${encodeURIComponent(packId)}`, {
+    method: 'DELETE',
+    headers: authHeaders(accessToken),
+  })
+  const payload = (await response.json()) as { success: true } | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.success ? 'Delete scene pack failed' : payload.error)
+  }
+}
+
+export async function generateStreamerScenePackImages(
+  accessToken: string,
+  packId: string,
+  input: { prompt: string; count: number; durationSec?: number; particlePreset?: string },
+): Promise<{
+  generated: StreamerScenePackItem[]
+  usage: {
+    monthKey: string
+    quotaImages: number
+    usedImages: number
+    remainingImages: number
+  }
+}> {
+  const response = await fetch(`/api/streamer/scene-packs/${encodeURIComponent(packId)}/generate`, {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(input),
+  })
+  const payload = (await response.json()) as
+    | {
+        success: true
+        generated: StreamerScenePackItem[]
+        usage: {
+          monthKey: string
+          quotaImages: number
+          usedImages: number
+          remainingImages: number
+        }
+      }
+    | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.success ? 'Generate scene pack images failed' : payload.error)
+  }
+  return { generated: payload.generated, usage: payload.usage }
+}
+
+export async function activateStreamerScenePack(accessToken: string, packId: string): Promise<void> {
+  const response = await fetch(`/api/streamer/scene-packs/${encodeURIComponent(packId)}/activate`, {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+  })
+  const payload = (await response.json()) as { success: true } | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.success ? 'Activate scene pack failed' : payload.error)
+  }
+}
+
+export async function updateStreamerScenePackItems(
+  accessToken: string,
+  packId: string,
+  items: Array<{ id: string; sortOrder?: number; durationSec?: number }>,
+): Promise<StreamerScenePackItem[]> {
+  const response = await fetch(`/api/streamer/scene-packs/${encodeURIComponent(packId)}/items`, {
+    method: 'PATCH',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify({ items }),
+  })
+  const payload = (await response.json()) as
+    | { success: true; items: StreamerScenePackItem[] }
+    | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.success ? 'Update scene pack items failed' : payload.error)
+  }
+  return payload.items
+}
+
+export async function fetchStreamerScenePlayback(accessToken: string): Promise<StreamerScenePack | null> {
+  const response = await fetch('/api/streamer/scene-playback', {
+    headers: authHeaders(accessToken),
+  })
+  const payload = (await response.json()) as
+    | { success: true; pack: StreamerScenePack | null }
+    | ApiErrorResponse
+  if (!response.ok || !payload.success) return null
+  return payload.pack
 }

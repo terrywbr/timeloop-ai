@@ -168,21 +168,37 @@ async function handleSubscriptionEvent(payload: LemonSqueezyPayload) {
   const vipUntil = renewsAt ?? endsAt
   const isActiveSubscription = status === 'active' || status === 'past_due'
   const supabase = createSupabaseAdminClient()
+  const targetPlan = isActiveSubscription ? resolvedPlan : 'free'
+  const updatePayload = {
+    plan: targetPlan,
+    vip_status: status,
+    vip_until: vipUntil,
+    lemon_squeezy_customer_id: customerId,
+    lemon_squeezy_subscription_id: subscriptionId,
+    lemon_squeezy_subscription_item_id: subscriptionItemId,
+    lemon_squeezy_variant_id: variantId,
+  }
 
   const { error } = await supabase
     .from('users')
-    .update({
-      plan: isActiveSubscription ? resolvedPlan : 'free',
-      vip_status: status,
-      vip_until: vipUntil,
-      lemon_squeezy_customer_id: customerId,
-      lemon_squeezy_subscription_id: subscriptionId,
-      lemon_squeezy_subscription_item_id: subscriptionItemId,
-      lemon_squeezy_variant_id: variantId,
-    })
+    .update(updatePayload)
     .eq('id', userId)
+  if (!error) return
 
-  if (error) throw error
+  // Compatibility fallback for legacy DB constraint users_plan_check (free|vip).
+  if (targetPlan === 'streamer' && String(error.message).includes('users_plan_check')) {
+    const { error: fallbackError } = await supabase
+      .from('users')
+      .update({
+        ...updatePayload,
+        plan: 'vip',
+      })
+      .eq('id', userId)
+    if (fallbackError) throw fallbackError
+    return
+  }
+
+  throw error
 }
 
 export async function POST(req: Request) {
