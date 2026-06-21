@@ -37,7 +37,7 @@ interface ControlPanelProps {
   videoRef: React.RefObject<VideoBackgroundRef | null>
   onGenerate: (prompt: string, scene: string) => void
   isAuthenticated: boolean
-  onRequireAuth: () => void | Promise<boolean>
+  onRequireAuth: (options?: { requestFullscreen?: boolean }) => void | Promise<boolean>
   isGenerating: boolean
   isExpanded: boolean
   onExpandedChange: (expanded: boolean) => void
@@ -161,7 +161,7 @@ export default function ControlPanel({
   const handleGenerate = () => {
     if (!prompt.trim() || isGenerating) return
     if (!isAuthenticated) {
-      onRequireAuth()
+      void onRequireAuth({ requestFullscreen: true })
       return
     }
     onGenerate(prompt, selectedVisualEffect)
@@ -500,7 +500,7 @@ export default function ControlPanel({
           {!isAuthenticated ? (
             <div className="mb-4 space-y-2 border-t border-foreground/10 pt-4">
               <p className="text-xs text-muted-foreground">{t.auth.signInPrompt}</p>
-              <GoogleSignInButton onClick={() => void onRequireAuth()} />
+              <GoogleSignInButton onClick={() => void onRequireAuth({ requestFullscreen: true })} />
             </div>
           ) : null}
 

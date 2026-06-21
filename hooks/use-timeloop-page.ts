@@ -84,6 +84,11 @@ const STREAMER_ROTATION_MAX = 20
 const LOCAL_STREAMER_BACKGROUNDS_KEY_PREFIX = 'timeloop.streamer.rotation.backgrounds'
 const LOCAL_STREAMER_BACKGROUNDS_FALLBACK_KEY = 'timeloop.streamer.rotation.backgrounds:last'
 const LOCAL_STREAMER_ROTATION_WORLD_IDS_KEY = 'timeloop.streamer.rotation.worldIds'
+const PENDING_CHECKOUT_KEY = 'timeloop.pending-checkout'
+
+export type RequireAuthOptions = {
+  requestFullscreen?: boolean
+}
 
 function isMissingStreamerTablesError(message: string) {
   const lower = message.toLowerCase()
@@ -779,8 +784,10 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     }
   }, [])
 
-  const handleRequireAuth = useCallback(async () => {
-    void requestAppFullscreen()
+  const handleRequireAuth = useCallback(async (options?: RequireAuthOptions) => {
+    if (options?.requestFullscreen) {
+      void requestAppFullscreen()
+    }
     if (authUser) return true
     if (!supabase) {
       window.alert('Supabase 尚未設定，請先補上 NEXT_PUBLIC_SUPABASE_URL 與 NEXT_PUBLIC_SUPABASE_ANON_KEY。')
@@ -866,11 +873,24 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
 
   const handleCheckout = useCallback(
     async (kind: CheckoutKind) => {
-      if (preferCreditPack && (kind === 'vip' || kind === 'subscription' || kind === 'streamer')) return
+      if (preferCreditPack && (kind === 'vip' || kind === 'subscription' || kind === 'streamer')) {
+        const cnCheckoutBlocked: Partial<Record<Language, string>> = {
+          en: 'Global Lemon checkout is disabled on the China entry. Please use the WeChat manual upgrade panel below.',
+          'zh-CN': '大陆入口暂不支持 Lemon 在线结账，请使用下方微信人工开通面板。',
+          'zh-TW': '大陸入口暫不支援 Lemon 線上結帳，請使用下方微信人工開通面板。',
+        }
+        window.alert(cnCheckoutBlocked[language] ?? cnCheckoutBlocked.en)
+        return
+      }
 
-      const accessToken = await getAccessToken()
+      let accessToken = await getAccessToken()
       if (!accessToken) {
-        await handleRequireAuth()
+        try {
+          window.sessionStorage.setItem(PENDING_CHECKOUT_KEY, kind)
+        } catch {
+          // Ignore sessionStorage errors in private browsing.
+        }
+        await handleRequireAuth({ requestFullscreen: false })
         return
       }
 
@@ -882,8 +902,24 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
         window.alert(message)
       }
     },
-    [getAccessToken, handleRequireAuth, preferCreditPack],
+    [getAccessToken, handleRequireAuth, language, preferCreditPack],
   )
+
+  useEffect(() => {
+    if (!authUser) return
+    let pendingKind: CheckoutKind | null = null
+    try {
+      const raw = window.sessionStorage.getItem(PENDING_CHECKOUT_KEY)
+      if (raw === 'vip' || raw === 'streamer' || raw === 'credits' || raw === 'subscription') {
+        pendingKind = raw
+        window.sessionStorage.removeItem(PENDING_CHECKOUT_KEY)
+      }
+    } catch {
+      return
+    }
+    if (!pendingKind) return
+    void handleCheckout(pendingKind)
+  }, [authUser, handleCheckout])
 
   const handleCreateStreamerScenePack = useCallback(
     async (input: { name: string; moodId: MusicMoodId }) => {

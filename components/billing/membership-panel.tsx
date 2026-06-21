@@ -13,8 +13,8 @@ type MembershipPanelProps = {
   preferCreditPack: boolean
   isCnHost?: boolean
   cnWechatSupportId?: string
-  onRequireAuth: () => void | Promise<boolean>
-  onCheckout: (kind: CheckoutHandlerKind) => void
+  onRequireAuth: (options?: { requestFullscreen?: boolean }) => void | Promise<boolean>
+  onCheckout: (kind: CheckoutHandlerKind) => void | Promise<void>
 }
 
 function formatVipUntil(iso: string | null, locale: string) {
@@ -37,12 +37,12 @@ export default function MembershipPanel({
   const showCnManual = preferCreditPack || isCnHost
   const vipUntilLabel = formatVipUntil(userProfile?.vipUntil ?? null, language)
 
-  const handlePaidAction = (kind: CheckoutHandlerKind) => {
+  const handlePaidAction = async (kind: CheckoutHandlerKind) => {
     if (!isAuthenticated) {
-      void onRequireAuth()
-      return
+      const ok = await onRequireAuth({ requestFullscreen: false })
+      if (!ok) return
     }
-    onCheckout(kind)
+    await onCheckout(kind)
   }
 
   return (
@@ -93,7 +93,7 @@ export default function MembershipPanel({
         {!showCnManual && !userProfile?.isVip && !userProfile?.isStreamerPlan ? (
           <button
             type="button"
-            onClick={() => handlePaidAction('vip')}
+            onClick={() => void handlePaidAction('vip')}
             className="rounded-lg bg-accent px-3 py-2 text-xs font-medium text-accent-foreground transition hover:bg-accent/90"
           >
             {t.membership.upgradeVip}
@@ -103,7 +103,7 @@ export default function MembershipPanel({
         {!showCnManual && !userProfile?.isStreamerPlan ? (
           <button
             type="button"
-            onClick={() => handlePaidAction('streamer')}
+            onClick={() => void handlePaidAction('streamer')}
             className="rounded-lg border border-accent/50 bg-accent/10 px-3 py-2 text-xs font-medium text-accent transition hover:bg-accent/20"
           >
             {t.membership.upgradeStreamer}

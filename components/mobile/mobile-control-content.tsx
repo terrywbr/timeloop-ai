@@ -38,7 +38,7 @@ export interface MobileControlContentProps {
   videoRef: React.RefObject<VideoBackgroundRef | null>
   onGenerate: (prompt: string, scene: string) => void
   isAuthenticated: boolean
-  onRequireAuth: () => void | Promise<boolean>
+  onRequireAuth: (options?: { requestFullscreen?: boolean }) => void | Promise<boolean>
   isGenerating: boolean
   onClose: () => void
   currentStation: RadioStation | null
@@ -164,7 +164,7 @@ export default function MobileControlContent({
   const handleGenerate = () => {
     if (!prompt.trim()) return
     if (!isAuthenticated) {
-      void onRequireAuth()
+      void onRequireAuth({ requestFullscreen: true })
       return
     }
     onGenerate(prompt, selectedVisualEffect)
@@ -430,7 +430,7 @@ export default function MobileControlContent({
       {!isAuthenticated ? (
         <div className="space-y-2 border-t border-foreground/10 pt-4">
           <p className="text-xs text-muted-foreground">{t.auth.signInPrompt}</p>
-          <GoogleSignInButton onClick={() => void onRequireAuth()} />
+          <GoogleSignInButton onClick={() => void onRequireAuth({ requestFullscreen: true })} />
         </div>
       ) : null}
 
