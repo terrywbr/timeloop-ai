@@ -116,6 +116,18 @@ export const translations: Record<Language, {
     rotation5: string
     rotation10: string
     streamModeLink: string
+    oneClickLiveTitle: string
+    oneClickLiveButton: string
+    oneClickLiveHint: string
+    oneClickLiveStatusImages: string
+    oneClickLiveStatusMusic: string
+    oneClickLiveStatusReady: string
+    oneClickLiveNeedImages: string
+    oneClickLiveNeedMusic: string
+    oneClickLivePopoutBlocked: string
+    oneClickLiveLaunchedToday: string
+    copyStreamUrl: string
+    copyStreamUrlDone: string
   }
 }> = {
   en: {
@@ -242,6 +254,20 @@ export const translations: Record<Language, {
       rotation5: '5 min',
       rotation10: '10 min',
       streamModeLink: 'Open stream mode (?stream=1)',
+      oneClickLiveTitle: 'One-click live',
+      oneClickLiveButton: 'Launch OBS stream',
+      oneClickLiveHint:
+        'After selecting rotation scenes in the gallery and picking a station, open the OBS capture window in one tap each day.',
+      oneClickLiveStatusImages: 'Rotation scenes: {count}',
+      oneClickLiveStatusMusic: 'Music: {name}',
+      oneClickLiveStatusReady: 'Ready — one tap to go live',
+      oneClickLiveNeedImages: 'Select at least 1 rotation scene in the right gallery (My tab).',
+      oneClickLiveNeedMusic: 'Complete music mood onboarding and confirm a station first.',
+      oneClickLivePopoutBlocked:
+        'Pop-up blocked. Allow pop-ups for this site or copy the stream URL below.',
+      oneClickLiveLaunchedToday: 'Stream window opened today',
+      copyStreamUrl: 'Copy stream URL',
+      copyStreamUrlDone: 'URL copied',
     },
   },
   'zh-CN': {
@@ -365,6 +391,18 @@ export const translations: Record<Language, {
       rotation5: '5 分钟',
       rotation10: '10 分钟',
       streamModeLink: '打开直播模式 (?stream=1)',
+      oneClickLiveTitle: '一键直播',
+      oneClickLiveButton: '开始投射直播',
+      oneClickLiveHint: '在右侧画廊勾选轮播图并选好电台后，每日一键开启 OBS 直播窗口。',
+      oneClickLiveStatusImages: '轮播图：{count} 张',
+      oneClickLiveStatusMusic: '音乐：{name}',
+      oneClickLiveStatusReady: '已就绪，可一键开播',
+      oneClickLiveNeedImages: '请先在右侧「我的」画廊勾选至少 1 张轮播图。',
+      oneClickLiveNeedMusic: '请先完成音乐 Mood 选择并确认电台。',
+      oneClickLivePopoutBlocked: '弹出窗口被阻挡，请允许弹窗或复制下方直播链接。',
+      oneClickLiveLaunchedToday: '今日直播窗口已开启',
+      copyStreamUrl: '复制直播链接',
+      copyStreamUrlDone: '链接已复制',
     },
   },
   'zh-TW': {
@@ -488,6 +526,18 @@ export const translations: Record<Language, {
       rotation5: '5 分鐘',
       rotation10: '10 分鐘',
       streamModeLink: '開啟直播模式 (?stream=1)',
+      oneClickLiveTitle: '一鍵直播',
+      oneClickLiveButton: '開始投射直播',
+      oneClickLiveHint: '在右側畫廊勾選輪播圖並選好電台後，每日一鍵開啟 OBS 直播視窗。',
+      oneClickLiveStatusImages: '輪播圖：{count} 張',
+      oneClickLiveStatusMusic: '音樂：{name}',
+      oneClickLiveStatusReady: '已就緒，可一鍵開播',
+      oneClickLiveNeedImages: '請先在右側「我的」畫廊勾選至少 1 張輪播圖。',
+      oneClickLiveNeedMusic: '請先完成音樂 Mood 選擇並確認電台。',
+      oneClickLivePopoutBlocked: '彈出視窗被阻擋，請允許彈窗或複製下方直播連結。',
+      oneClickLiveLaunchedToday: '今日直播視窗已開啟',
+      copyStreamUrl: '複製直播連結',
+      copyStreamUrlDone: '連結已複製',
     },
   },
   ja: {
@@ -613,6 +663,18 @@ export const translations: Record<Language, {
       rotation5: '5 分',
       rotation10: '10 分',
       streamModeLink: 'ストリームモードを開く (?stream=1)',
+      oneClickLiveTitle: 'ワンタップ配信',
+      oneClickLiveButton: 'OBS配信を開始',
+      oneClickLiveHint: 'ギャラリーで輪播シーンを選択し電台を選んだら、毎日ワンタップでOBS用ウィンドウを開けます。',
+      oneClickLiveStatusImages: '輪播シーン：{count} 枚',
+      oneClickLiveStatusMusic: '音楽：{name}',
+      oneClickLiveStatusReady: '準備完了 — ワンタップで配信開始',
+      oneClickLiveNeedImages: '右ギャラリー「マイ」で輪播シーンを1枚以上選択してください。',
+      oneClickLiveNeedMusic: '音楽Moodの選択と電台の確認を先に完了してください。',
+      oneClickLivePopoutBlocked: 'ポップアップがブロックされました。許可するか下のURLをコピーしてください。',
+      oneClickLiveLaunchedToday: '本日の配信ウィンドウは開いています',
+      copyStreamUrl: '配信URLをコピー',
+      copyStreamUrlDone: 'URLをコピーしました',
     },
   },
   ko: {
@@ -738,6 +800,18 @@ export const translations: Record<Language, {
       rotation5: '5분',
       rotation10: '10분',
       streamModeLink: '스트림 모드 열기 (?stream=1)',
+      oneClickLiveTitle: '원탭 라이브',
+      oneClickLiveButton: 'OBS 스트림 시작',
+      oneClickLiveHint: '갤러리에서 로테이션 장면을 고르고 스테이션을 선택한 뒤, 매일 원탭으로 OBS 창을 엽니다.',
+      oneClickLiveStatusImages: '로테이션 장면: {count}장',
+      oneClickLiveStatusMusic: '음악: {name}',
+      oneClickLiveStatusReady: '준비 완료 — 원탭으로 방송 시작',
+      oneClickLiveNeedImages: '오른쪽 갤러리 「내」에서 로테이션 장면을 1장 이상 선택하세요.',
+      oneClickLiveNeedMusic: '음악 Mood 선택과 스테이션 확인을 먼저 완료하세요.',
+      oneClickLivePopoutBlocked: '팝업이 차단되었습니다. 허용하거나 아래 URL을 복사하세요.',
+      oneClickLiveLaunchedToday: '오늘 스트림 창이 열렸습니다',
+      copyStreamUrl: '스트림 URL 복사',
+      copyStreamUrlDone: 'URL 복사됨',
     },
   },
   es: {
@@ -863,6 +937,18 @@ export const translations: Record<Language, {
       rotation5: '5 min',
       rotation10: '10 min',
       streamModeLink: 'Abrir modo stream (?stream=1)',
+      oneClickLiveTitle: 'Directo con un clic',
+      oneClickLiveButton: 'Iniciar stream OBS',
+      oneClickLiveHint: 'Tras elegir escenas en la galería y una emisora, abre la ventana OBS con un toque cada día.',
+      oneClickLiveStatusImages: 'Escenas en rotación: {count}',
+      oneClickLiveStatusMusic: 'Música: {name}',
+      oneClickLiveStatusReady: 'Listo — un toque para emitir',
+      oneClickLiveNeedImages: 'Selecciona al menos 1 escena en la galería derecha (pestaña Mías).',
+      oneClickLiveNeedMusic: 'Completa el onboarding musical y confirma una emisora primero.',
+      oneClickLivePopoutBlocked: 'Ventana emergente bloqueada. Permite pop-ups o copia la URL abajo.',
+      oneClickLiveLaunchedToday: 'Ventana de stream abierta hoy',
+      copyStreamUrl: 'Copiar URL de stream',
+      copyStreamUrlDone: 'URL copiada',
     },
   },
   fr: {
@@ -988,6 +1074,18 @@ export const translations: Record<Language, {
       rotation5: '5 min',
       rotation10: '10 min',
       streamModeLink: 'Ouvrir le mode stream (?stream=1)',
+      oneClickLiveTitle: 'Direct en un clic',
+      oneClickLiveButton: 'Lancer le stream OBS',
+      oneClickLiveHint: 'Après avoir choisi des scènes et une station, ouvrez la fenêtre OBS en un clic chaque jour.',
+      oneClickLiveStatusImages: 'Scènes en rotation : {count}',
+      oneClickLiveStatusMusic: 'Musique : {name}',
+      oneClickLiveStatusReady: 'Prêt — un clic pour diffuser',
+      oneClickLiveNeedImages: 'Sélectionnez au moins 1 scène dans la galerie droite (onglet Mes).',
+      oneClickLiveNeedMusic: 'Terminez l’onboarding musical et confirmez une station d’abord.',
+      oneClickLivePopoutBlocked: 'Pop-up bloquée. Autorisez les pop-ups ou copiez l’URL ci-dessous.',
+      oneClickLiveLaunchedToday: 'Fenêtre de stream ouverte aujourd’hui',
+      copyStreamUrl: 'Copier l’URL du stream',
+      copyStreamUrlDone: 'URL copiée',
     },
   },
   de: {
@@ -1113,6 +1211,18 @@ export const translations: Record<Language, {
       rotation5: '5 Min',
       rotation10: '10 Min',
       streamModeLink: 'Stream-Modus öffnen (?stream=1)',
+      oneClickLiveTitle: 'Live mit einem Klick',
+      oneClickLiveButton: 'OBS-Stream starten',
+      oneClickLiveHint: 'Nach Auswahl der Rotationsszenen und Station täglich per Klick das OBS-Fenster öffnen.',
+      oneClickLiveStatusImages: 'Rotationsszenen: {count}',
+      oneClickLiveStatusMusic: 'Musik: {name}',
+      oneClickLiveStatusReady: 'Bereit — ein Klick zum Streamen',
+      oneClickLiveNeedImages: 'Wähle mindestens 1 Rotationsszene in der rechten Galerie (Mein).',
+      oneClickLiveNeedMusic: 'Schließe zuerst das Musik-Onboarding und bestätige eine Station.',
+      oneClickLivePopoutBlocked: 'Pop-up blockiert. Erlaube Pop-ups oder kopiere die URL unten.',
+      oneClickLiveLaunchedToday: 'Stream-Fenster heute geöffnet',
+      copyStreamUrl: 'Stream-URL kopieren',
+      copyStreamUrlDone: 'URL kopiert',
     },
   },
   th: thTranslation,

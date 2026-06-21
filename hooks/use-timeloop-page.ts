@@ -10,6 +10,7 @@ import { useAiDj } from '@/hooks/use-ai-dj'
 import { DJ_INTERVAL_MS } from '@/lib/dj-types'
 import { markIntervalSpoken, shouldSpeakInterval, clearGreetDate } from '@/lib/dj-settings'
 import type { Language } from '@/lib/translations'
+import { translations } from '@/lib/translations'
 import { type SceneGalleryItem as GallerySceneItem } from '@/lib/scene-gallery-data'
 import type { GalleryWorld } from '@/lib/community/types'
 import { isMusicMoodId } from '@/lib/music-moods'
@@ -44,7 +45,13 @@ import {
   type CheckoutKind,
   type UserAccountProfile,
 } from '@/lib/api-client'
-import { readStreamModeFromWindow } from '@/lib/stream-mode'
+import {
+  buildStreamModeUrl,
+  markStreamerLiveLaunchedToday,
+  openStreamModePopout,
+  readStreamerLiveLaunchedToday,
+  readStreamModeFromWindow,
+} from '@/lib/stream-mode'
 import { getDefaultStreamerOverlayTemplate } from '@/lib/streamer-overlay-templates'
 import {
   DEFAULT_STREAMER_SETTINGS,
@@ -193,6 +200,9 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   const [isScenePackGenerating, setIsScenePackGenerating] = useState(false)
   const [activeScenePackItemIndex, setActiveScenePackItemIndex] = useState(0)
   const [communityRefreshKey, setCommunityRefreshKey] = useState(0)
+  const [streamerLiveLaunchedToday, setStreamerLiveLaunchedToday] = useState(() =>
+    readStreamerLiveLaunchedToday(),
+  )
   const isMobile = useIsMobile()
   const { isLandscape, isMobilePortrait } = useOrientation()
   const isClientMounted = useClientMounted()
@@ -202,7 +212,6 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     speakLine,
     triggerGreeting,
     setVoiceEnabled,
-    setIntervalEnabled,
     resetGreetSchedule,
     dismiss: dismissAiDj,
     isBusy,
@@ -355,11 +364,11 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     return () => { document.removeEventListener('pointerdown', unlock) }
   }, [isAudioUnlocked, handleUnlockAudio])
 
-  const showPortraitRotateGate = !isStreamMode && isClientMounted && isMobilePortrait
+  const showPortraitRotateGate = isClientMounted && isMobilePortrait
   const showMobileLandscapeUi = isClientMounted && (!isMobile || isLandscape)
   const showMusicOnboarding = !isStreamMode && showMobileLandscapeUi && !music.musicOnboarded
   const showCockpit = !isStreamMode && showMobileLandscapeUi && music.musicOnboarded
-  const showStreamLayout = isStreamMode && music.musicOnboarded
+  const showStreamLayout = isStreamMode && music.musicOnboarded && !isMobilePortrait
   const shouldKeepMusicAlive = showMusicOnboarding || showCockpit || showStreamLayout
 
   useEffect(() => {
@@ -1507,7 +1516,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   }, [showCockpit, music.primaryMood])
 
   useEffect(() => {
-    if (!showCockpit || !music.primaryMood || !aiDj.intervalEnabled) return
+    if (!showCockpit || !music.primaryMood || !aiDj.voiceEnabled) return
 
     const checkInterval = () => {
       if (document.visibilityState !== 'visible') return
@@ -1526,7 +1535,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     const id = window.setInterval(checkInterval, 60_000)
     return () => window.clearInterval(id)
   }, [
-    aiDj.intervalEnabled,
+    aiDj.voiceEnabled,
     isBusy,
     music.currentStation?.name,
     music.primaryMood,
@@ -1539,6 +1548,70 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     used: userProfile?.streamerUsedImages ?? 0,
     remaining: userProfile?.streamerRemainingImages ?? (userProfile?.streamerMonthlyQuotaImages ?? 300),
   }
+
+  const streamLiveReadiness = useMemo(() => {
+    const rotationCount = rotationWorlds.length
+    const musicReady = music.musicOnboarded && Boolean(music.currentStation || music.primaryMood)
+    const imagesReady = rotationCount > 0
+    const musicLabel =
+      music.currentStation?.name ??
+      (music.primaryMood ? getDjPersonaName(music.primaryMood) : null) ??
+      '—'
+    return {
+      rotationCount,
+      musicReady,
+      imagesReady,
+      ready: imagesReady && musicReady,
+      musicLabel,
+    }
+  }, [
+    getDjPersonaName,
+    music.currentStation,
+    music.musicOnboarded,
+    music.primaryMood,
+    rotationWorlds.length,
+  ])
+
+  const handleOneClickLiveStream = useCallback(() => {
+    const st = translations[language].streamerOverlay
+
+    if (!hasCreatorTools) {
+      window.alert(st.previewUpgrade)
+      return
+    }
+
+    if (!streamLiveReadiness.imagesReady) {
+      window.alert(st.oneClickLiveNeedImages)
+      return
+    }
+
+    if (!streamLiveReadiness.musicReady) {
+      window.alert(st.oneClickLiveNeedMusic)
+      return
+    }
+
+    setIsAudioUnlocked(true)
+    setIsMusicPlaying(true)
+    if (music.activeMusicStreamUrl) {
+      primeStreamAudio(music.activeMusicStreamUrl, musicVolume)
+    }
+
+    const streamUrl = buildStreamModeUrl()
+    const popout = openStreamModePopout(streamUrl)
+    markStreamerLiveLaunchedToday()
+    setStreamerLiveLaunchedToday(true)
+
+    if (!popout) {
+      window.alert(`${st.oneClickLivePopoutBlocked}\n\n${streamUrl}`)
+    }
+  }, [
+    hasCreatorTools,
+    language,
+    music.activeMusicStreamUrl,
+    musicVolume,
+    streamLiveReadiness.imagesReady,
+    streamLiveReadiness.musicReady,
+  ])
 
   return {
     videoRef,
@@ -1574,6 +1647,9 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     streamerScenePacks,
     isScenePackGenerating,
     streamerQuota,
+    streamLiveReadiness,
+    streamerLiveLaunchedToday,
+    handleOneClickLiveStream,
     communityRefreshKey,
     handleCreateStreamerScenePack,
     handleGenerateStreamerScenePack,
@@ -1618,7 +1694,6 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     handleReopenMusicOnboarding,
     aiDj,
     setDjVoiceEnabled: setVoiceEnabled,
-    setDjIntervalEnabled: setIntervalEnabled,
     dismissAiDj,
   }
 }

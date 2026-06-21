@@ -39,8 +39,6 @@ type TimeloopMobileDrawersProps = {
   onReopenMusicOnboarding: () => void
   djVoiceEnabled: boolean
   onDjVoiceEnabledChange: (enabled: boolean) => void
-  djIntervalEnabled: boolean
-  onDjIntervalEnabledChange: (enabled: boolean) => void
   isMusicPlaying: boolean
   onMusicPlayingChange: (playing: boolean) => void
   musicVolume: number
@@ -62,6 +60,15 @@ type TimeloopMobileDrawersProps = {
   selectedVisualEffect: VisualEffectSceneKey
   onVisualEffectChange: (scene: VisualEffectSceneKey) => void
   onEnterOfficialScene: (item: GallerySceneItem) => void
+  streamLiveReadiness?: {
+    rotationCount: number
+    musicLabel: string
+    imagesReady: boolean
+    musicReady: boolean
+    ready: boolean
+  }
+  streamerLiveLaunchedToday?: boolean
+  onOneClickLiveStream?: () => void
 }
 
 export default function TimeloopMobileDrawers({
@@ -86,8 +93,6 @@ export default function TimeloopMobileDrawers({
   onReopenMusicOnboarding,
   djVoiceEnabled,
   onDjVoiceEnabledChange,
-  djIntervalEnabled,
-  onDjIntervalEnabledChange,
   isMusicPlaying,
   onMusicPlayingChange,
   musicVolume,
@@ -109,6 +114,9 @@ export default function TimeloopMobileDrawers({
   selectedVisualEffect,
   onVisualEffectChange,
   onEnterOfficialScene,
+  streamLiveReadiness,
+  streamerLiveLaunchedToday,
+  onOneClickLiveStream,
 }: TimeloopMobileDrawersProps) {
   return (
     <>
@@ -147,8 +155,6 @@ export default function TimeloopMobileDrawers({
                   onReopenMusicOnboarding={onReopenMusicOnboarding}
                   djVoiceEnabled={djVoiceEnabled}
                   onDjVoiceEnabledChange={onDjVoiceEnabledChange}
-                  djIntervalEnabled={djIntervalEnabled}
-                  onDjIntervalEnabledChange={onDjIntervalEnabledChange}
                   isMusicPlaying={isMusicPlaying}
                   onMusicPlayingChange={onMusicPlayingChange}
                   musicVolume={musicVolume}
@@ -169,6 +175,9 @@ export default function TimeloopMobileDrawers({
                   cnWechatSupportId={cnWechatSupportId}
                   selectedVisualEffect={selectedVisualEffect}
                   onVisualEffectChange={onVisualEffectChange}
+                  streamLiveReadiness={streamLiveReadiness}
+                  streamerLiveLaunchedToday={streamerLiveLaunchedToday}
+                  onOneClickLiveStream={onOneClickLiveStream}
                 />
               </>
             ) : null}

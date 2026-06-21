@@ -8,7 +8,6 @@ import type { Language } from '@/lib/translations'
 import {
   clearGreetDate,
   loadDjVoiceEnabled,
-  loadIntervalEnabled,
   markGreetedToday,
   saveDjVoiceEnabled,
   saveIntervalEnabled,
@@ -103,10 +102,12 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
   const speakInFlightRef = useRef(false)
 
   useEffect(() => {
+    const voiceEnabled = loadDjVoiceEnabled()
+    saveIntervalEnabled(voiceEnabled)
     setState((prev) => ({
       ...prev,
-      voiceEnabled: loadDjVoiceEnabled(),
-      intervalEnabled: loadIntervalEnabled(),
+      voiceEnabled,
+      intervalEnabled: voiceEnabled,
     }))
     return () => {
       stopDjSpeech()
@@ -123,13 +124,14 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
 
   const setVoiceEnabled = useCallback((enabled: boolean) => {
     saveDjVoiceEnabled(enabled)
-    if (!enabled) stopDjSpeech()
-    setState((prev) => ({ ...prev, voiceEnabled: enabled, speaking: false }))
-  }, [])
-
-  const setIntervalEnabled = useCallback((enabled: boolean) => {
     saveIntervalEnabled(enabled)
-    setState((prev) => ({ ...prev, intervalEnabled: enabled }))
+    if (!enabled) stopDjSpeech()
+    setState((prev) => ({
+      ...prev,
+      voiceEnabled: enabled,
+      intervalEnabled: enabled,
+      speaking: false,
+    }))
   }, [])
 
   const speakLine = useCallback(
@@ -282,7 +284,6 @@ export function useAiDj({ locale, getPersonaName, onDuckMusic }: UseAiDjOptions)
     speakLine,
     triggerGreeting,
     setVoiceEnabled,
-    setIntervalEnabled,
     resetGreetSchedule,
     dismiss,
     isBusy,

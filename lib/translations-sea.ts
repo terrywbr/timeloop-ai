@@ -66,7 +66,19 @@ type TranslationBundle = {
     | 'rotationLabel'
     | 'rotation5'
     | 'rotation10'
-    | 'streamModeLink',
+    | 'streamModeLink'
+    | 'oneClickLiveTitle'
+    | 'oneClickLiveButton'
+    | 'oneClickLiveHint'
+    | 'oneClickLiveStatusImages'
+    | 'oneClickLiveStatusMusic'
+    | 'oneClickLiveStatusReady'
+    | 'oneClickLiveNeedImages'
+    | 'oneClickLiveNeedMusic'
+    | 'oneClickLivePopoutBlocked'
+    | 'oneClickLiveLaunchedToday'
+    | 'copyStreamUrl'
+    | 'copyStreamUrlDone',
     string
   >
 }
@@ -194,6 +206,18 @@ export const thTranslation: TranslationBundle = {
     rotation5: '5 นาที',
     rotation10: '10 นาที',
     streamModeLink: 'เปิดโหมดสตรีม (?stream=1)',
+    oneClickLiveTitle: 'ไลฟ์คลิกเดียว',
+    oneClickLiveButton: 'เริ่มสตรีม OBS',
+    oneClickLiveHint: 'เลือกฉากหมุนในคลังและเลือกสถานี แล้วเปิดหน้าต่าง OBS ด้วยคลิกเดียวทุกวัน',
+    oneClickLiveStatusImages: 'ฉากหมุน: {count}',
+    oneClickLiveStatusMusic: 'เพลง: {name}',
+    oneClickLiveStatusReady: 'พร้อมแล้ว — คลิกเดียวเพื่อไลฟ์',
+    oneClickLiveNeedImages: 'เลือกฉากหมุนอย่างน้อย 1 รูปในคลังขวา (แท็บของฉัน)',
+    oneClickLiveNeedMusic: 'ทำ onboarding เพลงและยืนยันสถานีก่อน',
+    oneClickLivePopoutBlocked: 'ป๊อปอัปถูกบล็อก อนุญาตหรือคัดลอก URL ด้านล่าง',
+    oneClickLiveLaunchedToday: 'เปิดหน้าต่างสตรีมวันนี้แล้ว',
+    copyStreamUrl: 'คัดลอก URL สตรีม',
+    copyStreamUrlDone: 'คัดลอก URL แล้ว',
   },
 }
 
@@ -297,5 +321,17 @@ export const viTranslation: TranslationBundle = {
     rotation5: '5 phút',
     rotation10: '10 phút',
     streamModeLink: 'Mở chế độ stream (?stream=1)',
+    oneClickLiveTitle: 'Live một cú nhấp',
+    oneClickLiveButton: 'Bắt đầu stream OBS',
+    oneClickLiveHint: 'Chọn cảnh xoay trong thư viện và chọn đài, mỗi ngày mở cửa sổ OBS bằng một cú nhấp.',
+    oneClickLiveStatusImages: 'Cảnh xoay: {count}',
+    oneClickLiveStatusMusic: 'Nhạc: {name}',
+    oneClickLiveStatusReady: 'Sẵn sàng — một cú nhấp để phát',
+    oneClickLiveNeedImages: 'Chọn ít nhất 1 cảnh trong thư viện bên phải (tab Của tôi).',
+    oneClickLiveNeedMusic: 'Hoàn tất onboarding nhạc và xác nhận đài trước.',
+    oneClickLivePopoutBlocked: 'Pop-up bị chặn. Cho phép pop-up hoặc sao chép URL bên dưới.',
+    oneClickLiveLaunchedToday: 'Đã mở cửa sổ stream hôm nay',
+    copyStreamUrl: 'Sao chép URL stream',
+    copyStreamUrlDone: 'Đã sao chép URL',
   },
 }

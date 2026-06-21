@@ -114,8 +114,6 @@ function TimeLoopPageInner() {
             onReopenMusicOnboarding={page.handleReopenMusicOnboarding}
             djVoiceEnabled={page.aiDj.voiceEnabled}
             onDjVoiceEnabledChange={page.setDjVoiceEnabled}
-            djIntervalEnabled={page.aiDj.intervalEnabled}
-            onDjIntervalEnabledChange={page.setDjIntervalEnabled}
             isMusicPlaying={page.isMusicPlaying}
             onMusicPlayingChange={page.handleMusicPlayingChange}
             musicVolume={page.musicVolume}
@@ -136,6 +134,9 @@ function TimeLoopPageInner() {
             cnWechatSupportId={process.env.NEXT_PUBLIC_CN_WECHAT_SUPPORT_ID ?? ''}
             selectedVisualEffect={page.selectedVisualEffect}
             onVisualEffectChange={page.setSelectedVisualEffect}
+            streamLiveReadiness={page.streamLiveReadiness}
+            streamerLiveLaunchedToday={page.streamerLiveLaunchedToday}
+            onOneClickLiveStream={page.handleOneClickLiveStream}
           />
 
           <CommunityGallery
@@ -171,8 +172,6 @@ function TimeLoopPageInner() {
             onReopenMusicOnboarding={page.handleReopenMusicOnboarding}
             djVoiceEnabled={page.aiDj.voiceEnabled}
             onDjVoiceEnabledChange={page.setDjVoiceEnabled}
-            djIntervalEnabled={page.aiDj.intervalEnabled}
-            onDjIntervalEnabledChange={page.setDjIntervalEnabled}
             isMusicPlaying={page.isMusicPlaying}
             onMusicPlayingChange={page.handleMusicPlayingChange}
             musicVolume={page.musicVolume}
@@ -194,6 +193,9 @@ function TimeLoopPageInner() {
             onToggleWorldInRotation={page.handleToggleWorldInStreamerRotation}
             isWorldInRotation={page.isWorldInStreamerRotation}
             onEnterOfficialScene={page.handleEnterGalleryScene}
+            streamLiveReadiness={page.streamLiveReadiness}
+            streamerLiveLaunchedToday={page.streamerLiveLaunchedToday}
+            onOneClickLiveStream={page.handleOneClickLiveStream}
           />
 
           {page.isGenerating ? <GeneratingOverlay /> : null}

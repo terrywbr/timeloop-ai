@@ -37,7 +37,7 @@ const djEn: DjUiCopy = {
   voiceOff: 'DJ voice off',
   subtitlesOnly: 'Subtitles only',
   autoDjComingSoon: 'Auto DJ — coming soon',
-  intervalCompanion: '30-min companion',
+  intervalCompanion: '20-min companion',
   personas: {
     'neon-tokyo': { name: 'Underground Rebel DJ', sceneTitle: 'Blade Runner: Neon Rain Rooftop' },
     'deep-night': { name: 'Houston Commander', sceneTitle: 'NASA ISS Observation Deck' },
@@ -56,7 +56,7 @@ const djZhTw: DjUiCopy = {
   voiceOff: 'DJ 語音關閉',
   subtitlesOnly: '僅字幕',
   autoDjComingSoon: 'Auto DJ — 即將推出',
-  intervalCompanion: '30 分鐘陪伴',
+  intervalCompanion: '20 分鐘陪伴',
   personas: {
     'neon-tokyo': { name: '地下電台反抗軍 DJ', sceneTitle: '銀翼殺手：霓虹雨夜天台' },
     'deep-night': { name: '休斯頓地面指揮官', sceneTitle: 'NASA 國際太空站觀景窗' },
@@ -88,7 +88,7 @@ const djJa: DjUiCopy = {
   voiceOff: 'DJ音声オフ',
   subtitlesOnly: '字幕のみ',
   autoDjComingSoon: 'Auto DJ — 近日公開',
-  intervalCompanion: '30分お付き添い',
+  intervalCompanion: '20分お付き添い',
   personas: {
     'neon-tokyo': { name: 'アンダーグラウンドDJ', sceneTitle: 'ブレードランナー：ネオン雨の屋上' },
     'deep-night': { name: 'ヒューストン管制官', sceneTitle: 'ISS観測デッキ' },
@@ -107,7 +107,7 @@ const djKo: DjUiCopy = {
   voiceOff: 'DJ 음성 꺼짐',
   subtitlesOnly: '자막만',
   autoDjComingSoon: 'Auto DJ — 곧 출시',
-  intervalCompanion: '30분 동행',
+  intervalCompanion: '20분 동행',
   personas: {
     'neon-tokyo': { name: '언더그라운드 DJ', sceneTitle: '블레이드 러너: 네온 비 옥상' },
     'deep-night': { name: '휴스턴 지상 관제', sceneTitle: 'ISS 관측창' },
@@ -126,7 +126,7 @@ const djEs: DjUiCopy = {
   voiceOff: 'Voz DJ desactivada',
   subtitlesOnly: 'Solo subtítulos',
   autoDjComingSoon: 'Auto DJ — próximamente',
-  intervalCompanion: 'Compañía 30 min',
+  intervalCompanion: 'Compañía 20 min',
   personas: {
     'neon-tokyo': { name: 'DJ Rebelde Underground', sceneTitle: 'Blade Runner: Azotea bajo la lluvia neón' },
     'deep-night': { name: 'Comandante de Houston', sceneTitle: 'Cubierta de observación ISS' },
@@ -145,7 +145,7 @@ const djFr: DjUiCopy = {
   voiceOff: 'Voix DJ désactivée',
   subtitlesOnly: 'Sous-titres seulement',
   autoDjComingSoon: 'Auto DJ — bientôt',
-  intervalCompanion: 'Compagnon 30 min',
+  intervalCompanion: 'Compagnon 20 min',
   personas: {
     'neon-tokyo': { name: 'DJ Rebelle Underground', sceneTitle: 'Blade Runner : Toit sous la pluie néon' },
     'deep-night': { name: 'Commandant Houston', sceneTitle: 'Pont d\'observation ISS' },
@@ -164,7 +164,7 @@ const djDe: DjUiCopy = {
   voiceOff: 'DJ-Stimme aus',
   subtitlesOnly: 'Nur Untertitel',
   autoDjComingSoon: 'Auto DJ — demnächst',
-  intervalCompanion: '30-Min-Begleitung',
+  intervalCompanion: '20-Min-Begleitung',
   personas: {
     'neon-tokyo': { name: 'Underground-Rebell-DJ', sceneTitle: 'Blade Runner: Neonregen-Dach' },
     'deep-night': { name: 'Houston-Bodenkommandant', sceneTitle: 'ISS-Beobachtungsdeck' },
@@ -183,7 +183,7 @@ const djTh: DjUiCopy = {
   voiceOff: 'ปิดเสียง DJ',
   subtitlesOnly: 'คำบรรยายเท่านั้น',
   autoDjComingSoon: 'Auto DJ — เร็วๆ นี้',
-  intervalCompanion: 'เพื่อนร่วมทาง 30 นาที',
+  intervalCompanion: 'เพื่อนร่วมทาง 20 นาที',
   personas: {
     'neon-tokyo': { name: 'ดีเจกบฏใต้ดิน', sceneTitle: 'Blade Runner: ดาดฟ้าฝนนีออน' },
     'deep-night': { name: 'ผู้บัญชาการฮิวสตัน', sceneTitle: 'ดาดฟ้าสังเกตการณ์ ISS' },
@@ -202,7 +202,7 @@ const djVi: DjUiCopy = {
   voiceOff: 'Tắt giọng DJ',
   subtitlesOnly: 'Chỉ phụ đề',
   autoDjComingSoon: 'Auto DJ — sắp ra mắt',
-  intervalCompanion: 'Đồng hành 30 phút',
+  intervalCompanion: 'Đồng hành 20 phút',
   personas: {
     'neon-tokyo': { name: 'DJ nổi loạn ngầm', sceneTitle: 'Blade Runner: sân thượng mưa neon' },
     'deep-night': { name: 'Chỉ huy Houston', sceneTitle: 'Đài quan sát ISS' },

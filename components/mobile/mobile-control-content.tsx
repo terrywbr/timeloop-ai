@@ -32,6 +32,7 @@ import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import type { VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
 import { VISUAL_EFFECT_SCENE_KEYS } from '@/lib/timeloop/world-resolver'
 import MembershipPanel from '@/components/billing/membership-panel'
+import StreamerLivePanel from '@/components/streamer/streamer-live-panel'
 
 export interface MobileControlContentProps {
   videoRef: React.RefObject<VideoBackgroundRef | null>
@@ -52,8 +53,6 @@ export interface MobileControlContentProps {
   onReopenMusicOnboarding: () => void
   djVoiceEnabled: boolean
   onDjVoiceEnabledChange: (enabled: boolean) => void
-  djIntervalEnabled: boolean
-  onDjIntervalEnabledChange: (enabled: boolean) => void
   isMusicPlaying: boolean
   onMusicPlayingChange: (playing: boolean) => void
   musicVolume: number
@@ -74,6 +73,15 @@ export interface MobileControlContentProps {
   cnWechatSupportId?: string
   selectedVisualEffect: VisualEffectSceneKey
   onVisualEffectChange: (scene: VisualEffectSceneKey) => void
+  streamLiveReadiness?: {
+    rotationCount: number
+    musicLabel: string
+    imagesReady: boolean
+    musicReady: boolean
+    ready: boolean
+  }
+  streamerLiveLaunchedToday?: boolean
+  onOneClickLiveStream?: () => void
 }
 
 export default function MobileControlContent({
@@ -95,8 +103,6 @@ export default function MobileControlContent({
   onReopenMusicOnboarding,
   djVoiceEnabled,
   onDjVoiceEnabledChange,
-  djIntervalEnabled,
-  onDjIntervalEnabledChange,
   isMusicPlaying,
   onMusicPlayingChange: setIsMusicPlaying,
   musicVolume,
@@ -117,6 +123,9 @@ export default function MobileControlContent({
   cnWechatSupportId = '',
   selectedVisualEffect,
   onVisualEffectChange,
+  streamLiveReadiness,
+  streamerLiveLaunchedToday = false,
+  onOneClickLiveStream,
 }: MobileControlContentProps) {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showFavoriteToast, setShowFavoriteToast] = useState(false)
@@ -248,18 +257,12 @@ export default function MobileControlContent({
           <div className="flex items-center gap-1">
             <button
               type="button"
-              onClick={() => onDjIntervalEnabledChange(!djIntervalEnabled)}
-              className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] ${
-                djIntervalEnabled
-                  ? 'border-accent/40 bg-accent/10 text-accent'
-                  : 'border-foreground/10 bg-secondary/30 text-muted-foreground'
-              }`}
-            >
-              <span>{t.dj.intervalCompanion}</span>
-            </button>
-            <button
-              type="button"
               onClick={() => onDjVoiceEnabledChange(!djVoiceEnabled)}
+              title={
+                djVoiceEnabled
+                  ? `${t.dj.voiceOn} · ${t.dj.intervalCompanion}`
+                  : t.dj.voiceOff
+              }
               className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] ${
                 djVoiceEnabled
                   ? 'border-accent/40 bg-accent/10 text-accent'
@@ -390,6 +393,18 @@ export default function MobileControlContent({
 
       {/* Spacer */}
       <div className="flex-1" />
+
+      {userProfile?.hasCreatorTools && streamLiveReadiness && onOneClickLiveStream ? (
+        <StreamerLivePanel
+          rotationCount={streamLiveReadiness.rotationCount}
+          musicLabel={streamLiveReadiness.musicLabel}
+          imagesReady={streamLiveReadiness.imagesReady}
+          musicReady={streamLiveReadiness.musicReady}
+          ready={streamLiveReadiness.ready}
+          launchedToday={streamerLiveLaunchedToday}
+          onLaunch={onOneClickLiveStream}
+        />
+      ) : null}
 
       {/* Fullscreen Toggle */}
       <div className="mb-4">

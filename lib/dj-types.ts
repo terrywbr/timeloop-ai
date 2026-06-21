@@ -18,4 +18,4 @@ export type DjSpeakParams = {
   force?: boolean
 }
 
-export const DJ_INTERVAL_MS = 1 * 60 * 1000
+export const DJ_INTERVAL_MS = 20 * 60 * 1000
