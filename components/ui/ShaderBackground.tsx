@@ -3,6 +3,7 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { AMBIENT_SHADER_PARALLAX } from '@/lib/ambient-visual-tuning'
 
 type ShaderBackgroundProps = {
   texture: THREE.Texture
@@ -43,6 +44,9 @@ const fragmentShader = `
   uniform float uZoom;
   uniform float uParallax;
   uniform vec2 uPointer;
+  uniform vec2 uParallaxScale;
+  uniform vec2 uPointerScale;
+  uniform vec2 uDriftScale;
 
   varying vec2 vUv;
 
@@ -52,10 +56,10 @@ const fragmentShader = `
     vec2 drift = vec2(
       sin((vUv.y * 9.0) + (uTime * 0.07)),
       cos((vUv.x * 8.0) + (uTime * 0.05))
-    ) * vec2(0.0028, 0.0048) * uParallax;
+    ) * uDriftScale * uParallax;
 
-    vec2 parallax = (vUv - 0.5) * vec2(0.065, 0.095) * depth * uParallax;
-    vec2 uv = vUv + drift + parallax + (uPointer * vec2(0.014, 0.024));
+    vec2 parallax = (vUv - 0.5) * uParallaxScale * depth * uParallax;
+    vec2 uv = vUv + drift + parallax + (uPointer * uPointerScale);
     vec2 zoomedUv = (uv - 0.5) / uZoom + 0.5;
 
     vec3 color = texture2D(uTexture, zoomedUv).rgb;
@@ -106,6 +110,15 @@ export default function ShaderBackground({
       uZoom: { value: 1.02 },
       uParallax: { value: 1.0 },
       uPointer: { value: new THREE.Vector2(0, 0) },
+      uParallaxScale: {
+        value: new THREE.Vector2(AMBIENT_SHADER_PARALLAX.parallaxX, AMBIENT_SHADER_PARALLAX.parallaxY),
+      },
+      uPointerScale: {
+        value: new THREE.Vector2(AMBIENT_SHADER_PARALLAX.pointerX, AMBIENT_SHADER_PARALLAX.pointerY),
+      },
+      uDriftScale: {
+        value: new THREE.Vector2(AMBIENT_SHADER_PARALLAX.driftX, AMBIENT_SHADER_PARALLAX.driftY),
+      },
     }),
     [texture, depthTexture],
   )
@@ -159,7 +172,7 @@ export default function ShaderBackground({
     )
     uniforms.uParallax.value = THREE.MathUtils.lerp(
       finiteNumber(uniforms.uParallax.value, 1),
-      0.65 + safeMotionScale * 0.35,
+      0.5 + safeMotionScale * 0.28,
       THREE.MathUtils.clamp(0.05 * (dt * 60), 0, 1),
     )
   })

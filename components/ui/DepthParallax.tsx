@@ -3,6 +3,7 @@
 import { useFrame, useThree } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import { AMBIENT_DEPTH_PARALLAX, AMBIENT_MOTION } from '@/lib/ambient-visual-tuning'
 
 type DepthParallaxProps = {
   texture: THREE.Texture
@@ -40,19 +41,24 @@ const fragmentShader = `
   uniform vec2 uPointer;
   uniform float uIntensity;
   uniform float uMotionScale;
+  uniform float uDepthShift;
+  uniform vec2 uDirectionalLift;
+  uniform float uGhostAlpha;
+  uniform vec2 uNearMask;
+  uniform float uColorLift;
+  uniform float uTintStrength;
 
   varying vec2 vUv;
 
   void main() {
     float depth = texture2D(uDepthMap, vUv).r;
-    vec2 directionalLift = vec2(0.86, 1.34);
-    vec2 uv = vUv + (uOffset + uPointer * directionalLift) * (depth * 0.72) * uMotionScale;
+    vec2 uv = vUv + (uOffset + uPointer * uDirectionalLift) * (depth * uDepthShift) * uMotionScale;
     vec3 sampleColor = texture2D(uTexture, uv).rgb;
 
-    float nearMask = smoothstep(0.5, 0.95, depth);
-    float alpha = nearMask * 0.34 * uIntensity;
+    float nearMask = smoothstep(uNearMask.x, uNearMask.y, depth);
+    float alpha = nearMask * uGhostAlpha * uIntensity;
 
-    vec3 lifted = sampleColor * 1.08 + vec3(0.02, 0.05, 0.08) * nearMask;
+    vec3 lifted = sampleColor * uColorLift + vec3(0.02, 0.05, 0.08) * nearMask * uTintStrength;
     gl_FragColor = vec4(lifted, alpha);
   }
 `
@@ -81,6 +87,22 @@ export default function DepthParallax({
       uPointer: { value: new THREE.Vector2(0, 0) },
       uIntensity: { value: finiteNumber(intensity, 1) },
       uMotionScale: { value: finiteNumber(motionScale, 0) },
+      uDepthShift: { value: AMBIENT_DEPTH_PARALLAX.depthShift },
+      uDirectionalLift: {
+        value: new THREE.Vector2(
+          AMBIENT_DEPTH_PARALLAX.directionalLiftX,
+          AMBIENT_DEPTH_PARALLAX.directionalLiftY,
+        ),
+      },
+      uGhostAlpha: { value: AMBIENT_DEPTH_PARALLAX.ghostAlpha },
+      uNearMask: {
+        value: new THREE.Vector2(
+          AMBIENT_DEPTH_PARALLAX.nearMaskStart,
+          AMBIENT_DEPTH_PARALLAX.nearMaskEnd,
+        ),
+      },
+      uColorLift: { value: AMBIENT_DEPTH_PARALLAX.colorLift },
+      uTintStrength: { value: AMBIENT_DEPTH_PARALLAX.tintStrength },
     }),
     [texture, depthTexture, intensity, motionScale],
   )
@@ -96,14 +118,14 @@ export default function DepthParallax({
     const safeIntensity = finiteNumber(intensity, 1)
     const safeMotionScale = finiteNumber(motionScale, 0)
     const t = finiteNumber(state.clock.getElapsedTime(), 0)
-    const autoOffsetX = Math.sin(t * 0.16) * 0.028 * safeMotionScale
-    const autoOffsetY = Math.cos(t * 0.14) * 0.044 * safeMotionScale
+    const autoOffsetX = Math.sin(t * 0.16) * 0.016 * safeMotionScale
+    const autoOffsetY = Math.cos(t * 0.14) * 0.026 * safeMotionScale
 
     if (t >= nextRandomAtRef.current) {
       randomTargetRef.current.set(
-        randomBetween(-0.026, 0.026) * safeMotionScale,
-        randomBetween(-0.04, 0.04) * safeMotionScale,
-        randomBetween(-0.006, 0.012) * safeMotionScale,
+        randomBetween(-0.016, 0.016) * safeMotionScale,
+        randomBetween(-0.024, 0.024) * safeMotionScale,
+        randomBetween(-0.004, 0.008) * safeMotionScale,
       )
       nextRandomAtRef.current = t + randomBetween(4.5, 8.5)
     }
@@ -124,7 +146,10 @@ export default function DepthParallax({
         meshRef.current.position.z = 0.01 + Math.cos(t * 0.035) * 0.008
       }
 
-      uniforms.uOffset.value.set(Math.sin(t * 0.07) * 0.02, Math.cos(t * 0.052) * 0.032)
+      uniforms.uOffset.value.set(
+        Math.sin(t * 0.07) * 0.012 * AMBIENT_MOTION.cameraDriftScale,
+        Math.cos(t * 0.052) * 0.02 * AMBIENT_MOTION.cameraDriftScale,
+      )
     }
     uniforms.uPointer.value.lerp(targetPointerRef.current, alpha)
     uniforms.uIntensity.value = THREE.MathUtils.lerp(

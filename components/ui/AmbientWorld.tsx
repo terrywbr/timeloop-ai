@@ -6,6 +6,7 @@ import * as THREE from 'three'
 import DepthParallax from './DepthParallax'
 import ParticleLayer from './ParticleLayer'
 import ShaderBackground from './ShaderBackground'
+import { AMBIENT_MOTION } from '@/lib/ambient-visual-tuning'
 
 export type AmbientWorldParticles = {
   enabled?: boolean
@@ -252,7 +253,11 @@ function AmbientWorldLayers({
   const paused = Boolean(shader.paused || ambience.paused)
   const effectsIntensity = ambience.muted ? 0.2 : clamp01(shader.intensity, 1)
   const particleIntensity = ambience.muted ? 0.15 : clamp01(particles.intensity, effectsIntensity)
-  const motionScale = finiteNumber(shader.motionScale, size.width > 768 ? 1 : 0.45)
+  const motionScale = finiteNumber(
+    shader.motionScale,
+    size.width > 768 ? AMBIENT_MOTION.desktopMotionScale : AMBIENT_MOTION.mobileMotionScale,
+  )
+  const cameraDrift = AMBIENT_MOTION.cameraDriftScale
   const particlePreset = particles.preset || 'cyberpunk'
 
   useFrame((state, delta) => {
@@ -261,29 +266,32 @@ function AmbientWorldLayers({
     const alpha = THREE.MathUtils.clamp(0.045 * (dt * 60), 0, 1)
     const pointerX = THREE.MathUtils.clamp(finiteNumber(state.pointer?.x, 0), -1, 1)
     const pointerY = THREE.MathUtils.clamp(finiteNumber(state.pointer?.y, 0), -1, 1)
-    const autoOffsetX = Math.sin(t * 0.18) * 0.04 * motionScale
-    const autoOffsetY = Math.cos(t * 0.16) * 0.052 * motionScale
+    const autoOffsetX = Math.sin(t * 0.18) * AMBIENT_MOTION.autoDriftX * motionScale
+    const autoOffsetY = Math.cos(t * 0.16) * AMBIENT_MOTION.autoDriftY * motionScale
 
     if (t >= nextRandomCameraAtRef.current) {
       randomCameraTargetRef.current.set(
-        randomBetween(-0.026, 0.026) * motionScale,
-        randomBetween(-0.034, 0.034) * motionScale,
-        randomBetween(-0.018, 0.018) * motionScale,
+        randomBetween(-0.018, 0.018) * motionScale * cameraDrift,
+        randomBetween(-0.024, 0.024) * motionScale * cameraDrift,
+        randomBetween(-0.012, 0.012) * motionScale * cameraDrift,
       )
       nextRandomCameraAtRef.current = t + randomBetween(4.5, 8)
     }
     randomCameraDriftRef.current.lerp(randomCameraTargetRef.current, THREE.MathUtils.clamp(0.018 * (dt * 60), 0, 1))
 
     targetPointerRef.current.set(
-      pointerX * 0.034 * motionScale + autoOffsetX,
-      pointerY * 0.046 * motionScale + autoOffsetY,
+      pointerX * AMBIENT_MOTION.pointerFollowX * motionScale + autoOffsetX,
+      pointerY * AMBIENT_MOTION.pointerFollowY * motionScale + autoOffsetY,
     )
     pointerOffsetRef.current.lerp(targetPointerRef.current, alpha)
 
     if (!paused) {
-      state.camera.position.x = Math.sin(t * 0.08) * 0.046 * motionScale + randomCameraDriftRef.current.x
-      state.camera.position.y = Math.cos(t * 0.065) * 0.058 * motionScale + randomCameraDriftRef.current.y
-      state.camera.position.z = 2.25 + Math.sin(t * 0.05) * 0.025 * motionScale + randomCameraDriftRef.current.z
+      state.camera.position.x =
+        Math.sin(t * 0.08) * 0.032 * motionScale * cameraDrift + randomCameraDriftRef.current.x
+      state.camera.position.y =
+        Math.cos(t * 0.065) * 0.04 * motionScale * cameraDrift + randomCameraDriftRef.current.y
+      state.camera.position.z =
+        2.25 + Math.sin(t * 0.05) * 0.018 * motionScale * cameraDrift + randomCameraDriftRef.current.z
       state.camera.lookAt(0, 0, 0)
     }
 
