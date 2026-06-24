@@ -61,7 +61,6 @@ import {
 import { useCoFocus } from '@/hooks/use-cofocus'
 import { markCoFocusSpokenToday, shouldSpeakCoFocusToday } from '@/lib/dj-settings'
 import type { VideoBackgroundRef } from '@/components/ui/video-background'
-import { AMBIENCE_AUDIO_SOURCES, AMBIENCE_VOLUME_RATIO } from '@/lib/timeloop/constants'
 import type { AmbientWorldLayer, GalleryWorldAssets, GenerateApiResponse } from '@/lib/timeloop/types'
 import { normalizeVisualEffectScene, resolveParticlePreset, resolvePresetWorld, type VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
 import { buildStreamPlaybackUrl, resolveInitialProxyTier } from '@/lib/radio-station'
@@ -291,8 +290,6 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   const activeShaderPreset = moodAmbientLayer?.shaderPreset ?? presetWorld.shaderPreset
   const activeAmbienceAudio = moodAmbientLayer?.ambienceAudio ?? presetWorld.ambienceAudio
   const activeMusicStreamUrl = music.activeMusicStreamUrl
-  const activeAmbienceUrl = AMBIENCE_AUDIO_SOURCES[activeAmbienceAudio] ?? ''
-  const ambienceVolume = Math.round(musicVolume * AMBIENCE_VOLUME_RATIO)
   const activeAmbientLayer = useMemo<AmbientWorldLayer>(
     () => ({
       key: [
@@ -1486,6 +1483,13 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     ],
   )
 
+  const collapseSidePanels = useCallback(() => {
+    setLeftPanelExpanded(false)
+    setRightPanelExpanded(false)
+    setLeftDrawerOpen(false)
+    setRightDrawerOpen(false)
+  }, [])
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       const windowWidth = window.innerWidth
@@ -1502,10 +1506,21 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
       }
     }
 
+    const handleDoubleClick = (e: MouseEvent) => {
+      const windowWidth = window.innerWidth
+      const mouseX = e.clientX
+      const leftThreshold = windowWidth / 3
+      const rightThreshold = (windowWidth * 2) / 3
+      if (mouseX >= leftThreshold && mouseX <= rightThreshold) {
+        collapseSidePanels()
+      }
+    }
+
     const mediaQuery = window.matchMedia('(min-width: 768px)')
     if (mediaQuery.matches) {
       window.addEventListener('mousemove', handleMouseMove)
     }
+    window.addEventListener('dblclick', handleDoubleClick)
 
     const handleMediaChange = (e: MediaQueryListEvent) => {
       if (e.matches) {
@@ -1519,9 +1534,10 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('dblclick', handleDoubleClick)
       mediaQuery.removeEventListener('change', handleMediaChange)
     }
-  }, [])
+  }, [collapseSidePanels])
 
   useEffect(() => {
     if (!music.musicOnboarded || !music.primaryMood || showMusicOnboarding) return
@@ -1704,8 +1720,6 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     isMobile,
     isMobilePortrait,
     ambientLayers,
-    activeAmbienceUrl,
-    ambienceVolume,
     handleMusicPlayingChange,
     handleUnlockAudio,
     handleCompleteMusicOnboarding,

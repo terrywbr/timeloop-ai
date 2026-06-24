@@ -10,10 +10,8 @@ type StreamLayoutProps = {
   ambientLayers: AmbientWorldLayer[]
   overlaySettings: StreamerOverlaySettings
   musicStreamUrl: string | null
-  ambienceStreamUrl: string | null
   isMusicPlaying: boolean
   musicVolume: number
-  ambienceVolume: number
   isAudioUnlocked: boolean
   onPlaybackError: (url: string) => void
 }
@@ -22,10 +20,8 @@ export default function StreamLayout({
   ambientLayers,
   overlaySettings,
   musicStreamUrl,
-  ambienceStreamUrl,
   isMusicPlaying,
   musicVolume,
-  ambienceVolume,
   isAudioUnlocked,
   onPlaybackError,
 }: StreamLayoutProps) {
@@ -42,17 +38,6 @@ export default function StreamLayout({
           muted={!isAudioUnlocked}
           streamMode
           onPlaybackError={onPlaybackError}
-        />
-      ) : null}
-
-      {ambienceStreamUrl ? (
-        <StreamAudioPlayer
-          streamUrl={ambienceStreamUrl}
-          playing={isMusicPlaying}
-          volume={ambienceVolume}
-          muted={!isAudioUnlocked}
-          loop
-          streamMode
         />
       ) : null}
     </main>

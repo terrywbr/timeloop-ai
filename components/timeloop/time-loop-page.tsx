@@ -59,10 +59,8 @@ function TimeLoopPageInner() {
           ambientLayers={page.ambientLayers}
           overlaySettings={page.effectiveOverlaySettings}
           musicStreamUrl={page.activeMusicStreamUrl}
-          ambienceStreamUrl={page.activeAmbienceUrl}
           isMusicPlaying={page.isMusicPlaying}
           musicVolume={page.effectiveMusicVolume}
-          ambienceVolume={page.ambienceVolume}
           isAudioUnlocked={page.isAudioUnlocked}
           onPlaybackError={(url) => void page.handleStreamFailure(url)}
         />
@@ -71,14 +69,6 @@ function TimeLoopPageInner() {
       {page.showCockpit ? (
         <main className="timeloop-app-shell relative h-screen w-screen overflow-hidden bg-background">
           <AmbientBackground layers={page.ambientLayers} />
-
-          <StreamAudioPlayer
-            streamUrl={page.activeAmbienceUrl}
-            playing={page.isMusicPlaying}
-            volume={page.ambienceVolume}
-            muted={!page.isAudioUnlocked}
-            loop
-          />
 
           <NowPlayingTuner station={page.tunerStation} />
           <AiDjOverlay aiDj={page.aiDj} onDismiss={page.dismissAiDj} />
