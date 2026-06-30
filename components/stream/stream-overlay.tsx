@@ -1,6 +1,9 @@
 'use client'
 
+import Image from 'next/image'
 import type { StreamerOverlaySettings } from '@/lib/streamer-settings'
+
+const FOUNDING_CREATOR_BADGE_SRC = '/badges/founding-creator.png'
 
 type StreamOverlayProps = {
   settings: StreamerOverlaySettings
@@ -16,38 +19,31 @@ const positionClasses: Record<StreamerOverlaySettings['position'], string> = {
   br: 'bottom-6 right-6 items-end text-right',
 }
 
-function StreamerPassBadge() {
+function CreatorBadgeImage({ alt }: { alt: string }) {
   return (
     <div
-      className="pointer-events-none absolute right-5 top-5 z-30 flex items-center gap-2 rounded-full border border-teal-200/30 bg-gradient-to-r from-teal-500/20 via-cyan-400/10 to-teal-500/15 px-3 py-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.45)] backdrop-blur-md"
-      aria-hidden
+      className="pointer-events-none absolute right-4 top-4 z-30 sm:right-5 sm:top-5"
+      aria-label={alt}
     >
-      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-teal-400/25 text-[10px] font-bold text-teal-50 ring-1 ring-teal-200/35">
-        ◉
-      </span>
-      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-teal-50/95">
-        Streamer Pass
-      </span>
+      <Image
+        src={FOUNDING_CREATOR_BADGE_SRC}
+        alt={alt}
+        width={112}
+        height={140}
+        priority
+        className="h-auto w-[5.5rem] drop-shadow-[0_6px_28px_rgba(251,191,36,0.45)] sm:w-[6.5rem]"
+        sizes="(max-width: 640px) 88px, 104px"
+      />
     </div>
   )
 }
 
+function StreamerPassBadge() {
+  return <CreatorBadgeImage alt="Streamer Pass" />
+}
+
 function FoundingCreatorBadge() {
-  return (
-    <div
-      className="pointer-events-none absolute right-5 top-5 z-30 flex items-center gap-2 rounded-full border border-amber-200/35 bg-gradient-to-r from-amber-500/20 via-amber-300/10 to-amber-500/15 px-3 py-1.5 shadow-[0_4px_24px_rgba(0,0,0,0.45)] backdrop-blur-md"
-      aria-hidden
-    >
-      <span
-        className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-400/25 text-[10px] font-bold text-amber-100 ring-1 ring-amber-200/40"
-      >
-        ★
-      </span>
-      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-50/95">
-        Founding Creator
-      </span>
-    </div>
-  )
+  return <CreatorBadgeImage alt="Founding Creator" />
 }
 
 export default function StreamOverlay({
