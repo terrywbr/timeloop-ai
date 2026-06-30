@@ -1,34 +1,42 @@
-[
-  {
-    "id": "1",
-    "icon": "🎧",
-    "title": "FocusFlow",
-    "country_flag": "🇺🇸",
-    "subtitle": "Study Room",
-    "viewers": "127"
+{
+  "_meta": {
+    "purpose": "Seed placeholder rooms for Live Network until real streamers go on-air.",
+    "dataSource": "seed",
+    "ranking": "Sorted by viewerCount descending via GET /api/live-network",
+    "note": "When fetchLiveStreamerNetworkRooms returns rows, auto mode switches to live data."
   },
-  {
-    "id": "2",
-    "icon": "🎧",
-    "title": "ChillLab",
-    "country_flag": "🇲🇾",
-    "subtitle": "LoFi Beats",
-    "viewers": "89"
-  },
-  {
-    "id": "3",
-    "icon": "🎧",
-    "title": "AI Hustle",
-    "country_flag": "🇵🇭",
-    "subtitle": "AI Tools Radio",
-    "viewers": "65"
-  },
-  {
-    "id": "4",
-    "icon": "🎧",
-    "title": "NightRain",
-    "country_flag": "🇮🇩",
-    "subtitle": "Sleep Ambient",
-    "viewers": "41"
-  }
-]
+  "rooms": [
+    {
+      "id": "seed-1",
+      "icon": "🎧",
+      "title": "FocusFlow",
+      "country_flag": "🇺🇸",
+      "subtitle": "Study Room",
+      "viewers": "127"
+    },
+    {
+      "id": "seed-2",
+      "icon": "🎧",
+      "title": "ChillLab",
+      "country_flag": "🇲🇾",
+      "subtitle": "LoFi Beats",
+      "viewers": "89"
+    },
+    {
+      "id": "seed-3",
+      "icon": "🎧",
+      "title": "AI Hustle",
+      "country_flag": "🇵🇭",
+      "subtitle": "AI Tools Radio",
+      "viewers": "65"
+    },
+    {
+      "id": "seed-4",
+      "icon": "🎧",
+      "title": "NightRain",
+      "country_flag": "🇮🇩",
+      "subtitle": "Sleep Ambient",
+      "viewers": "41"
+    }
+  ]
+}

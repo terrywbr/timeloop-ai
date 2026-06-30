@@ -1,18 +1,25 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
+  fetchLiveNetworkBoard,
   fluctuateViewerCount,
-  LIVE_NETWORK_ROOMS,
-  parseViewerBase,
+  LIVE_NETWORK_POLL_MS,
   readLiveNetworkHiddenFromWindow,
-  type LiveNetworkRoom,
+  type LiveNetworkDataSource,
+  type LiveNetworkRoomRow,
 } from '@/lib/live-network'
 
-const TICK_MS = 4200
+const SEED_TICK_MS = 4200
 
-function LiveNetworkRow({ room }: { room: LiveNetworkRoom }) {
-  const base = parseViewerBase(room.viewers)
+function LiveNetworkRow({
+  room,
+  dataSource,
+}: {
+  room: LiveNetworkRoomRow
+  dataSource: LiveNetworkDataSource
+}) {
+  const base = room.viewerCount
   const [viewers, setViewers] = useState(base)
 
   useEffect(() => {
@@ -20,17 +27,17 @@ function LiveNetworkRow({ room }: { room: LiveNetworkRoom }) {
   }, [base])
 
   useEffect(() => {
-    if (base <= 0) return undefined
+    if (dataSource !== 'seed' || base <= 0) return undefined
     const id = window.setInterval(() => {
       setViewers((prev) => fluctuateViewerCount(prev, base))
-    }, TICK_MS)
+    }, SEED_TICK_MS)
     return () => window.clearInterval(id)
-  }, [base])
+  }, [base, dataSource])
+
+  const displayCount = dataSource === 'seed' ? viewers : base
 
   return (
-    <li
-      className="group rounded-lg border border-white/5 bg-white/[0.04] px-2.5 py-2 transition-colors hover:border-white/12 hover:bg-white/[0.07]"
-    >
+    <li className="group rounded-lg border border-white/5 bg-white/[0.04] px-2.5 py-2 transition-colors hover:border-white/12 hover:bg-white/[0.07]">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-semibold leading-tight text-white/95">
@@ -48,7 +55,7 @@ function LiveNetworkRow({ room }: { room: LiveNetworkRoom }) {
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.85)]" />
           </span>
           <span className="text-[10px] font-medium tabular-nums text-white/70">
-            {viewers} viewers
+            {displayCount} viewers
           </span>
         </div>
       </div>
@@ -63,10 +70,30 @@ type LiveNetworkWidgetProps = {
 
 export default function LiveNetworkWidget({ visible = true }: LiveNetworkWidgetProps) {
   const [hiddenByUrl, setHiddenByUrl] = useState(false)
+  const [dataSource, setDataSource] = useState<LiveNetworkDataSource>('seed')
+  const [rooms, setRooms] = useState<LiveNetworkRoomRow[]>([])
+
+  const refresh = useCallback(async () => {
+    try {
+      const payload = await fetchLiveNetworkBoard()
+      if (!payload.success || !payload.rooms) return
+      setDataSource(payload.dataSource ?? 'seed')
+      setRooms(payload.rooms)
+    } catch {
+      // Keep last good snapshot on transient errors.
+    }
+  }, [])
 
   useEffect(() => {
     setHiddenByUrl(readLiveNetworkHiddenFromWindow())
   }, [])
+
+  useEffect(() => {
+    if (!visible || hiddenByUrl) return undefined
+    void refresh()
+    const id = window.setInterval(() => void refresh(), LIVE_NETWORK_POLL_MS)
+    return () => window.clearInterval(id)
+  }, [hiddenByUrl, refresh, visible])
 
   if (!visible || hiddenByUrl) return null
 
@@ -87,8 +114,8 @@ export default function LiveNetworkWidget({ visible = true }: LiveNetworkWidgetP
         </header>
 
         <ul className="space-y-1.5">
-          {LIVE_NETWORK_ROOMS.map((room) => (
-            <LiveNetworkRow key={room.id} room={room} />
+          {rooms.map((room) => (
+            <LiveNetworkRow key={room.id} dataSource={dataSource} room={room} />
           ))}
         </ul>
       </div>
