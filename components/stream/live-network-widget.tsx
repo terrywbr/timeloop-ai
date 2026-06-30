@@ -36,29 +36,48 @@ function LiveNetworkRow({
 
   const displayCount = dataSource === 'seed' ? viewers : base
 
+  const inner = (
+    <>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[13px] font-semibold leading-tight text-white/95">
+          <span className="mr-1.5">{room.icon}</span>
+          {room.title}
+        </p>
+        <p className="mt-0.5 truncate text-[11px] leading-snug text-white/55">
+          <span className="mr-1">{room.country_flag}</span>
+          {room.subtitle}
+        </p>
+      </div>
+      <div className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
+        <span className="relative flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70 opacity-60" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.85)]" />
+        </span>
+        <span className="text-[10px] font-medium tabular-nums text-white/70">
+          {displayCount} viewers
+        </span>
+      </div>
+    </>
+  )
+
+  if (room.streamUrl && dataSource === 'live') {
+    return (
+      <li className="group rounded-lg border border-white/5 bg-white/[0.04] transition-colors hover:border-white/12 hover:bg-white/[0.07]">
+        <a
+          href={room.streamUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-start justify-between gap-2 px-2.5 py-2"
+        >
+          {inner}
+        </a>
+      </li>
+    )
+  }
+
   return (
     <li className="group rounded-lg border border-white/5 bg-white/[0.04] px-2.5 py-2 transition-colors hover:border-white/12 hover:bg-white/[0.07]">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[13px] font-semibold leading-tight text-white/95">
-            <span className="mr-1.5">{room.icon}</span>
-            {room.title}
-          </p>
-          <p className="mt-0.5 truncate text-[11px] leading-snug text-white/55">
-            <span className="mr-1">{room.country_flag}</span>
-            {room.subtitle}
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-1 pt-0.5">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/70 opacity-60" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.85)]" />
-          </span>
-          <span className="text-[10px] font-medium tabular-nums text-white/70">
-            {displayCount} viewers
-          </span>
-        </div>
-      </div>
+      <div className="flex items-start justify-between gap-2">{inner}</div>
     </li>
   )
 }
@@ -113,7 +132,7 @@ export default function LiveNetworkWidget({ visible = true }: LiveNetworkWidgetP
           </h2>
         </header>
 
-        <ul className="space-y-1.5">
+        <ul className="pointer-events-auto space-y-1.5">
           {rooms.map((room) => (
             <LiveNetworkRow key={room.id} dataSource={dataSource} room={room} />
           ))}

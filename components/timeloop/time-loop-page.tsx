@@ -60,6 +60,8 @@ function TimeLoopPageInner() {
           overlaySettings={page.effectiveOverlaySettings}
           isFoundingCreator={Boolean(page.userProfile?.isFoundingCreator)}
           isStreamer={Boolean(page.userProfile?.isStreamerPlan)}
+          accessToken={page.accessToken}
+          authUserId={page.authUser?.id ?? null}
           musicStreamUrl={page.activeMusicStreamUrl}
           isMusicPlaying={page.isMusicPlaying}
           musicVolume={page.effectiveMusicVolume}

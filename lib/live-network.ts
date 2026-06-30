@@ -34,3 +34,5 @@ export async function fetchLiveNetworkBoard(): Promise<LiveNetworkClientPayload>
   const response = await fetch('/api/live-network', { cache: 'no-store' })
   return (await response.json()) as LiveNetworkClientPayload
 }
+
+export { LIVE_NETWORK_HEARTBEAT_MS } from '@/lib/live-network-constants'

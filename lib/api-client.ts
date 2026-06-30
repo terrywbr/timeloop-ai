@@ -261,6 +261,61 @@ export async function fetchFocusPresence(worldId: string): Promise<number> {
   return payload.count
 }
 
+export async function sendStreamerLiveHeartbeat(
+  accessToken: string,
+  input: {
+    roomName?: string
+    subtitle?: string
+    countryFlag?: string
+    icon?: string
+  },
+): Promise<void> {
+  const response = await fetch('/api/live-network/streamer-heartbeat', {
+    method: 'POST',
+    headers: authHeaders(accessToken),
+    body: JSON.stringify(input),
+  })
+  const payload = (await response.json()) as { success: true } | ApiErrorResponse
+  if (!response.ok || !payload.success) {
+    throw new Error(payload.success ? 'Streamer heartbeat failed' : payload.error)
+  }
+}
+
+export async function leaveStreamerLiveHeartbeat(accessToken: string): Promise<void> {
+  await fetch('/api/live-network/streamer-heartbeat', {
+    method: 'DELETE',
+    headers: authHeaders(accessToken),
+  })
+}
+
+export async function sendLiveNetworkViewerHeartbeat(
+  streamerUserId: string,
+  options?: { accessToken?: string | null; guestId?: string },
+): Promise<void> {
+  await fetch('/api/live-network/viewer-heartbeat', {
+    method: 'POST',
+    headers: authHeaders(
+      options?.accessToken ?? null,
+      options?.guestId ? { 'x-live-network-guest': options.guestId } : undefined,
+    ),
+    body: JSON.stringify({ streamerUserId }),
+  })
+}
+
+export async function leaveLiveNetworkViewerHeartbeat(
+  streamerUserId: string,
+  options?: { accessToken?: string | null; guestId?: string },
+): Promise<void> {
+  const params = new URLSearchParams({ streamerUserId })
+  await fetch(`/api/live-network/viewer-heartbeat?${params.toString()}`, {
+    method: 'DELETE',
+    headers: authHeaders(
+      options?.accessToken ?? null,
+      options?.guestId ? { 'x-live-network-guest': options.guestId } : undefined,
+    ),
+  })
+}
+
 export type CheckoutKind = CheckoutProductKind | 'subscription'
 
 export async function startCheckout(

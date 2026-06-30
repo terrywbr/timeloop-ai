@@ -3,18 +3,34 @@ export function isStreamModeFromSearch(search: string): boolean {
   return params.get('stream') === '1'
 }
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+export function readStreamHostUserIdFromSearch(search: string): string | null {
+  const host = new URLSearchParams(search).get('host')?.trim() ?? ''
+  return UUID_RE.test(host) ? host : null
+}
+
+export function readStreamHostUserIdFromWindow(): string | null {
+  if (typeof window === 'undefined') return null
+  return readStreamHostUserIdFromSearch(window.location.search)
+}
+
 export function readStreamModeFromWindow(): boolean {
   if (typeof window === 'undefined') return false
   return isStreamModeFromSearch(window.location.search)
 }
 
 /** OBS browser source URL on the current origin. */
-export function buildStreamModeUrl(pathname = '/') {
+export function buildStreamModeUrl(pathname = '/', hostUserId?: string | null) {
   if (typeof window === 'undefined') {
-    return `${pathname}?stream=1`
+    const params = new URLSearchParams({ stream: '1' })
+    if (hostUserId) params.set('host', hostUserId)
+    return `${pathname}?${params.toString()}`
   }
   const url = new URL(pathname, window.location.origin)
   url.searchParams.set('stream', '1')
+  if (hostUserId) url.searchParams.set('host', hostUserId)
   return url.toString()
 }
 
