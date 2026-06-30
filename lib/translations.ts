@@ -56,6 +56,7 @@ export const translations: Record<Language, {
   }
   auth: {
     signInPrompt: string
+    signOut: string
   }
   immersive: {
     enterCockpit: string
@@ -119,6 +120,7 @@ export const translations: Record<Language, {
     oneClickLiveTitle: string
     oneClickLiveButton: string
     oneClickLiveHint: string
+    oneClickLiveStreamHint: string
     oneClickLiveStatusImages: string
     oneClickLiveStatusMusic: string
     oneClickLiveStatusReady: string
@@ -170,6 +172,7 @@ export const translations: Record<Language, {
     },
     auth: {
       signInPrompt: 'Sign in to save scenes and unlock VIP features.',
+      signOut: 'Sign out',
     },
     immersive: {
       enterCockpit: 'Enter Cockpit · Enable Sound',
@@ -258,6 +261,8 @@ export const translations: Record<Language, {
       oneClickLiveButton: 'Launch OBS stream',
       oneClickLiveHint:
         'After selecting rotation scenes in the gallery and picking a station, open the OBS capture window in one tap each day.',
+      oneClickLiveStreamHint:
+        'Badge and Live Network board appear in the stream window (?stream=1), top-left / top-right — not in this control panel.',
       oneClickLiveStatusImages: 'Rotation scenes: {count}',
       oneClickLiveStatusMusic: 'Music: {name}',
       oneClickLiveStatusReady: 'Ready — one tap to go live',
@@ -310,6 +315,7 @@ export const translations: Record<Language, {
     },
     auth: {
       signInPrompt: '登录以保存场景并解锁 VIP 功能。',
+      signOut: '登出',
     },
     immersive: {
       enterCockpit: '进入座舱 · 开启声音',
@@ -394,6 +400,7 @@ export const translations: Record<Language, {
       oneClickLiveTitle: '一键直播',
       oneClickLiveButton: '开始投射直播',
       oneClickLiveHint: '在右侧画廊勾选轮播图并选好电台后，每日一键开启 OBS 直播窗口。',
+      oneClickLiveStreamHint: '徽章与 LIVE NETWORK 联播看板在直播窗口（?stream=1）左上角/右上角显示，不在此控制面板。',
       oneClickLiveStatusImages: '轮播图：{count} 张',
       oneClickLiveStatusMusic: '音乐：{name}',
       oneClickLiveStatusReady: '已就绪，可一键开播',
@@ -445,6 +452,7 @@ export const translations: Record<Language, {
     },
     auth: {
       signInPrompt: '登入以儲存場景並解鎖 VIP 功能。',
+      signOut: '登出',
     },
     immersive: {
       enterCockpit: '進入座艙 · 開啟聲音',
@@ -529,6 +537,7 @@ export const translations: Record<Language, {
       oneClickLiveTitle: '一鍵直播',
       oneClickLiveButton: '開始投射直播',
       oneClickLiveHint: '在右側畫廊勾選輪播圖並選好電台後，每日一鍵開啟 OBS 直播視窗。',
+      oneClickLiveStreamHint: '徽章與 LIVE NETWORK 聯播看板在直播視窗（?stream=1）左上角／右上角顯示，不在此控制面板。',
       oneClickLiveStatusImages: '輪播圖：{count} 張',
       oneClickLiveStatusMusic: '音樂：{name}',
       oneClickLiveStatusReady: '已就緒，可一鍵開播',
@@ -580,6 +589,7 @@ export const translations: Record<Language, {
     },
     auth: {
       signInPrompt: 'サインインしてシーンを保存し、VIP機能を解除してください。',
+      signOut: 'サインアウト',
     },
     immersive: {
       enterCockpit: 'コックピットに入る · 音声をオン',
@@ -666,6 +676,7 @@ export const translations: Record<Language, {
       oneClickLiveTitle: 'ワンタップ配信',
       oneClickLiveButton: 'OBS配信を開始',
       oneClickLiveHint: 'ギャラリーで輪播シーンを選択し電台を選んだら、毎日ワンタップでOBS用ウィンドウを開けます。',
+      oneClickLiveStreamHint: 'バッジとLIVE NETWORKはストリームウィンドウ（?stream=1）に表示されます。',
       oneClickLiveStatusImages: '輪播シーン：{count} 枚',
       oneClickLiveStatusMusic: '音楽：{name}',
       oneClickLiveStatusReady: '準備完了 — ワンタップで配信開始',
@@ -717,6 +728,7 @@ export const translations: Record<Language, {
     },
     auth: {
       signInPrompt: '로그인하여 장면을 저장하고 VIP 기능을 잠금 해제하세요.',
+      signOut: '로그아웃',
     },
     immersive: {
       enterCockpit: '콕핏 입장 · 사운드 켜기',
@@ -803,6 +815,7 @@ export const translations: Record<Language, {
       oneClickLiveTitle: '원탭 라이브',
       oneClickLiveButton: 'OBS 스트림 시작',
       oneClickLiveHint: '갤러리에서 로테이션 장면을 고르고 스테이션을 선택한 뒤, 매일 원탭으로 OBS 창을 엽니다.',
+      oneClickLiveStreamHint: '배지와 LIVE NETWORK는 스트림 창(?stream=1)에 표시됩니다.',
       oneClickLiveStatusImages: '로테이션 장면: {count}장',
       oneClickLiveStatusMusic: '음악: {name}',
       oneClickLiveStatusReady: '준비 완료 — 원탭으로 방송 시작',
@@ -854,6 +867,7 @@ export const translations: Record<Language, {
     },
     auth: {
       signInPrompt: 'Inicia sesión para guardar escenas y desbloquear funciones VIP.',
+      signOut: 'Cerrar sesión',
     },
     immersive: {
       enterCockpit: 'Entrar a la cabina · Activar sonido',
@@ -940,6 +954,7 @@ export const translations: Record<Language, {
       oneClickLiveTitle: 'Directo con un clic',
       oneClickLiveButton: 'Iniciar stream OBS',
       oneClickLiveHint: 'Tras elegir escenas en la galería y una emisora, abre la ventana OBS con un toque cada día.',
+      oneClickLiveStreamHint: 'La insignia y LIVE NETWORK aparecen en la ventana de stream (?stream=1).',
       oneClickLiveStatusImages: 'Escenas en rotación: {count}',
       oneClickLiveStatusMusic: 'Música: {name}',
       oneClickLiveStatusReady: 'Listo — un toque para emitir',
@@ -991,6 +1006,7 @@ export const translations: Record<Language, {
     },
     auth: {
       signInPrompt: 'Connectez-vous pour enregistrer vos scènes et débloquer les fonctionnalités VIP.',
+      signOut: 'Se déconnecter',
     },
     immersive: {
       enterCockpit: 'Entrer dans le cockpit · Activer le son',
@@ -1077,6 +1093,7 @@ export const translations: Record<Language, {
       oneClickLiveTitle: 'Direct en un clic',
       oneClickLiveButton: 'Lancer le stream OBS',
       oneClickLiveHint: 'Après avoir choisi des scènes et une station, ouvrez la fenêtre OBS en un clic chaque jour.',
+      oneClickLiveStreamHint: 'Le badge et LIVE NETWORK s’affichent dans la fenêtre stream (?stream=1).',
       oneClickLiveStatusImages: 'Scènes en rotation : {count}',
       oneClickLiveStatusMusic: 'Musique : {name}',
       oneClickLiveStatusReady: 'Prêt — un clic pour diffuser',
@@ -1128,6 +1145,7 @@ export const translations: Record<Language, {
     },
     auth: {
       signInPrompt: 'Melden Sie sich an, um Szenen zu speichern und VIP-Funktionen freizuschalten.',
+      signOut: 'Abmelden',
     },
     immersive: {
       enterCockpit: 'Cockpit betreten · Ton aktivieren',
@@ -1214,6 +1232,7 @@ export const translations: Record<Language, {
       oneClickLiveTitle: 'Live mit einem Klick',
       oneClickLiveButton: 'OBS-Stream starten',
       oneClickLiveHint: 'Nach Auswahl der Rotationsszenen und Station täglich per Klick das OBS-Fenster öffnen.',
+      oneClickLiveStreamHint: 'Badge und LIVE NETWORK erscheinen im Stream-Fenster (?stream=1).',
       oneClickLiveStatusImages: 'Rotationsszenen: {count}',
       oneClickLiveStatusMusic: 'Musik: {name}',
       oneClickLiveStatusReady: 'Bereit — ein Klick zum Streamen',

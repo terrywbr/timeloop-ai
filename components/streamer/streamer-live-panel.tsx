@@ -47,6 +47,9 @@ export default function StreamerLivePanel({
       </div>
 
       <p className="text-[10px] leading-relaxed text-muted-foreground">{st.oneClickLiveHint}</p>
+      <p className="text-[10px] leading-relaxed text-muted-foreground/80">
+        {st.oneClickLiveStreamHint}
+      </p>
 
       <div className="space-y-1.5">
         <StatusRow

@@ -58,6 +58,8 @@ function TimeLoopPageInner() {
         <StreamLayout
           ambientLayers={page.ambientLayers}
           overlaySettings={page.effectiveOverlaySettings}
+          isFoundingCreator={Boolean(page.userProfile?.isFoundingCreator)}
+          isStreamer={Boolean(page.userProfile?.isStreamerPlan)}
           musicStreamUrl={page.activeMusicStreamUrl}
           isMusicPlaying={page.isMusicPlaying}
           musicVolume={page.effectiveMusicVolume}
@@ -89,6 +91,8 @@ function TimeLoopPageInner() {
             onGenerate={page.handleGenerate}
             isAuthenticated={Boolean(page.authUser)}
             onRequireAuth={page.handleRequireAuth}
+            onSignOut={page.handleSignOut}
+            isSigningOut={page.isSigningOut}
             isGenerating={page.isGenerating}
             isExpanded={page.leftPanelExpanded}
             onExpandedChange={page.setLeftPanelExpanded}
@@ -149,6 +153,8 @@ function TimeLoopPageInner() {
             onGenerate={page.handleGenerate}
             isAuthenticated={Boolean(page.authUser)}
             onRequireAuth={page.handleRequireAuth}
+            onSignOut={page.handleSignOut}
+            isSigningOut={page.isSigningOut}
             isGenerating={page.isGenerating}
             currentStation={page.currentStation}
             isStationLoading={page.isStationLoading}

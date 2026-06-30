@@ -25,7 +25,7 @@ type TranslationBundle = {
     | 'generationCost',
     string
   >
-  auth: { signInPrompt: string }
+  auth: { signInPrompt: string; signOut: string }
   immersive: Record<
     'enterCockpit' | 'rotateLabel' | 'rotateToLandscape' | 'landscapeHint' | 'mobileTapAndRotate',
     string
@@ -70,6 +70,7 @@ type TranslationBundle = {
     | 'oneClickLiveTitle'
     | 'oneClickLiveButton'
     | 'oneClickLiveHint'
+    | 'oneClickLiveStreamHint'
     | 'oneClickLiveStatusImages'
     | 'oneClickLiveStatusMusic'
     | 'oneClickLiveStatusReady'
@@ -146,6 +147,7 @@ export const thTranslation: TranslationBundle = {
   },
   auth: {
     signInPrompt: 'เข้าสู่ระบบเพื่อบันทึกฉากและปลดล็อก VIP',
+    signOut: 'ออกจากระบบ',
   },
   immersive: {
     enterCockpit: 'เข้าห้องควบคุม · เปิดเสียง',
@@ -209,6 +211,7 @@ export const thTranslation: TranslationBundle = {
     oneClickLiveTitle: 'ไลฟ์คลิกเดียว',
     oneClickLiveButton: 'เริ่มสตรีม OBS',
     oneClickLiveHint: 'เลือกฉากหมุนในคลังและเลือกสถานี แล้วเปิดหน้าต่าง OBS ด้วยคลิกเดียวทุกวัน',
+    oneClickLiveStreamHint: 'ป้ายและ LIVE NETWORK แสดงในหน้าต่างสตรีม (?stream=1)',
     oneClickLiveStatusImages: 'ฉากหมุน: {count}',
     oneClickLiveStatusMusic: 'เพลง: {name}',
     oneClickLiveStatusReady: 'พร้อมแล้ว — คลิกเดียวเพื่อไลฟ์',
@@ -261,6 +264,7 @@ export const viTranslation: TranslationBundle = {
   },
   auth: {
     signInPrompt: 'Đăng nhập để lưu cảnh và mở khóa VIP',
+    signOut: 'Đăng xuất',
   },
   immersive: {
     enterCockpit: 'Vào buồng lái · Bật âm thanh',
@@ -324,6 +328,7 @@ export const viTranslation: TranslationBundle = {
     oneClickLiveTitle: 'Live một cú nhấp',
     oneClickLiveButton: 'Bắt đầu stream OBS',
     oneClickLiveHint: 'Chọn cảnh xoay trong thư viện và chọn đài, mỗi ngày mở cửa sổ OBS bằng một cú nhấp.',
+    oneClickLiveStreamHint: 'Huy hiệu và LIVE NETWORK hiển thị trong cửa sổ stream (?stream=1).',
     oneClickLiveStatusImages: 'Cảnh xoay: {count}',
     oneClickLiveStatusMusic: 'Nhạc: {name}',
     oneClickLiveStatusReady: 'Sẵn sàng — một cú nhấp để phát',

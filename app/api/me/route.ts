@@ -51,6 +51,8 @@ export async function GET(req: Request) {
         streamerMonthlyQuotaImages: streamerQuota,
         streamerUsedImages: streamerUsed,
         streamerRemainingImages: Math.max(0, streamerQuota - streamerUsed),
+        isFoundingCreator: Boolean(profile.is_founding_creator),
+        foundingEnrolledAt: profile.founding_enrolled_at ?? null,
       },
     })
   } catch (error) {

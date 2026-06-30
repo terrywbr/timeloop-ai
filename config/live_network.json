@@ -1,0 +1,34 @@
+[
+  {
+    "id": "1",
+    "icon": "🎧",
+    "title": "FocusFlow",
+    "country_flag": "🇺🇸",
+    "subtitle": "Study Room",
+    "viewers": "127"
+  },
+  {
+    "id": "2",
+    "icon": "🎧",
+    "title": "ChillLab",
+    "country_flag": "🇲🇾",
+    "subtitle": "LoFi Beats",
+    "viewers": "89"
+  },
+  {
+    "id": "3",
+    "icon": "🎧",
+    "title": "AI Hustle",
+    "country_flag": "🇵🇭",
+    "subtitle": "AI Tools Radio",
+    "viewers": "65"
+  },
+  {
+    "id": "4",
+    "icon": "🎧",
+    "title": "NightRain",
+    "country_flag": "🇮🇩",
+    "subtitle": "Sleep Ambient",
+    "viewers": "41"
+  }
+]

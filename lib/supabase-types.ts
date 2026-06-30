@@ -20,6 +20,8 @@ export type UserProfile = {
   lemon_squeezy_subscription_id: string | null
   lemon_squeezy_subscription_item_id: string | null
   lemon_squeezy_variant_id: string | null
+  is_founding_creator: boolean
+  founding_enrolled_at: string | null
   created_at: string
   updated_at: string
 }

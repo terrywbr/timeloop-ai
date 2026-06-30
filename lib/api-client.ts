@@ -23,6 +23,8 @@ export type UserAccountProfile = {
   streamerMonthlyQuotaImages?: number
   streamerUsedImages?: number
   streamerRemainingImages?: number
+  isFoundingCreator?: boolean
+  foundingEnrolledAt?: string | null
 }
 
 export type StreamerScenePackItem = {
