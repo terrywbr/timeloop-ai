@@ -23,6 +23,7 @@ import type { RadioStation } from '@/lib/radio-station'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import type { UserAccountProfile, CheckoutKind } from '@/lib/api-client'
 import GoogleSignInButton from '@/components/google-sign-in-button'
+import SignOutButton from '@/components/sign-out-button'
 import {
   exitAppFullscreen,
   getFullscreenElement,
@@ -38,6 +39,8 @@ interface ControlPanelProps {
   onGenerate: (prompt: string, scene: string) => void
   isAuthenticated: boolean
   onRequireAuth: (options?: { requestFullscreen?: boolean }) => void | Promise<boolean>
+  onSignOut: () => void | Promise<void>
+  isSigningOut?: boolean
   isGenerating: boolean
   isExpanded: boolean
   onExpandedChange: (expanded: boolean) => void
@@ -89,6 +92,8 @@ export default function ControlPanel({
   onGenerate,
   isAuthenticated,
   onRequireAuth,
+  onSignOut,
+  isSigningOut = false,
   isGenerating,
   isExpanded,
   onExpandedChange,
@@ -502,7 +507,15 @@ export default function ControlPanel({
               <p className="text-xs text-muted-foreground">{t.auth.signInPrompt}</p>
               <GoogleSignInButton onClick={() => void onRequireAuth({ requestFullscreen: true })} />
             </div>
-          ) : null}
+          ) : (
+            <div className="mb-4 space-y-2 border-t border-foreground/10 pt-4">
+              <SignOutButton
+                label={t.auth.signOut}
+                onClick={() => void onSignOut()}
+                loading={isSigningOut}
+              />
+            </div>
+          )}
 
           <MembershipPanel
             userProfile={userProfile}

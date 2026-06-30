@@ -40,6 +40,9 @@ create table if not exists public.users (
   lemon_squeezy_subscription_item_id text,
   lemon_squeezy_variant_id text,
 
+  is_founding_creator boolean not null default false,
+  founding_enrolled_at timestamptz,
+
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -210,7 +213,9 @@ returns trigger
 language plpgsql
 as $$
 begin
-  if auth.role() = 'service_role' then
+  if auth.role() = 'service_role'
+    or current_user in ('postgres', 'supabase_admin', 'service_role')
+  then
     return new;
   end if;
 

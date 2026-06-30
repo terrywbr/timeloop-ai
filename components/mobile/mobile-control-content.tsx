@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import LanguageSelector from '@/components/language-selector'
 import GoogleSignInButton from '@/components/google-sign-in-button'
+import SignOutButton from '@/components/sign-out-button'
 import { useLanguage } from '@/lib/language-context'
 import type { RadioStation } from '@/lib/radio-station'
 import {
@@ -39,6 +40,8 @@ export interface MobileControlContentProps {
   onGenerate: (prompt: string, scene: string) => void
   isAuthenticated: boolean
   onRequireAuth: (options?: { requestFullscreen?: boolean }) => void | Promise<boolean>
+  onSignOut: () => void | Promise<void>
+  isSigningOut?: boolean
   isGenerating: boolean
   onClose: () => void
   currentStation: RadioStation | null
@@ -89,6 +92,8 @@ export default function MobileControlContent({
   onGenerate,
   isAuthenticated,
   onRequireAuth,
+  onSignOut,
+  isSigningOut = false,
   isGenerating,
   onClose,
   currentStation,
@@ -432,7 +437,15 @@ export default function MobileControlContent({
           <p className="text-xs text-muted-foreground">{t.auth.signInPrompt}</p>
           <GoogleSignInButton onClick={() => void onRequireAuth({ requestFullscreen: true })} />
         </div>
-      ) : null}
+      ) : (
+        <div className="space-y-2 border-t border-foreground/10 pt-4">
+          <SignOutButton
+            label={t.auth.signOut}
+            onClick={() => void onSignOut()}
+            loading={isSigningOut}
+          />
+        </div>
+      )}
 
       <MembershipPanel
         userProfile={userProfile}

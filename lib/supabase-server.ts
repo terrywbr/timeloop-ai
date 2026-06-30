@@ -148,16 +148,21 @@ export function hasVipAccess(profile: UserProfile) {
   return hasPlanEntitlement(profile, 'vip')
 }
 
+/** Streamer Pass — creator tools, scene packs, OBS rotation APIs. */
 export function hasStreamerPlanAccess(profile: UserProfile) {
-  if (hasPlanEntitlement(profile, 'streamer')) return true
+  return hasPlanEntitlement(profile, 'streamer')
+}
+
+/**
+ * Legacy rows: plan stuck as vip because DB rejected plan=streamer (compat fallback).
+ * Used only for admin repair — not for live entitlements.
+ */
+export function isMislabeledStreamerCompatProfile(profile: UserProfile) {
+  if (profile.plan !== 'vip') return false
+  if (profile.is_founding_creator) return true
   const streamerVariantId = process.env.LEMON_SQUEEZY_STREAMER_VARIANT_ID?.trim()
   if (!streamerVariantId) return false
-  if (profile.lemon_squeezy_variant_id !== streamerVariantId) return false
-  if (profile.lemon_squeezy_subscription_id) {
-    return profile.vip_status === 'active' || profile.vip_status === 'past_due'
-  }
-  // Local/manual grants can carry streamer variant metadata without subscription id.
-  return profile.vip_status === 'active' || profile.vip_status === 'past_due'
+  return profile.lemon_squeezy_variant_id === streamerVariantId
 }
 
 /** VIP + Streamer: unlimited image generations. */

@@ -19,6 +19,7 @@ import type { MusicMoodId } from '@/lib/music-moods'
 import { resolveMoodWorldLayer } from '@/lib/mood-worlds'
 import { createSupabaseBrowserClient } from '@/lib/supabase-client'
 import { signInWithGoogle } from '@/lib/auth-google'
+import { signOutAndRedirect } from '@/lib/auth-sign-out'
 import type { PublicGeneratedWorld } from '@/lib/supabase-types'
 import {
   activateStreamerScenePack,
@@ -166,6 +167,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
   const firstVisitIntroPlayedRef = useRef(false)
   const backgroundRotationLastTickRef = useRef(Date.now())
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isSigningOut, setIsSigningOut] = useState(false)
   const [leftPanelExpanded, setLeftPanelExpanded] = useState(false)
   const [rightPanelExpanded, setRightPanelExpanded] = useState(false)
   const [leftDrawerOpen, setLeftDrawerOpen] = useState(false)
@@ -800,6 +802,18 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
 
     return false
   }, [authUser, supabase])
+
+  const handleSignOut = useCallback(async () => {
+    if (!supabase || isSigningOut) return
+    setIsSigningOut(true)
+    try {
+      await signOutAndRedirect(supabase)
+    } catch (error) {
+      setIsSigningOut(false)
+      const message = error instanceof Error ? error.message : 'Sign out failed'
+      window.alert(message)
+    }
+  }, [isSigningOut, supabase])
 
   const getAccessToken = useCallback(async () => {
     if (!supabase) return null
@@ -1725,6 +1739,8 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     handleCompleteMusicOnboarding,
     chooseRegion,
     handleRequireAuth,
+    handleSignOut,
+    isSigningOut,
     handleLoadWorld,
     handleDeleteWorld,
     handleRenameWorld,

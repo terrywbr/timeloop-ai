@@ -24,3 +24,7 @@ export function createSupabaseBrowserClient() {
 
   return browserClient
 }
+
+export function resetSupabaseBrowserClient() {
+  browserClient = null
+}

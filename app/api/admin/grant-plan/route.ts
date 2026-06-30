@@ -3,12 +3,20 @@ import { createSupabaseAdminClient } from '@/lib/supabase-server'
 
 export const runtime = 'nodejs'
 
+const FOUNDING_PREMIUM_DAYS = 90
+
 function jsonError(message: string, status: number) {
   return NextResponse.json({ success: false, error: message }, { status })
 }
 
 function readAdminSecret(req: Request) {
   return req.headers.get('x-admin-secret')?.trim() || null
+}
+
+function addDaysIso(days: number) {
+  const until = new Date()
+  until.setDate(until.getDate() + days)
+  return until.toISOString()
 }
 
 export async function POST(req: Request) {
@@ -25,24 +33,38 @@ export async function POST(req: Request) {
       vipUntil?: string | null
       note?: string
       addCredits?: number
+      foundingCreator?: boolean
     }
 
     if (!body.userId) return jsonError('userId is required', 400)
     if (!body.plan) return jsonError('plan is required', 400)
 
+    const foundingCreator = Boolean(body.foundingCreator)
     const supabase = createSupabaseAdminClient()
+    const nowIso = new Date().toISOString()
     const updates: Record<string, unknown> = {
       plan: body.plan,
-      updated_at: new Date().toISOString(),
+      updated_at: nowIso,
     }
 
     if (body.plan === 'streamer' || body.plan === 'vip') {
       updates.vip_status = 'active'
-      updates.vip_until = body.vipUntil ?? null
+      if (body.vipUntil !== undefined) {
+        updates.vip_until = body.vipUntil
+      } else if (foundingCreator) {
+        updates.vip_until = addDaysIso(FOUNDING_PREMIUM_DAYS)
+      } else {
+        updates.vip_until = null
+      }
     }
 
     if (body.plan === 'streamer') {
       updates.lemon_squeezy_variant_id = process.env.LEMON_SQUEEZY_STREAMER_VARIANT_ID?.trim() ?? null
+    }
+
+    if (foundingCreator) {
+      updates.is_founding_creator = true
+      updates.founding_enrolled_at = nowIso
     }
 
     const { data: profile, error } = await supabase
@@ -60,7 +82,7 @@ export async function POST(req: Request) {
           .update({
             ...updates,
             plan: 'vip',
-            updated_at: new Date().toISOString(),
+            updated_at: nowIso,
           })
           .eq('id', body.userId)
           .select('*')
@@ -71,6 +93,10 @@ export async function POST(req: Request) {
           success: true,
           profile: fallbackProfile,
           compatibilityMode: 'streamer_plan_fallback_to_vip_variant',
+          warning:
+            'plan stored as vip because DB constraint missing streamer. Run migration 20260623_repair_streamer_plan.sql then POST /api/admin/repair-streamer-plans',
+          foundingCreator: foundingCreator,
+          vipUntilApplied: updates.vip_until ?? null,
         })
       }
       throw error
@@ -90,11 +116,19 @@ export async function POST(req: Request) {
         balance_after: newBalance,
         type: 'admin_adjustment',
         source: 'admin',
-        metadata: { note: body.note ?? 'wechat_manual', source: 'wechat_manual' },
+        metadata: {
+          note: body.note ?? (foundingCreator ? 'founding_creator' : 'wechat_manual'),
+          source: foundingCreator ? 'founding_creator' : 'wechat_manual',
+        },
       })
     }
 
-    return NextResponse.json({ success: true, profile })
+    return NextResponse.json({
+      success: true,
+      profile,
+      foundingCreator: foundingCreator,
+      vipUntilApplied: updates.vip_until ?? null,
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown grant error'
     return jsonError(message, 500)

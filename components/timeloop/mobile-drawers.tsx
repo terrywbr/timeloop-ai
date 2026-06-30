@@ -26,6 +26,8 @@ type TimeloopMobileDrawersProps = {
   onGenerate: (prompt: string, scene: string) => void
   isAuthenticated: boolean
   onRequireAuth: () => void | Promise<boolean>
+  onSignOut: () => void | Promise<void>
+  isSigningOut?: boolean
   isGenerating: boolean
   currentStation: RadioStation | null
   isStationLoading: boolean
@@ -80,6 +82,8 @@ export default function TimeloopMobileDrawers({
   onGenerate,
   isAuthenticated,
   onRequireAuth,
+  onSignOut,
+  isSigningOut = false,
   isGenerating,
   currentStation,
   isStationLoading,
@@ -141,6 +145,8 @@ export default function TimeloopMobileDrawers({
                   onGenerate={onGenerate}
                   isAuthenticated={isAuthenticated}
                   onRequireAuth={onRequireAuth}
+                  onSignOut={onSignOut}
+                  isSigningOut={isSigningOut}
                   isGenerating={isGenerating}
                   onClose={() => onLeftDrawerOpenChange(false)}
                   currentStation={currentStation}

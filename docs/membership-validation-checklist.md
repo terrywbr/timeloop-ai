@@ -13,7 +13,9 @@ Use this checklist before release whenever membership or entitlement logic chang
 - `GET /api/me`
   - Free: `isVip=false`, `isStreamerPlan=false`, `hasCreatorTools=false`, `hasDownloadAccess=false`, `hasUnlimitedGeneration=false`
   - VIP: `isVip=true`, `isStreamerPlan=false`, `hasCreatorTools=false`, `hasDownloadAccess=true`, `hasUnlimitedGeneration=true`
-  - Streamer: `isVip=false|true` (depends billing setup), `isStreamerPlan=true`, `hasCreatorTools=true`, `hasDownloadAccess=true`, `hasUnlimitedGeneration=true`
+  - Streamer: `plan=streamer`, `isStreamerPlan=true`, `hasCreatorTools=true`, `hasDownloadAccess=true`, `hasUnlimitedGeneration=true`, `isVip=false` (unless also on VIP tier)
+
+**Entitlement source of truth:** `users.plan` column (`free` | `vip` | `streamer`). Lemon `variant_id` is metadata only; it does **not** grant Streamer tools when `plan=vip`.
 
 - `POST /api/generate`
   - Free: deducts 10 credits and rejects when remaining credits < 10
