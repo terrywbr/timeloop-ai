@@ -1,5 +1,6 @@
 import type { MusicMoodId } from '@/lib/music-moods'
 import { MUSIC_MOOD_BY_ID } from '@/lib/music-moods'
+import { loadPrimaryMood } from '@/lib/dj-settings'
 import { getCachedGeoCountry, getStoredRegionPreference } from '@/lib/geo-region'
 
 export type RadioStation = {
@@ -16,6 +17,7 @@ export type StreamProxyTier = 'direct' | 'external' | 'api'
 export const MUSIC_ONBOARDED_KEY = 'timeloop-music-onboarded'
 export const MUSIC_MOODS_KEY = 'timeloop-music-moods'
 export const MUSIC_FAVORITES_KEY = 'musicFavorites'
+export const MUSIC_CURRENT_STATION_KEY = 'timeloop-music-current-station'
 
 export function getExternalStreamProxyBase(): string {
   const base = process.env.NEXT_PUBLIC_STREAM_PROXY_URL?.trim()
@@ -126,9 +128,63 @@ export function isDefaultStation(stationuuid: string): boolean {
   return stationuuid.startsWith('default-')
 }
 
-export function pickInitialStation(moodIds: MusicMoodId[]): RadioStation {
-  const moodId = moodIds[0] ?? 'deep-night'
+export function pickInitialStation(
+  moodIds: MusicMoodId[],
+  primaryMood?: MusicMoodId | null,
+): RadioStation {
+  const fallback = moodIds[0] ?? 'deep-night'
+  const moodId =
+    primaryMood && moodIds.includes(primaryMood) ? primaryMood : fallback
   return defaultStationForMood(moodId)
+}
+
+export function loadCurrentStation(): RadioStation | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(MUSIC_CURRENT_STATION_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as unknown
+    if (!isRadioStationEntry(parsed)) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+export function saveCurrentStation(station: RadioStation) {
+  if (typeof window === 'undefined') return
+  localStorage.setItem(MUSIC_CURRENT_STATION_KEY, JSON.stringify(station))
+}
+
+export function resolveStartupStation(radioStationUuid?: string | null): RadioStation | null {
+  if (typeof window === 'undefined') return null
+
+  const moods = loadSelectedMoods()
+  if (moods.length === 0) return null
+
+  const storedPrimary = loadPrimaryMood()
+  const primary =
+    storedPrimary && moods.includes(storedPrimary) ? storedPrimary : moods[0] ?? null
+
+  const storedStation = loadCurrentStation()
+  if (storedStation) {
+    const storedMood = storedStation.moodId
+    const moodOk = !storedMood || moods.includes(storedMood)
+    const uuidOk = !radioStationUuid || storedStation.stationuuid === radioStationUuid
+    if (moodOk && uuidOk) return storedStation
+  }
+
+  return pickInitialStation(moods, primary)
+}
+
+function isRadioStationEntry(value: unknown): value is RadioStation {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'stationuuid' in value &&
+    'name' in value &&
+    'urlResolved' in value
+  )
 }
 
 export function loadSelectedMoods(): MusicMoodId[] {
@@ -163,16 +219,6 @@ export function clearMusicOnboarding() {
 
 function isLegacyFavoriteEntry(value: unknown): value is string {
   return typeof value === 'string'
-}
-
-function isRadioStationEntry(value: unknown): value is RadioStation {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'stationuuid' in value &&
-    'name' in value &&
-    'urlResolved' in value
-  )
 }
 
 export function loadFavoriteStations(): RadioStation[] {

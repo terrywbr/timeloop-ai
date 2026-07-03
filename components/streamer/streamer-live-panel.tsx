@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Radio, CheckCircle2, Circle, Copy } from 'lucide-react'
 import { useLanguage } from '@/lib/language-context'
 import { buildStreamModeUrl } from '@/lib/stream-mode'
+import { loadCurrentStation } from '@/lib/radio-station'
 
 type StreamerLivePanelProps = {
   rotationCount: number
@@ -29,7 +30,9 @@ export default function StreamerLivePanel({
   const [copied, setCopied] = useState(false)
 
   const handleCopyUrl = async () => {
-    const url = buildStreamModeUrl()
+    const url = buildStreamModeUrl('/', {
+      stationUuid: loadCurrentStation()?.stationuuid ?? null,
+    })
     try {
       await navigator.clipboard.writeText(url)
       setCopied(true)
@@ -50,6 +53,7 @@ export default function StreamerLivePanel({
       <p className="text-[10px] leading-relaxed text-muted-foreground/80">
         {st.oneClickLiveStreamHint}
       </p>
+      <p className="text-[10px] leading-relaxed text-muted-foreground/80">{st.oneClickLiveObsHint}</p>
 
       <div className="space-y-1.5">
         <StatusRow

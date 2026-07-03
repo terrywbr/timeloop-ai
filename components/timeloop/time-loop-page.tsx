@@ -55,19 +55,21 @@ function TimeLoopPageInner() {
       ) : null}
 
       {page.showStreamLayout ? (
-        <StreamLayout
-          ambientLayers={page.ambientLayers}
-          overlaySettings={page.effectiveOverlaySettings}
-          isFoundingCreator={Boolean(page.userProfile?.isFoundingCreator)}
-          isStreamer={Boolean(page.userProfile?.isStreamerPlan)}
-          accessToken={page.accessToken}
-          authUserId={page.authUser?.id ?? null}
-          musicStreamUrl={page.activeMusicStreamUrl}
-          isMusicPlaying={page.isMusicPlaying}
-          musicVolume={page.effectiveMusicVolume}
-          isAudioUnlocked={page.isAudioUnlocked}
-          onPlaybackError={(url) => void page.handleStreamFailure(url)}
-        />
+        <>
+          <StreamLayout
+            ambientLayers={page.ambientLayers}
+            isFoundingCreator={Boolean(page.userProfile?.isFoundingCreator)}
+            isStreamer={Boolean(page.userProfile?.isStreamerPlan)}
+            accessToken={page.accessToken}
+            authUserId={page.authUser?.id ?? null}
+            musicStreamUrl={page.activeMusicStreamUrl}
+            isMusicPlaying={page.isMusicPlaying}
+            musicVolume={page.effectiveMusicVolume}
+            isAudioUnlocked={page.isAudioUnlocked}
+            onPlaybackError={(url) => void page.handleStreamFailure(url)}
+          />
+          <AiDjOverlay aiDj={page.aiDj} onDismiss={page.dismissAiDj} />
+        </>
       ) : null}
 
       {page.showCockpit ? (
@@ -195,8 +197,6 @@ function TimeLoopPageInner() {
             streamerLiveLaunchedToday={page.streamerLiveLaunchedToday}
             onOneClickLiveStream={page.handleOneClickLiveStream}
           />
-
-          {page.isGenerating ? <GeneratingOverlay /> : null}
         </main>
       ) : null}
     </>

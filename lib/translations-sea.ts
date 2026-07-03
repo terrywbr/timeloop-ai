@@ -71,6 +71,8 @@ type TranslationBundle = {
     | 'oneClickLiveButton'
     | 'oneClickLiveHint'
     | 'oneClickLiveStreamHint'
+    | 'oneClickLiveObsHint'
+    | 'streamFullscreenTap'
     | 'oneClickLiveStatusImages'
     | 'oneClickLiveStatusMusic'
     | 'oneClickLiveStatusReady'
@@ -212,6 +214,9 @@ export const thTranslation: TranslationBundle = {
     oneClickLiveButton: 'เริ่มสตรีม OBS',
     oneClickLiveHint: 'เลือกฉากหมุนในคลังและเลือกสถานี แล้วเปิดหน้าต่าง OBS ด้วยคลิกเดียวทุกวัน',
     oneClickLiveStreamHint: 'ป้ายและ LIVE NETWORK แสดงในหน้าต่างสตรีม (?stream=1)',
+    oneClickLiveObsHint:
+      'สำหรับ OBS: เพิ่ม Browser Source ด้วย URL ด้านล่าง — ไม่มีแถบเบราว์เซอร์ จับภาพเต็มจอจริง',
+    streamFullscreenTap: 'แตะเพื่อเต็มจอ (ซ่อนแถบเบราว์เซอร์)',
     oneClickLiveStatusImages: 'ฉากหมุน: {count}',
     oneClickLiveStatusMusic: 'เพลง: {name}',
     oneClickLiveStatusReady: 'พร้อมแล้ว — คลิกเดียวเพื่อไลฟ์',
@@ -329,6 +334,9 @@ export const viTranslation: TranslationBundle = {
     oneClickLiveButton: 'Bắt đầu stream OBS',
     oneClickLiveHint: 'Chọn cảnh xoay trong thư viện và chọn đài, mỗi ngày mở cửa sổ OBS bằng một cú nhấp.',
     oneClickLiveStreamHint: 'Huy hiệu và LIVE NETWORK hiển thị trong cửa sổ stream (?stream=1).',
+    oneClickLiveObsHint:
+      'Cho OBS: thêm Nguồn trình duyệt với URL bên dưới — không có thanh trình duyệt, khung hình đầy đủ.',
+    streamFullscreenTap: 'Chạm để toàn màn hình (ẩn thanh trình duyệt)',
     oneClickLiveStatusImages: 'Cảnh xoay: {count}',
     oneClickLiveStatusMusic: 'Nhạc: {name}',
     oneClickLiveStatusReady: 'Sẵn sàng — một cú nhấp để phát',

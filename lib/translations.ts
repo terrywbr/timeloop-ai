@@ -121,6 +121,8 @@ export const translations: Record<Language, {
     oneClickLiveButton: string
     oneClickLiveHint: string
     oneClickLiveStreamHint: string
+    oneClickLiveObsHint: string
+    streamFullscreenTap: string
     oneClickLiveStatusImages: string
     oneClickLiveStatusMusic: string
     oneClickLiveStatusReady: string
@@ -263,6 +265,9 @@ export const translations: Record<Language, {
         'After selecting rotation scenes in the gallery and picking a station, open the OBS capture window in one tap each day.',
       oneClickLiveStreamHint:
         'Badge and Live Network board appear in the stream window (?stream=1), top-left / top-right — not in this control panel.',
+      oneClickLiveObsHint:
+        'For OBS: add a Browser Source with the stream URL below — no browser bar, true full-frame capture. Preview window may show a title bar; tap the stream view for fullscreen.',
+      streamFullscreenTap: 'Tap for fullscreen (hide browser bar)',
       oneClickLiveStatusImages: 'Rotation scenes: {count}',
       oneClickLiveStatusMusic: 'Music: {name}',
       oneClickLiveStatusReady: 'Ready — one tap to go live',
@@ -401,6 +406,9 @@ export const translations: Record<Language, {
       oneClickLiveButton: '开始投射直播',
       oneClickLiveHint: '在右侧画廊勾选轮播图并选好电台后，每日一键开启 OBS 直播窗口。',
       oneClickLiveStreamHint: '徽章与 LIVE NETWORK 联播看板在直播窗口（?stream=1）左上角/右上角显示，不在此控制面板。',
+      oneClickLiveObsHint:
+        'OBS 正式推流：用下方链接添加「浏览器来源」，无浏览器栏，才是满屏画面。预览窗口可能仍有标题栏，请在直播画面轻触进入全屏。',
+      streamFullscreenTap: '轻触画面进入全屏（隐藏浏览器栏）',
       oneClickLiveStatusImages: '轮播图：{count} 张',
       oneClickLiveStatusMusic: '音乐：{name}',
       oneClickLiveStatusReady: '已就绪，可一键开播',
@@ -538,6 +546,9 @@ export const translations: Record<Language, {
       oneClickLiveButton: '開始投射直播',
       oneClickLiveHint: '在右側畫廊勾選輪播圖並選好電台後，每日一鍵開啟 OBS 直播視窗。',
       oneClickLiveStreamHint: '徽章與 LIVE NETWORK 聯播看板在直播視窗（?stream=1）左上角／右上角顯示，不在此控制面板。',
+      oneClickLiveObsHint:
+        'OBS 正式推流：用下方連結添加「瀏覽器來源」，無瀏覽器列，才是滿屏畫面。預覽視窗可能仍有標題列，請在直播畫面輕觸進入全螢幕。',
+      streamFullscreenTap: '輕觸畫面進入全螢幕（隱藏瀏覽器列）',
       oneClickLiveStatusImages: '輪播圖：{count} 張',
       oneClickLiveStatusMusic: '音樂：{name}',
       oneClickLiveStatusReady: '已就緒，可一鍵開播',
@@ -677,6 +688,9 @@ export const translations: Record<Language, {
       oneClickLiveButton: 'OBS配信を開始',
       oneClickLiveHint: 'ギャラリーで輪播シーンを選択し電台を選んだら、毎日ワンタップでOBS用ウィンドウを開けます。',
       oneClickLiveStreamHint: 'バッジとLIVE NETWORKはストリームウィンドウ（?stream=1）に表示されます。',
+      oneClickLiveObsHint:
+        'OBS本番：下のURLをブラウザソースに追加するとブラウザバーなしのフル画面になります。プレビュー窓にはタイトルバーが残る場合があります。',
+      streamFullscreenTap: 'タップして全画面（ブラウザバーを非表示）',
       oneClickLiveStatusImages: '輪播シーン：{count} 枚',
       oneClickLiveStatusMusic: '音楽：{name}',
       oneClickLiveStatusReady: '準備完了 — ワンタップで配信開始',
@@ -816,6 +830,9 @@ export const translations: Record<Language, {
       oneClickLiveButton: 'OBS 스트림 시작',
       oneClickLiveHint: '갤러리에서 로테이션 장면을 고르고 스테이션을 선택한 뒤, 매일 원탭으로 OBS 창을 엽니다.',
       oneClickLiveStreamHint: '배지와 LIVE NETWORK는 스트림 창(?stream=1)에 표시됩니다.',
+      oneClickLiveObsHint:
+        'OBS 방송: 아래 URL을 브라우저 소스로 추가하면 브라우저 바 없이 전체 화면입니다. 미리보기 창에는 제목 표시줄이 남을 수 있습니다.',
+      streamFullscreenTap: '탭하여 전체 화면(브라우저 바 숨김)',
       oneClickLiveStatusImages: '로테이션 장면: {count}장',
       oneClickLiveStatusMusic: '음악: {name}',
       oneClickLiveStatusReady: '준비 완료 — 원탭으로 방송 시작',
@@ -955,6 +972,9 @@ export const translations: Record<Language, {
       oneClickLiveButton: 'Iniciar stream OBS',
       oneClickLiveHint: 'Tras elegir escenas en la galería y una emisora, abre la ventana OBS con un toque cada día.',
       oneClickLiveStreamHint: 'La insignia y LIVE NETWORK aparecen en la ventana de stream (?stream=1).',
+      oneClickLiveObsHint:
+        'Para OBS: añade una fuente de navegador con la URL de abajo — sin barra del navegador, captura a pantalla completa.',
+      streamFullscreenTap: 'Toca para pantalla completa (ocultar barra del navegador)',
       oneClickLiveStatusImages: 'Escenas en rotación: {count}',
       oneClickLiveStatusMusic: 'Música: {name}',
       oneClickLiveStatusReady: 'Listo — un toque para emitir',
@@ -1094,6 +1114,9 @@ export const translations: Record<Language, {
       oneClickLiveButton: 'Lancer le stream OBS',
       oneClickLiveHint: 'Après avoir choisi des scènes et une station, ouvrez la fenêtre OBS en un clic chaque jour.',
       oneClickLiveStreamHint: 'Le badge et LIVE NETWORK s’affichent dans la fenêtre stream (?stream=1).',
+      oneClickLiveObsHint:
+        'Pour OBS : ajoutez une source navigateur avec l’URL ci-dessous — sans barre du navigateur, capture plein cadre.',
+      streamFullscreenTap: 'Appuyez pour le plein écran (masquer la barre du navigateur)',
       oneClickLiveStatusImages: 'Scènes en rotation : {count}',
       oneClickLiveStatusMusic: 'Musique : {name}',
       oneClickLiveStatusReady: 'Prêt — un clic pour diffuser',
@@ -1233,6 +1256,9 @@ export const translations: Record<Language, {
       oneClickLiveButton: 'OBS-Stream starten',
       oneClickLiveHint: 'Nach Auswahl der Rotationsszenen und Station täglich per Klick das OBS-Fenster öffnen.',
       oneClickLiveStreamHint: 'Badge und LIVE NETWORK erscheinen im Stream-Fenster (?stream=1).',
+      oneClickLiveObsHint:
+        'Für OBS: Browser-Quelle mit der URL unten hinzufügen — keine Browser-Leiste, echtes Vollbild.',
+      streamFullscreenTap: 'Tippen für Vollbild (Browser-Leiste ausblenden)',
       oneClickLiveStatusImages: 'Rotationsszenen: {count}',
       oneClickLiveStatusMusic: 'Musik: {name}',
       oneClickLiveStatusReady: 'Bereit — ein Klick zum Streamen',

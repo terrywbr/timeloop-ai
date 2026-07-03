@@ -10,11 +10,15 @@ import {
   isExternalProxyUrl,
   isMusicOnboarded,
   isStreamUrlForStation,
+  loadCurrentStation,
   loadFavoriteStations,
   loadSelectedMoods,
   markMusicOnboarded,
+  MUSIC_CURRENT_STATION_KEY,
   pickInitialStation,
   resolveInitialProxyTier,
+  resolveStartupStation,
+  saveCurrentStation,
   saveFavoriteStations,
   saveSelectedMoods,
   shouldPreferStreamProxy,
@@ -25,6 +29,7 @@ import {
 } from '@/lib/radio-station'
 import { GEO_UPDATED_EVENT } from '@/lib/geo-region'
 import { loadPrimaryMood, savePrimaryMood } from '@/lib/dj-settings'
+import { readStreamModeFromWindow, readStreamRadioStationUuidFromWindow } from '@/lib/stream-mode'
 import { WORLD_MUSIC_MOODS } from '@/lib/worlds'
 import type { AmbientWorldId } from '@/lib/ambient-worlds'
 
@@ -48,7 +53,11 @@ export function useMusicStation() {
   )
   const [selectedMoods, setSelectedMoods] = useState<MusicMoodId[]>([])
   const [primaryMood, setPrimaryMoodState] = useState<MusicMoodId | null>(null)
-  const [currentStation, setCurrentStation] = useState<RadioStation | null>(null)
+  const [currentStation, setCurrentStation] = useState<RadioStation | null>(() =>
+    typeof window !== 'undefined'
+      ? resolveStartupStation(readStreamRadioStationUuidFromWindow())
+      : null,
+  )
   const [favoriteStations, setFavoriteStations] = useState<RadioStation[]>([])
   const [isStationLoading, setIsStationLoading] = useState(false)
   const [tunerStation, setTunerStation] = useState<RadioStation | null>(null)
@@ -91,10 +100,14 @@ export function useMusicStation() {
     const primary = storedPrimary && moods.includes(storedPrimary) ? storedPrimary : moods[0] ?? null
     setPrimaryMoodState(primary)
     setFavoriteStations(loadFavoriteStations())
-    if (moods.length > 0) {
-      const initial = pickInitialStation(moods)
-      setCurrentStation(initial)
-      if (onboarded) {
+    const initial =
+      currentStation ??
+      resolveStartupStation(readStreamRadioStationUuidFromWindow())
+    if (initial) {
+      if (!currentStation) {
+        setCurrentStation(initial)
+      }
+      if (onboarded && historyRef.current.length === 0) {
         historyRef.current = [initial]
         historyIndexRef.current = 0
       }
@@ -116,6 +129,7 @@ export function useMusicStation() {
   const applyStation = useCallback(
     (station: RadioStation, options?: { showTuner?: boolean; pushHistory?: boolean }) => {
       setCurrentStation(station)
+      saveCurrentStation(station)
       if (options?.pushHistory !== false) {
         pushHistory(station)
       }
@@ -125,6 +139,28 @@ export function useMusicStation() {
     },
     [pushHistory, showTuner],
   )
+
+  useEffect(() => {
+    if (currentStation) {
+      saveCurrentStation(currentStation)
+    }
+  }, [currentStation])
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== MUSIC_CURRENT_STATION_KEY || !event.newValue) return
+      try {
+        const station = JSON.parse(event.newValue) as RadioStation
+        if (!station?.stationuuid || !station.urlResolved) return
+        applyStation(station, { pushHistory: false, showTuner: false })
+      } catch {
+        // Ignore malformed cross-tab station payloads.
+      }
+    }
+
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [applyStation])
 
   const fetchRandomStation = useCallback(async (moods: MusicMoodId[], excludeUuids: string[] = []) => {
     if (moods.length === 0) return null
@@ -167,13 +203,22 @@ export function useMusicStation() {
       markMusicOnboarded()
       setSelectedMoods(moods)
       setMusicOnboarded(true)
-      const primary = moods[0] ?? 'deep-night'
+      const storedPrimary = loadPrimaryMood()
+      const primary =
+        storedPrimary && moods.includes(storedPrimary) ? storedPrimary : moods[0] ?? 'deep-night'
       savePrimaryMood(primary)
       setPrimaryMoodState(primary)
-      const initial = pickInitialStation(moods)
+      const storedStation = loadCurrentStation()
+      const storedMood = storedStation?.moodId
+      const canUseStoredStation =
+        storedStation && (!storedMood || moods.includes(storedMood))
+      const initial = canUseStoredStation
+        ? storedStation
+        : pickInitialStation(moods, primary)
       historyRef.current = [initial]
       historyIndexRef.current = 0
       setCurrentStation(initial)
+      saveCurrentStation(initial)
       return { initial, primaryMood: primary }
     },
     [],
@@ -222,7 +267,18 @@ export function useMusicStation() {
         const moods = selectedMoods.length > 0 ? selectedMoods : loadSelectedMoods()
         const moodId = station.moodId ?? moods[0] ?? 'deep-night'
 
+        // Stream capture must keep the chosen station — only proxy tier changes above.
+        if (readStreamModeFromWindow()) {
+          return
+        }
+
         if (!isDefaultStation(station.stationuuid)) {
+          const exclude = [...failedStationIdsRef.current]
+          const next = await fetchRandomStation(moods, exclude)
+          if (next) {
+            applyStation(next, { showTuner: true, pushHistory: false })
+            return
+          }
           const fallback = defaultStationForMood(moodId)
           applyStation(fallback, { showTuner: true, pushHistory: false })
           return

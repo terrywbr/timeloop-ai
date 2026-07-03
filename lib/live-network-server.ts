@@ -1,6 +1,10 @@
-import seedRooms from '@/config/live_network.json'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
+  getSeedLiveNetworkRooms,
+  getSeedRoomsInSlotOrder,
+} from '@/lib/live-network-seed'
+import {
+  LIVE_NETWORK_DISPLAY_SLOTS,
   streamerPresenceCutoffIso,
   viewerPresenceCutoffIso,
 } from '@/lib/live-network-constants'
@@ -8,7 +12,7 @@ import { hasStreamerPlanAccess } from '@/lib/supabase-server'
 import type { UserProfile } from '@/lib/supabase-types'
 
 /** How the Live Network board is populated. */
-export type LiveNetworkDataSource = 'seed' | 'live'
+export type LiveNetworkDataSource = 'seed' | 'live' | 'mixed'
 
 export type LiveNetworkRoomRow = {
   id: string
@@ -18,6 +22,8 @@ export type LiveNetworkRoomRow = {
   subtitle: string
   /** Current viewer count (real when dataSource=live). */
   viewerCount: number
+  /** Seed placeholder row — not a real streamer. */
+  isSeed?: boolean
   /** Streamer user id when live; null for seed placeholders. */
   streamerUserId?: string | null
   /** Link to ?stream=1&host= or public world when live. */
@@ -39,20 +45,6 @@ export type StreamerLivePresenceRow = {
   viewer_count: number
   last_seen_at: string
   updated_at: string
-}
-
-type SeedJsonFile = {
-  _meta?: { purpose?: string; dataSource?: string }
-  rooms: SeedJsonRow[]
-}
-
-type SeedJsonRow = {
-  id: string
-  icon: string
-  title: string
-  country_flag: string
-  subtitle: string
-  viewers: string
 }
 
 type PresenceWithUser = StreamerLivePresenceRow & {
@@ -91,11 +83,6 @@ function normalizePresenceUser(
   return row as UserProfile
 }
 
-function parseViewerCount(raw: string): number {
-  const parsed = Number.parseInt(raw, 10)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
-}
-
 function sortByViewersDesc(rooms: LiveNetworkRoomRow[]): LiveNetworkRoomRow[] {
   return [...rooms].sort((a, b) => b.viewerCount - a.viewerCount)
 }
@@ -116,22 +103,32 @@ export function buildStreamerLiveStreamUrl(streamerUserId: string): string {
   return url.toString()
 }
 
-/** Placeholder seed rooms — shown until real streamers are live on the network. */
-export function getSeedLiveNetworkRooms(): LiveNetworkRoomRow[] {
-  const file = seedRooms as SeedJsonFile | SeedJsonRow[]
-  const rows = Array.isArray(file) ? file : file.rooms
-  return sortByViewersDesc(
-    rows.map((row) => ({
-      id: row.id,
-      icon: row.icon,
-      title: row.title,
-      country_flag: row.country_flag,
-      subtitle: row.subtitle,
-      viewerCount: parseViewerCount(row.viewers),
-      streamerUserId: null,
-      streamUrl: null,
-    })),
-  )
+export { getSeedLiveNetworkRooms } from '@/lib/live-network-seed'
+
+/**
+ * Fill up to `maxSlots` board rows: live streamers first (by viewers), then seed placeholders.
+ * Real streamers replace seed slots from the top down as they join.
+ */
+export function mergeLiveNetworkBoard(
+  liveRooms: LiveNetworkRoomRow[],
+  maxSlots = LIVE_NETWORK_DISPLAY_SLOTS,
+): LiveNetworkRoomRow[] {
+  const live = sortByViewersDesc(liveRooms)
+    .slice(0, maxSlots)
+    .map((room) => ({ ...room, isSeed: false }))
+
+  const seedSlotsNeeded = maxSlots - live.length
+  if (seedSlotsNeeded <= 0) return live
+
+  const fillers = getSeedRoomsInSlotOrder().slice(0, seedSlotsNeeded)
+  return [...live, ...fillers]
+}
+
+function resolveBoardDataSource(rooms: LiveNetworkRoomRow[]): LiveNetworkDataSource {
+  const liveCount = rooms.filter((room) => !room.isSeed).length
+  if (liveCount === 0) return 'seed'
+  if (liveCount >= rooms.length) return 'live'
+  return 'mixed'
 }
 
 function countViewerSessions(rows: Array<{ streamer_user_id: string }>): Map<string, number> {
@@ -238,6 +235,7 @@ export async function fetchLiveStreamerNetworkRooms(
     country_flag: row.country_flag || '🌍',
     subtitle: row.subtitle || 'Live',
     viewerCount: viewerCounts.get(row.user_id) ?? 0,
+    isSeed: false,
     streamerUserId: row.user_id,
     streamUrl: buildStreamerLiveStreamUrl(row.user_id),
   }))
@@ -253,7 +251,7 @@ function readDataSourceMode(): 'seed' | 'auto' | 'live' {
 
 /** Resolve board payload: live ranked rooms when available, else seed placeholders. */
 export async function resolveLiveNetworkPayload(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient | null,
 ): Promise<LiveNetworkPayload> {
   const mode = readDataSourceMode()
   const updatedAt = new Date().toISOString()
@@ -262,14 +260,31 @@ export async function resolveLiveNetworkPayload(
     return { dataSource: 'seed', updatedAt, rooms: getSeedLiveNetworkRooms() }
   }
 
-  const liveRooms = await fetchLiveStreamerNetworkRooms(supabase)
+  let liveRooms: LiveNetworkRoomRow[] = []
+  if (supabase) {
+    try {
+      liveRooms = await fetchLiveStreamerNetworkRooms(supabase)
+    } catch (error) {
+      console.warn('[live-network] live fetch failed, falling back to seed', error)
+    }
+  }
 
   if (mode === 'live') {
-    return { dataSource: 'live', updatedAt, rooms: liveRooms }
+    const rooms = mergeLiveNetworkBoard(liveRooms)
+    return {
+      dataSource: resolveBoardDataSource(rooms),
+      updatedAt,
+      rooms,
+    }
   }
 
   if (liveRooms.length > 0) {
-    return { dataSource: 'live', updatedAt, rooms: liveRooms }
+    const rooms = mergeLiveNetworkBoard(liveRooms)
+    return {
+      dataSource: resolveBoardDataSource(rooms),
+      updatedAt,
+      rooms,
+    }
   }
 
   return { dataSource: 'seed', updatedAt, rooms: getSeedLiveNetworkRooms() }

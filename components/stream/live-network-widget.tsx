@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   fetchLiveNetworkBoard,
   fluctuateViewerCount,
+  getSeedLiveNetworkRooms,
   LIVE_NETWORK_POLL_MS,
   readLiveNetworkHiddenFromWindow,
   type LiveNetworkDataSource,
@@ -27,14 +28,16 @@ function LiveNetworkRow({
   }, [base])
 
   useEffect(() => {
-    if (dataSource !== 'seed' || base <= 0) return undefined
+    const isSeedRow = room.isSeed ?? dataSource === 'seed'
+    if (!isSeedRow || base <= 0) return undefined
     const id = window.setInterval(() => {
       setViewers((prev) => fluctuateViewerCount(prev, base))
     }, SEED_TICK_MS)
     return () => window.clearInterval(id)
-  }, [base, dataSource])
+  }, [base, dataSource, room.isSeed])
 
-  const displayCount = dataSource === 'seed' ? viewers : base
+  const isSeedRow = room.isSeed ?? dataSource === 'seed'
+  const displayCount = isSeedRow ? viewers : base
 
   const inner = (
     <>
@@ -60,7 +63,7 @@ function LiveNetworkRow({
     </>
   )
 
-  if (room.streamUrl && dataSource === 'live') {
+  if (room.streamUrl && !room.isSeed) {
     return (
       <li className="group rounded-lg border border-white/5 bg-white/[0.04] transition-colors hover:border-white/12 hover:bg-white/[0.07]">
         <a
@@ -90,17 +93,21 @@ type LiveNetworkWidgetProps = {
 export default function LiveNetworkWidget({ visible = true }: LiveNetworkWidgetProps) {
   const [hiddenByUrl, setHiddenByUrl] = useState(false)
   const [dataSource, setDataSource] = useState<LiveNetworkDataSource>('seed')
-  const [rooms, setRooms] = useState<LiveNetworkRoomRow[]>([])
+  const [rooms, setRooms] = useState<LiveNetworkRoomRow[]>(() => getSeedLiveNetworkRooms())
 
   const refresh = useCallback(async () => {
     try {
       const payload = await fetchLiveNetworkBoard()
-      if (!payload.success || !payload.rooms) return
-      setDataSource(payload.dataSource ?? 'seed')
-      setRooms(payload.rooms)
+      if (payload.success && payload.rooms?.length) {
+        setDataSource(payload.dataSource ?? 'seed')
+        setRooms(payload.rooms)
+        return
+      }
     } catch {
-      // Keep last good snapshot on transient errors.
+      // Fall through to client seed snapshot.
     }
+    setDataSource('seed')
+    setRooms(getSeedLiveNetworkRooms())
   }, [])
 
   useEffect(() => {

@@ -21,16 +21,31 @@ export function readStreamModeFromWindow(): boolean {
   return isStreamModeFromSearch(window.location.search)
 }
 
+export function readStreamRadioStationUuidFromSearch(search: string): string | null {
+  const radio = new URLSearchParams(search).get('radio')?.trim() ?? ''
+  return radio.length > 0 ? radio : null
+}
+
+export function readStreamRadioStationUuidFromWindow(): string | null {
+  if (typeof window === 'undefined') return null
+  return readStreamRadioStationUuidFromSearch(window.location.search)
+}
+
 /** OBS browser source URL on the current origin. */
-export function buildStreamModeUrl(pathname = '/', hostUserId?: string | null) {
+export function buildStreamModeUrl(
+  pathname = '/',
+  options?: { hostUserId?: string | null; stationUuid?: string | null },
+) {
   if (typeof window === 'undefined') {
     const params = new URLSearchParams({ stream: '1' })
-    if (hostUserId) params.set('host', hostUserId)
+    if (options?.hostUserId) params.set('host', options.hostUserId)
+    if (options?.stationUuid) params.set('radio', options.stationUuid)
     return `${pathname}?${params.toString()}`
   }
   const url = new URL(pathname, window.location.origin)
   url.searchParams.set('stream', '1')
-  if (hostUserId) url.searchParams.set('host', hostUserId)
+  if (options?.hostUserId) url.searchParams.set('host', options.hostUserId)
+  if (options?.stationUuid) url.searchParams.set('radio', options.stationUuid)
   return url.toString()
 }
 
@@ -59,6 +74,18 @@ export function openStreamModePopout(url: string) {
     popout.focus()
   }
   return popout
+}
+
+/** Mobile: same-tab navigation (better fullscreen). Desktop: dedicated pop-out window. */
+export function launchStreamModeWindow(url: string, isMobile: boolean) {
+  if (typeof window === 'undefined') return null
+
+  if (isMobile) {
+    window.location.assign(url)
+    return null
+  }
+
+  return openStreamModePopout(url)
 }
 
 const STREAMER_LIVE_LAUNCH_DATE_KEY = 'timeloop.streamer.liveLaunchDate'

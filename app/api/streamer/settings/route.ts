@@ -6,6 +6,7 @@ import {
   getAuthenticatedUser,
 } from '@/lib/supabase-server'
 import { DEFAULT_STREAMER_SETTINGS, normalizeStreamerSettings } from '@/lib/streamer-settings'
+import { isMissingStreamerTableError, toErrorMessage } from '@/lib/streamer-db-errors'
 
 export const runtime = 'nodejs'
 
@@ -22,24 +23,31 @@ export async function GET(req: Request) {
       return jsonError('Streamer Pass required', 403)
     }
 
-    const { data } = await supabase
+    const { data, error: selectError } = await supabase
       .from('streamer_settings')
-      .select('overlay, background_rotation_minutes')
+      .select('background_rotation_minutes')
       .eq('user_id', auth.user.id)
-      .maybeSingle<{ overlay: Record<string, unknown>; background_rotation_minutes: number }>()
+      .maybeSingle<{ background_rotation_minutes: number }>()
 
-    const settings = normalizeStreamerSettings(
-      data
-        ? {
-            overlay: data.overlay as never,
-            backgroundRotationMinutes: data.background_rotation_minutes === 10 ? 10 : 5,
-          }
-        : DEFAULT_STREAMER_SETTINGS,
-    )
+    if (selectError) {
+      const message = toErrorMessage(selectError)
+      if (isMissingStreamerTableError(message)) {
+        return NextResponse.json({
+          success: true,
+          settings: DEFAULT_STREAMER_SETTINGS,
+          persisted: false,
+        })
+      }
+      throw selectError
+    }
 
-    return NextResponse.json({ success: true, settings })
+    const settings = normalizeStreamerSettings({
+      backgroundRotationMinutes: data?.background_rotation_minutes === 10 ? 10 : 5,
+    })
+
+    return NextResponse.json({ success: true, settings, persisted: true })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown settings error'
+    const message = toErrorMessage(error)
     const status = message.includes('登入') ? 401 : 500
     return jsonError(message, status)
   }
@@ -58,34 +66,44 @@ export async function PUT(req: Request) {
     const body = (await req.json()) as Partial<typeof DEFAULT_STREAMER_SETTINGS>
     const settings = normalizeStreamerSettings(body)
 
-    const payloadWithUpdatedAt = {
-      user_id: auth.user.id,
-      overlay: settings.overlay,
-      background_rotation_minutes: settings.backgroundRotationMinutes,
-      updated_at: new Date().toISOString(),
-    }
-    let { error } = await supabase
+    const { data: existing } = await supabase
       .from('streamer_settings')
-      .upsert(payloadWithUpdatedAt, { onConflict: 'user_id' })
+      .select('overlay')
+      .eq('user_id', auth.user.id)
+      .maybeSingle<{ overlay: Record<string, unknown> | null }>()
 
-    // Backward compatibility: some old streamer_settings tables may not have updated_at.
-    if (error && String(error.message).includes('updated_at')) {
-      const fallback = await supabase.from('streamer_settings').upsert(
-        {
-          user_id: auth.user.id,
-          overlay: settings.overlay,
-          background_rotation_minutes: settings.backgroundRotationMinutes,
-        },
-        { onConflict: 'user_id' },
-      )
-      error = fallback.error
+    const basePayload = {
+      user_id: auth.user.id,
+      overlay: existing?.overlay ?? {},
+      background_rotation_minutes: settings.backgroundRotationMinutes,
     }
 
-    if (error) throw error
+    const attempts = [
+      { ...basePayload, updated_at: new Date().toISOString() },
+      basePayload,
+    ]
 
-    return NextResponse.json({ success: true, settings })
+    let lastError: unknown = null
+    for (const payload of attempts) {
+      const { error } = await supabase
+        .from('streamer_settings')
+        .upsert(payload, { onConflict: 'user_id' })
+      if (!error) {
+        return NextResponse.json({ success: true, settings, persisted: true })
+      }
+      lastError = error
+      const message = toErrorMessage(error)
+      if (isMissingStreamerTableError(message)) {
+        return NextResponse.json({ success: true, settings, persisted: false })
+      }
+      if (!message.includes('updated_at')) break
+    }
+
+    if (lastError) throw lastError
+
+    return NextResponse.json({ success: true, settings, persisted: true })
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown settings error'
+    const message = toErrorMessage(error)
     const status = message.includes('登入') ? 401 : 500
     return jsonError(message, status)
   }

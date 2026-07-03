@@ -48,12 +48,12 @@ import {
 } from '@/lib/api-client'
 import {
   buildStreamModeUrl,
+  launchStreamModeWindow,
   markStreamerLiveLaunchedToday,
-  openStreamModePopout,
   readStreamerLiveLaunchedToday,
   readStreamModeFromWindow,
 } from '@/lib/stream-mode'
-import { getDefaultStreamerOverlayTemplate } from '@/lib/streamer-overlay-templates'
+import { isMissingStreamerTableError } from '@/lib/streamer-db-errors'
 import {
   DEFAULT_STREAMER_SETTINGS,
   normalizeStreamerSettings,
@@ -64,7 +64,7 @@ import { markCoFocusSpokenToday, shouldSpeakCoFocusToday } from '@/lib/dj-settin
 import type { VideoBackgroundRef } from '@/components/ui/video-background'
 import type { AmbientWorldLayer, GalleryWorldAssets, GenerateApiResponse } from '@/lib/timeloop/types'
 import { normalizeVisualEffectScene, resolveParticlePreset, resolvePresetWorld, type VisualEffectSceneKey } from '@/lib/timeloop/world-resolver'
-import { buildStreamPlaybackUrl, resolveInitialProxyTier } from '@/lib/radio-station'
+import { buildStreamPlaybackUrl, loadSelectedMoods, resolveInitialProxyTier, saveCurrentStation } from '@/lib/radio-station'
 import { primeStreamAudio } from '@/lib/prime-stream-audio'
 import {
   fetchGeoFromApi,
@@ -91,10 +91,10 @@ export type RequireAuthOptions = {
 }
 
 function isMissingStreamerTablesError(message: string) {
-  const lower = message.toLowerCase()
-  const missing = lower.includes('could not find') || lower.includes('does not exist')
-  const table = lower.includes('public.streamer_backgrounds') || lower.includes('public.streamer_settings')
-  return missing && table
+  return (
+    isMissingStreamerTableError(message, 'streamer_settings') ||
+    isMissingStreamerTableError(message, 'streamer_backgrounds')
+  )
 }
 
 function normalizeStreamerBackgrounds(
@@ -368,11 +368,12 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     return () => { document.removeEventListener('pointerdown', unlock) }
   }, [isAudioUnlocked, handleUnlockAudio])
 
-  const showPortraitRotateGate = isClientMounted && isMobilePortrait
+  const showPortraitRotateGate = isClientMounted && isMobilePortrait && !isStreamMode
   const showMobileLandscapeUi = isClientMounted && (!isMobile || isLandscape)
   const showMusicOnboarding = !isStreamMode && showMobileLandscapeUi && !music.musicOnboarded
   const showCockpit = !isStreamMode && showMobileLandscapeUi && music.musicOnboarded
-  const showStreamLayout = isStreamMode && music.musicOnboarded && !isMobilePortrait
+  const showStreamLayout = isStreamMode && music.musicOnboarded
+  const showLiveExperience = showCockpit || showStreamLayout
   const shouldKeepMusicAlive = showMusicOnboarding || showCockpit || showStreamLayout
 
   useEffect(() => {
@@ -489,18 +490,6 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     [localStreamerBackgroundsKey],
   )
   const preferCreditPack = regionPreference === 'cn' || isCnHost
-  const effectiveOverlaySettings = useMemo(() => {
-    const settings = normalizeStreamerSettings(streamerSettings)
-    const template = getDefaultStreamerOverlayTemplate(language)
-    if (!settings.overlay.line1.trim() && !settings.overlay.line2.trim()) {
-      return {
-        ...settings.overlay,
-        line1: template.line1,
-        line2: template.line2,
-      }
-    }
-    return settings.overlay
-  }, [language, streamerSettings])
 
   const refreshAccountData = useCallback(async () => {
     if (!supabase) return
@@ -532,7 +521,10 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
 
   useEffect(() => {
     if (!isStreamMode || music.musicOnboarded) return
-    const { initial, primaryMood } = music.completeMusicOnboarding(['deep-night'])
+
+    const moods = loadSelectedMoods()
+    const resolvedMoods = moods.length > 0 ? moods : (['deep-night'] as MusicMoodId[])
+    const { initial, primaryMood } = music.completeMusicOnboarding(resolvedMoods)
     loadMoodWorld(primaryMood)
     setIsAudioUnlocked(true)
     setIsMusicPlaying(true)
@@ -1555,34 +1547,38 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
 
   useEffect(() => {
     if (!music.musicOnboarded || !music.primaryMood || showMusicOnboarding) return
-    if (!showCockpit) return
+    if (!showLiveExperience) return
     if (greetTriggeredRef.current) return
 
-    loadMoodWorld(music.primaryMood)
+    if (showCockpit) {
+      loadMoodWorld(music.primaryMood)
+    }
     greetTriggeredRef.current = true
 
     void triggerGreeting({
       moodId: music.primaryMood,
       stationName: music.currentStation?.name,
-      sessionType: 'return',
+      sessionType: isStreamMode ? 'enter' : 'return',
     })
   }, [
+    isStreamMode,
     loadMoodWorld,
     music.currentStation?.name,
     music.musicOnboarded,
     music.primaryMood,
     showCockpit,
+    showLiveExperience,
     showMusicOnboarding,
     triggerGreeting,
   ])
 
   useEffect(() => {
-    if (!showCockpit || !music.primaryMood) return
+    if (!showLiveExperience || !music.primaryMood) return
     markIntervalSpoken()
-  }, [showCockpit, music.primaryMood])
+  }, [showLiveExperience, music.primaryMood])
 
   useEffect(() => {
-    if (!showCockpit || !music.primaryMood || !aiDj.voiceEnabled) return
+    if (!showLiveExperience || !music.primaryMood || !aiDj.voiceEnabled) return
 
     const checkInterval = () => {
       if (document.visibilityState !== 'visible') return
@@ -1605,7 +1601,7 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     isBusy,
     music.currentStation?.name,
     music.primaryMood,
-    showCockpit,
+    showLiveExperience,
     speakLine,
   ])
 
@@ -1662,18 +1658,26 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
       primeStreamAudio(music.activeMusicStreamUrl, musicVolume)
     }
 
-    const streamUrl = buildStreamModeUrl()
-    const popout = openStreamModePopout(streamUrl)
+    if (music.currentStation) {
+      saveCurrentStation(music.currentStation)
+    }
+
+    const streamUrl = buildStreamModeUrl('/', {
+      stationUuid: music.currentStation?.stationuuid ?? null,
+    })
+    const popout = launchStreamModeWindow(streamUrl, isMobile)
     markStreamerLiveLaunchedToday()
     setStreamerLiveLaunchedToday(true)
 
-    if (!popout) {
+    if (!isMobile && !popout) {
       window.alert(`${st.oneClickLivePopoutBlocked}\n\n${streamUrl}`)
     }
   }, [
     hasCreatorTools,
+    isMobile,
     language,
     music.activeMusicStreamUrl,
+    music.currentStation,
     musicVolume,
     streamLiveReadiness.imagesReady,
     streamLiveReadiness.musicReady,
@@ -1727,7 +1731,6 @@ export function useTimeloopPage({ language, getDjPersonaName }: UseTimeloopPageO
     handleToggleWorldInStreamerRotation,
     handleStreamerRotationChange,
     streamerSettings,
-    effectiveOverlaySettings,
     preferCreditPack,
     isCnHost,
     isClientMounted,

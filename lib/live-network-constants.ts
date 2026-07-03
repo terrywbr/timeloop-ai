@@ -7,6 +7,9 @@ export const VIEWER_PRESENCE_STALE_MS = 2 * 60 * 1000
 /** Client interval for streamer/viewer heartbeats in ?stream=1. */
 export const LIVE_NETWORK_HEARTBEAT_MS = 30_000
 
+/** Fixed slots on the Live Network board (live streamers replace seed rows in order). */
+export const LIVE_NETWORK_DISPLAY_SLOTS = 6
+
 export function streamerPresenceCutoffIso(nowMs = Date.now()): string {
   return new Date(nowMs - STREAMER_PRESENCE_STALE_MS).toISOString()
 }

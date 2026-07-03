@@ -2,41 +2,58 @@
   "_meta": {
     "purpose": "Seed placeholder rooms for Live Network until real streamers go on-air.",
     "dataSource": "seed",
-    "ranking": "Sorted by viewerCount descending via GET /api/live-network",
-    "note": "When fetchLiveStreamerNetworkRooms returns rows, auto mode switches to live data."
+    "slots": 6,
+    "ranking": "Live streamers fill slots first; remaining slots use these placeholders in order.",
+    "note": "When a real streamer heartbeats in, they replace the next seed slot (top to bottom)."
   },
   "rooms": [
     {
       "id": "seed-1",
-      "icon": "🎧",
-      "title": "FocusFlow",
-      "country_flag": "🇺🇸",
-      "subtitle": "Study Room",
-      "viewers": "127"
+      "icon": "🌙",
+      "title": "LunaFocus",
+      "country_flag": "🇹🇼",
+      "subtitle": "Late-night study room",
+      "viewers": "142"
     },
     {
       "id": "seed-2",
-      "icon": "🎧",
-      "title": "ChillLab",
-      "country_flag": "🇲🇾",
-      "subtitle": "LoFi Beats",
-      "viewers": "89"
+      "icon": "🎹",
+      "title": "VelvetLoFi",
+      "country_flag": "🇯🇵",
+      "subtitle": "Rainy Tokyo beats",
+      "viewers": "98"
     },
     {
       "id": "seed-3",
-      "icon": "🎧",
-      "title": "AI Hustle",
-      "country_flag": "🇵🇭",
-      "subtitle": "AI Tools Radio",
-      "viewers": "65"
+      "icon": "✨",
+      "title": "NebulaChill",
+      "country_flag": "🇺🇸",
+      "subtitle": "Deep space ambient",
+      "viewers": "76"
     },
     {
       "id": "seed-4",
-      "icon": "🎧",
-      "title": "NightRain",
-      "country_flag": "🇮🇩",
-      "subtitle": "Sleep Ambient",
-      "viewers": "41"
+      "icon": "🌿",
+      "title": "MossGarden",
+      "country_flag": "🇲🇾",
+      "subtitle": "Forest focus radio",
+      "viewers": "58"
+    },
+    {
+      "id": "seed-5",
+      "icon": "🔮",
+      "title": "CrystalWave",
+      "country_flag": "🇰🇷",
+      "subtitle": "Synth meditation",
+      "viewers": "44"
+    },
+    {
+      "id": "seed-6",
+      "icon": "🦋",
+      "title": "DreamPulse",
+      "country_flag": "🇸🇬",
+      "subtitle": "Soft vocal lo-fi",
+      "viewers": "31"
     }
   ]
 }

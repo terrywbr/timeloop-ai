@@ -1,6 +1,9 @@
 import type { LiveNetworkDataSource, LiveNetworkRoomRow } from '@/lib/live-network-server'
+import { getSeedLiveNetworkRooms } from '@/lib/live-network-seed'
 
 export type { LiveNetworkDataSource, LiveNetworkRoomRow }
+
+export { getSeedLiveNetworkRooms }
 
 export type LiveNetworkClientPayload = {
   success: boolean
